@@ -227,14 +227,14 @@ class SettingsScreen extends StatelessWidget {
                               value: AlarmScreenType.shake,
                               child: Text(context.localization.shakeToStop),
                             ),
-                            DropdownMenuItem(
-                              value: AlarmScreenType.tap,
-                              child: Text(context.localization.tapChallenge),
-                            ),
-                            DropdownMenuItem(
-                              value: AlarmScreenType.qr,
-                              child: Text(context.localization.qrCodeScan),
-                            ),
+                            // DropdownMenuItem(
+                            //   value: AlarmScreenType.tap,
+                            //   child: Text(context.localization.tapChallenge),
+                            // ),
+                            // DropdownMenuItem(
+                            //   value: AlarmScreenType.qr,
+                            //   child: Text(context.localization.qrCodeScan),
+                            // ),
                           ],
                           onChanged: (v) async {
                             if (v == null) return;
