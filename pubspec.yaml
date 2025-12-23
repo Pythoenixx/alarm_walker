@@ -1,0 +1,60 @@
+name: alarm_walker
+description: A neumorphic themed digital calculator which has keyboard and dark mode support
+publish_to: 'none'
+version: 1.1.2+4
+environment:
+  sdk: ^3.7.0
+  flutter: 3.32.6
+
+dependencies:
+  alarm: ^5.1.5
+  device_preview_plus: ^2.5.6
+  disable_battery_optimization:
+    git:
+      url: https://github.com/adeeteya/Disable-Battery-Optimizations.git
+      ref: master
+  file_picker: ^10.2.0
+  flutter:
+    sdk: flutter
+  flutter_bloc: ^9.1.1
+  flutter_inset_box_shadow_update: ^0.0.1
+  flutter_launcher_icons: ^0.14.4
+  flutter_localizations:
+    sdk: flutter
+  go_router: ^17.0.1
+  intl: ^0.20.2
+  lottie: ^3.3.1
+  mobile_scanner: ^7.0.1
+  path: ^1.9.1
+  path_provider: ^2.1.5
+  permission_handler: ^12.0.1
+  sensors_plus: ^7.0.0
+  shared_preferences: ^2.5.3
+  sqflite: ^2.4.2
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter
+  rename: ^3.0.0
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icon/icon.png"
+
+flutter:
+  uses-material-design: true
+  generate: true
+
+  assets:
+    - assets/
+    - assets/fonts/
+    - assets/lottie/
+
+  fonts:
+    - family: Poppins
+      fonts:
+        - asset: assets/fonts/Poppins-Regular.ttf
+        - asset: assets/fonts/Poppins-Medium.ttf
+          weight: 500

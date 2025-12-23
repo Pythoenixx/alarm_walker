@@ -1,0 +1,104 @@
+import 'dart:async';
+
+import 'package:alarm/alarm.dart';
+import 'package:alarm_walker/constants.dart';
+import 'package:alarm_walker/extensions/context_extensions.dart';
+import 'package:alarm_walker/services/alarm_cubit.dart';
+import 'package:alarm_walker/theme/app_colors.dart';
+import 'package:alarm_walker/theme/app_text_styles.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:permission_handler/permission_handler.dart';
+
+class QrAlarmScreen extends StatefulWidget {
+  final AlarmSettings alarmSettings;
+  const QrAlarmScreen({super.key, required this.alarmSettings});
+
+  @override
+  State<QrAlarmScreen> createState() => _QrAlarmScreenState();
+}
+
+class _QrAlarmScreenState extends State<QrAlarmScreen> {
+  late final MobileScannerController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = MobileScannerController();
+    unawaited(_requestPermission());
+  }
+
+  Future<void> _requestPermission() async {
+    final status = await Permission.camera.status;
+    if (status.isDenied) {
+      await Permission.camera.request();
+    }
+  }
+
+  @override
+  void dispose() {
+    unawaited(_controller.dispose());
+    super.dispose();
+  }
+
+  Future<void> _onDetect(BarcodeCapture capture) async {
+    final value = capture.barcodes.last.rawValue;
+    if (value == kQRCodeText) {
+      await context.read<AlarmCubit>().stopAlarm(widget.alarmSettings.id);
+      if (mounted) {
+        context.pop();
+      }
+    } else if (value != null && value.isNotEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.localization.wrongQr)));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isDark = context.isDarkMode;
+    return PopScope(
+      canPop: false,
+      child: Scaffold(
+        body: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors:
+                  isDark
+                      ? [AppColors.darkScaffold1, AppColors.darkScaffold2]
+                      : [AppColors.lightScaffold1, AppColors.lightScaffold2],
+            ),
+          ),
+          child: Column(
+            children: [
+              const Spacer(),
+              Text(
+                widget.alarmSettings.notificationSettings.body,
+                style: AppTextStyles.large(context),
+              ),
+              const SizedBox(height: 20),
+              Expanded(
+                flex: 6,
+                child: MobileScanner(
+                  controller: _controller,
+                  onDetect: _onDetect,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                context.localization.scanQrInstruction,
+                style: AppTextStyles.large(context),
+              ),
+              const Spacer(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
