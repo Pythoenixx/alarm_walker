@@ -60,21 +60,6 @@ android {
             signingConfig = signingConfigs.getByName("release")
         }
     }
-
-    // flavorDimensions += "default"
-    // productFlavors {
-    //     create("production") {
-    //         dimension = "default"
-    //         resValue("string", "app_name", "Awake")
-    //         applicationIdSuffix = ""
-    //     }
-    //     create("development") {
-    //         dimension = "default"
-    //         resValue("string", "app_name", "Awake Dev")
-    //         applicationIdSuffix = ".development"
-    //         versionNameSuffix = "-development"
-    //     }
-    // }
 }
 
 flutter {

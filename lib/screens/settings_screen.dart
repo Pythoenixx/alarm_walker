@@ -44,7 +44,7 @@ class SettingsScreen extends StatelessWidget {
   Future<void> _downloadQrCode(BuildContext context) async {
     final byteData = await rootBundle.load("assets/qr_code.png");
     final saveLocation = await FilePicker.platform.saveFile(
-      fileName: 'awake_qr.png',
+      fileName: 'alarm_walker_qr.png',
       type: FileType.image,
       bytes: byteData.buffer.asUint8List(),
     );
