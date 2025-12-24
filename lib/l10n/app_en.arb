@@ -234,5 +234,9 @@
   "sunday": "Sunday",
   "@sunday": {
     "description": "Day of the week"
+  },
+  "database": "Database (debug)",
+  "@database": {
+    "description": "Base of data"
   }
 }

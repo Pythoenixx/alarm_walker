@@ -2,6 +2,7 @@ import 'package:alarm/alarm.dart';
 import 'package:alarm_walker/models/alarm_model.dart';
 import 'package:alarm_walker/screens/add_alarm_screen.dart';
 import 'package:alarm_walker/screens/alarm_ringing_screen.dart';
+import 'package:alarm_walker/screens/database_screen.dart';
 import 'package:alarm_walker/screens/home.dart';
 import 'package:alarm_walker/screens/math_alarm_screen.dart';
 // import 'package:alarm_walker/screens/qr_alarm_screen.dart';
@@ -21,6 +22,7 @@ enum AppRoute {
   retypeAlarm,
   qrAlarm,
   tapAlarm,
+  database,
 }
 
 GoRouter createRouter() {
@@ -91,6 +93,11 @@ GoRouter createRouter() {
                 (context, state) => TapAlarmScreen(
                   alarmSettings: state.extra! as AlarmSettings,
                 ),
+          ),
+          GoRoute(
+            path: AppRoute.database.name,
+            name: AppRoute.database.name,
+            builder: (context, state) => const DatabaseScreen(),
           ),
         ],
       ),

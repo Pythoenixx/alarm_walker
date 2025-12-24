@@ -1,5 +1,6 @@
 // import 'dart:async';
 
+import 'package:alarm_walker/app_router.dart';
 import 'package:alarm_walker/extensions/context_extensions.dart';
 import 'package:alarm_walker/models/alarm_screen_type.dart';
 import 'package:alarm_walker/services/alarm_cubit.dart';
@@ -271,6 +272,29 @@ class SettingsScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 23),
+                SettingsTile(
+                  onTap: () => context.goNamed(AppRoute.database.name),
+                  child: Row(
+                    children: [
+                      Text(
+                        context.localization.database,
+                        style: AppTextStyles.body(
+                          context,
+                        ).copyWith(color: color),
+                      ),
+                      // const Spacer(),
+                      // GradientSwitch(
+                      //   value: state.vibrationEnabled,
+                      //   onChanged: (v) async {
+                      //     final settingsCubit = context.read<SettingsCubit>();
+                      //     final alarmCubit = context.read<AlarmCubit>();
+                      //     await settingsCubit.setVibrationEnabled(v);
+                      //     await alarmCubit.updateVibrationForAll(v);
+                      //   },
+                      // ),
+                    ],
+                  ),
+                ),
                 // if (state.alarmScreenType == AlarmScreenType.qr)
                 //   SettingsTile(
                 //     onTap: () async {
