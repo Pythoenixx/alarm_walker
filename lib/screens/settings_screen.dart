@@ -23,39 +23,6 @@ import 'package:go_router/go_router.dart';
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
-  // Future<void> _pickAndAddAudio(BuildContext context) async {
-  //   final result = await FilePicker.platform.pickFiles(type: FileType.audio);
-  //   if (!context.mounted ||
-  //       result == null ||
-  //       result.files.single.path == null) {
-  //     return;
-  //   }
-  //   final path = result.files.single.path!;
-
-  //   final soundsCubit = context.read<CustomSoundsCubit>();
-  //   final settingsCubit = context.read<SettingsCubit>();
-  //   final alarmCubit = context.read<AlarmCubit>();
-
-  //   final newPath = await soundsCubit.addSound(path);
-  //   if (newPath == null) return;
-  //   await settingsCubit.setAlarmAudioPath(newPath);
-  //   await alarmCubit.updateAudioPathForAll(newPath);
-  // }
-
-  // Future<void> _downloadQrCode(BuildContext context) async {
-  //   final byteData = await rootBundle.load("assets/qr_code.png");
-  //   final saveLocation = await FilePicker.platform.saveFile(
-  //     fileName: 'alarm_walker_qr.png',
-  //     type: FileType.image,
-  //     bytes: byteData.buffer.asUint8List(),
-  //   );
-  //   if (context.mounted && saveLocation != null) {
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(content: Text(context.localization.fileSaved(saveLocation))),
-  //     );
-  //   }
-  // }
-
   @override
   Widget build(BuildContext context) {
     final bool isDark = context.isDarkMode;
@@ -232,35 +199,9 @@ class SettingsScreen extends StatelessWidget {
                               value: AlarmScreenType.retype,
                               child: Text(context.localization.retypeToStop),
                             ),
-                            // DropdownMenuItem(
-                            //   value: AlarmScreenType.tap,
-                            //   child: Text(context.localization.tapChallenge),
-                            // ),
-                            // DropdownMenuItem(
-                            //   value: AlarmScreenType.qr,
-                            //   child: Text(context.localization.qrCodeScan),
-                            // ),
                           ],
                           onChanged: (v) async {
                             if (v == null) return;
-                            // if (v == AlarmScreenType.qr) {
-                            //   final granted =
-                            //       await AlarmPermissions.checkCameraPermission();
-                            //   if (!granted) {
-                            //     if (context.mounted) {
-                            //       ScaffoldMessenger.of(context).showSnackBar(
-                            //         SnackBar(
-                            //           content: Text(
-                            //             context
-                            //                 .localization
-                            //                 .cameraPermissionRequired,
-                            //           ),
-                            //         ),
-                            //       );
-                            //     }
-                            //     return;
-                            //   }
-                            // }
                             if (!context.mounted) return;
                             await context
                                 .read<SettingsCubit>()
@@ -295,133 +236,6 @@ class SettingsScreen extends StatelessWidget {
                     ],
                   ),
                 ),
-                // if (state.alarmScreenType == AlarmScreenType.qr)
-                //   SettingsTile(
-                //     onTap: () async {
-                //       await _downloadQrCode(context);
-                //     },
-                //     child: Row(
-                //       children: [
-                //         Text(
-                //           context.localization.downloadQr,
-                //           style: AppTextStyles.body(
-                //             context,
-                //           ).copyWith(color: color),
-                //         ),
-                //       ],
-                //     ),
-                //   ),
-                // if (state.alarmScreenType == AlarmScreenType.qr)
-                //   const SizedBox(height: 23),
-                // BlocBuilder<CustomSoundsCubit, List<String>>(
-                //   builder: (context, files) {
-                //     final items = <DropdownMenuItem<String>>[
-                //       DropdownMenuItem(
-                //         value: 'assets/alarm_ringtone.mp3',
-                //         child: Text(context.localization.defaultOption),
-                //       ),
-                //       ...files.map(
-                //         (e) => DropdownMenuItem(
-                //           value: e,
-                //           child: Text(basename(e)),
-                //         ),
-                //       ),
-                //       DropdownMenuItem(
-                //         value: '__add__',
-                //         child: Text(context.localization.addSound),
-                //       ),
-                //     ];
-                //     final values =
-                //         items
-                //             .where((e) => e.value != '__add__')
-                //             .map((e) => e.value)
-                //             .whereType<String>()
-                //             .toList();
-                //     String dropdownValue = state.alarmAudioPath;
-                //     if (files.isEmpty &&
-                //         dropdownValue != 'assets/alarm_ringtone.mp3') {
-                //       dropdownValue = 'assets/alarm_ringtone.mp3';
-                //     } else if (files.isNotEmpty &&
-                //         !values.contains(dropdownValue)) {
-                //       dropdownValue = 'assets/alarm_ringtone.mp3';
-                //       WidgetsBinding.instance.addPostFrameCallback((_) {
-                //         unawaited(
-                //           context.read<SettingsCubit>().setAlarmAudioPath(
-                //             dropdownValue,
-                //           ),
-                //         );
-                //       });
-                //     }
-
-                //     final alarmSoundTile = SettingsTile(
-                //       child: Row(
-                //         children: [
-                //           Text(
-                //             context.localization.alarmSound,
-                //             style: AppTextStyles.body(
-                //               context,
-                //             ).copyWith(color: color),
-                //           ),
-                //           const SizedBox(width: 20),
-                //           Expanded(
-                //             child: DropdownButton<String>(
-                //               value: dropdownValue,
-                //               underline: const SizedBox(),
-                //               enableFeedback: true,
-                //               isExpanded: true,
-                //               dropdownColor:
-                //                   isDark
-                //                       ? AppColors.darkScaffold1
-                //                       : Colors.white,
-                //               items: items,
-                //               onChanged: (v) async {
-                //                 if (v == null) return;
-                //                 if (v == '__add__') {
-                //                   await _pickAndAddAudio(context);
-                //                 } else {
-                //                   final settingsCubit =
-                //                       context.read<SettingsCubit>();
-                //                   final alarmCubit = context.read<AlarmCubit>();
-                //                   await settingsCubit.setAlarmAudioPath(v);
-                //                   await alarmCubit.updateAudioPathForAll(v);
-                //                 }
-                //               },
-                //             ),
-                //           ),
-                //         ],
-                //       ),
-                //     );
-
-                //     if (files.isEmpty) {
-                //       return alarmSoundTile;
-                //     }
-
-                //     return Column(
-                //       mainAxisSize: MainAxisSize.min,
-                //       children: [
-                //         alarmSoundTile,
-                //         const SizedBox(height: 23),
-                //         SettingsTile(
-                //           onTap: () async {
-                //             await context
-                //                 .read<CustomSoundsCubit>()
-                //                 .clearSounds();
-                //           },
-                //           child: Row(
-                //             children: [
-                //               Text(
-                //                 context.localization.clearCustomSounds,
-                //                 style: AppTextStyles.body(
-                //                   context,
-                //                 ).copyWith(color: color),
-                //               ),
-                //             ],
-                //           ),
-                //         ),
-                //       ],
-                //     );
-                //   },
-                // ),
                 const SizedBox(height: 23),
                 SettingsTile(
                   child: Row(

@@ -82,8 +82,6 @@ class _HomeState extends State<Home> {
       AlarmScreenType.math => AppRoute.mathAlarm.name,
       AlarmScreenType.shake => AppRoute.shakeAlarm.name,
       AlarmScreenType.retype => AppRoute.retypeAlarm.name,
-      // AlarmScreenType.qr => AppRoute.qrAlarm.name,
-      AlarmScreenType.tap => AppRoute.tapAlarm.name,
       _ => AppRoute.alarmRinging.name,
     };
     context.goNamed(name, extra: alarms.alarms.first);

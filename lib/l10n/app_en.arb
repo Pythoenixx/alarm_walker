@@ -61,14 +61,6 @@
       }
     }
   },
-  "scanQrInstruction": "Scan the QR Code",
-  "@scanQrInstruction": {
-    "description": "Instruction to scan a QR code as a challenge"
-  },
-  "wrongQr": "Wrong QR Code. Please scan the correct one.",
-  "@wrongQr": {
-    "description": "Error message shown when an incorrect QR code is scanned"
-  },
   "shakePhone": "Shake the phone!",
   "@shakePhone": {
     "description": "Instruction to shake the phone as part of the challenge"
@@ -82,35 +74,6 @@
       },
       "required": {
         "type": "num"
-      }
-    }
-  },
-  "tapScreen": "Tap the screen!",
-  "@tapScreen": {
-    "description": "Instruction to tap the screen as part of the challenge"
-  },
-  "tapsCount": "Taps: {count} / {required}",
-  "@tapsCount": {
-    "description": "To show the number of taps remaining to stop the alarm",
-    "placeholders": {
-      "count": {
-        "type": "num"
-      },
-      "required": {
-        "type": "num"
-      }
-    }
-  },
-  "downloadQr": "Download QR Code",
-  "@downloadQr": {
-    "description": "Button label to download a QR code for the alarm challenge"
-  },
-  "fileSaved": "File saved to {path}",
-  "@fileSaved": {
-    "description": "A message to show the path where the QR code file is saved",
-    "placeholders": {
-      "path": {
-        "type": "String"
       }
     }
   },
@@ -145,14 +108,6 @@
   "retypeToStop": "Retype to Stop",
   "@shakeToStop": {
     "description": "Label for retype-to-stop alarm challenge"
-  },
-  "tapChallenge": "Tap Challenge",
-  "@tapChallenge": {
-    "description": "Label for tap-the-screen alarm challenge"
-  },
-  "qrCodeScan": "QR Code Scan",
-  "@qrCodeScan": {
-    "description": "Label for QR code scanning alarm challenge"
   },
   "alarmSound": "Alarm Sound",
   "@alarmSound": {

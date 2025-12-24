@@ -21,20 +21,6 @@
       }
     }
   },
-  "scanQrInstruction": "Imbas kod QR",
-  "wrongQr": "Kod QR yang salah. Sila imbas yang betul.",
-  "shakePhone": "Goncang telefon!",
-  "shakesCount": "Shakes: {count} / {required}",
-  "@shakesCount": {
-    "placeholders": {
-      "count": {
-        "type": "num"
-      },
-      "required": {
-        "type": "num"
-      }
-    }
-  },
   "tapScreen": "Ketik skrin!",
   "tapsCount": "TAPS: {count} / {required}",
   "@tapsCount": {
@@ -47,7 +33,6 @@
       }
     }
   },
-  "downloadQr": "Muat turun kod QR",
   "fileSaved": "Fail disimpan ke {path}",
   "@fileSaved": {
     "placeholders": {
@@ -64,7 +49,6 @@
   "mathChallenge": "Cabaran Matematik",
   "shakeToStop": "Goncang untuk berhenti",
   "tapChallenge": "Ketuk Cabaran",
-  "qrCodeScan": "Imbasan kod QR",
   "alarmSound": "Bunyi penggera",
   "addSound": "Tambah bunyi",
   "clearCustomSounds": "Bunyi tersuai yang jelas",
