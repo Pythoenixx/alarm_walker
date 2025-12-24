@@ -56,24 +56,12 @@ class _DatabaseScreenState extends State<DatabaseScreen> {
   }
 
   String _formatTime(TimeOfDay time) {
-    final now = DateTime.now();
-    final dateTime = DateTime(
-      now.year,
-      now.month,
-      now.day,
-      time.hour,
-      time.minute,
-    );
-    return DateFormat.jm().format(dateTime);
+    return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
   }
 
   String _formatDays(List<int> days) {
-    if (days.isEmpty) return 'One time';
-
-    if (days.length == 7) return 'Every day';
-
-    const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    return days.map((d) => dayNames[d]).join(', ');
+    if (days.isEmpty) return '';
+    return days.join(',');
   }
 
   Future<void> _deleteAlarm(AlarmDbEntry alarm) async {
@@ -116,25 +104,6 @@ class _DatabaseScreenState extends State<DatabaseScreen> {
     }
   }
 
-  Future<void> _toggleAlarm(AlarmDbEntry alarm) async {
-    try {
-      final updated = AlarmDbEntry(
-        time: alarm.time,
-        days: alarm.days,
-        enabled: !alarm.enabled,
-        body: alarm.body,
-      );
-      await AlarmDatabase.insertOrUpdate(updated);
-      await _loadAlarms();
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to update alarm: $e')));
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final bool isDark = context.isDarkMode;
@@ -164,7 +133,7 @@ class _DatabaseScreenState extends State<DatabaseScreen> {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'Alarm Database',
+                      'Database',
                       style: AppTextStyles.large(
                         context,
                       ).copyWith(fontSize: 24, fontWeight: FontWeight.bold),
@@ -178,6 +147,21 @@ class _DatabaseScreenState extends State<DatabaseScreen> {
                   ],
                 ),
               ),
+              if (_alarms != null && _alarms!.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Text(
+                    'Total Records: ${_alarms!.length}',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color:
+                          isDark
+                              ? AppColors.darkBackgroundText.withOpacity(0.7)
+                              : AppColors.lightBackgroundText.withOpacity(0.7),
+                    ),
+                  ),
+                ),
+              const SizedBox(height: 8),
               Expanded(child: _buildContent(isDark)),
             ],
           ),
@@ -198,10 +182,13 @@ class _DatabaseScreenState extends State<DatabaseScreen> {
           children: [
             const Icon(Icons.error_outline, size: 48, color: Colors.red),
             const SizedBox(height: 16),
-            Text(
-              _error!,
-              style: const TextStyle(color: Colors.red),
-              textAlign: TextAlign.center,
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              child: Text(
+                _error!,
+                style: const TextStyle(color: Colors.red),
+                textAlign: TextAlign.center,
+              ),
             ),
             const SizedBox(height: 16),
             ElevatedButton(onPressed: _loadAlarms, child: const Text('Retry')),
@@ -216,7 +203,7 @@ class _DatabaseScreenState extends State<DatabaseScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              Icons.alarm_off,
+              Icons.table_chart_outlined,
               size: 64,
               color:
                   isDark
@@ -225,7 +212,7 @@ class _DatabaseScreenState extends State<DatabaseScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              'No alarms in database',
+              'No records in database',
               style: AppTextStyles.large(context).copyWith(
                 color:
                     isDark
@@ -238,36 +225,32 @@ class _DatabaseScreenState extends State<DatabaseScreen> {
       );
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      itemCount: _alarms!.length,
-      itemBuilder: (context, index) {
-        final alarm = _alarms![index];
-        return _AlarmCard(
-          alarm: alarm,
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: _DatabaseTable(
+          alarms: _alarms!,
           isDark: isDark,
-          onToggle: () => _toggleAlarm(alarm),
-          onDelete: () => _deleteAlarm(alarm),
+          onDelete: _deleteAlarm,
           formatTime: _formatTime,
           formatDays: _formatDays,
-        );
-      },
+        ),
+      ),
     );
   }
 }
 
-class _AlarmCard extends StatelessWidget {
-  final AlarmDbEntry alarm;
+class _DatabaseTable extends StatelessWidget {
+  final List<AlarmDbEntry> alarms;
   final bool isDark;
-  final VoidCallback onToggle;
-  final VoidCallback onDelete;
+  final Function(AlarmDbEntry) onDelete;
   final String Function(TimeOfDay) formatTime;
   final String Function(List<int>) formatDays;
 
-  const _AlarmCard({
-    required this.alarm,
+  const _DatabaseTable({
+    required this.alarms,
     required this.isDark,
-    required this.onToggle,
     required this.onDelete,
     required this.formatTime,
     required this.formatDays,
@@ -275,128 +258,205 @@ class _AlarmCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final headerColor =
+        isDark
+            ? AppColors.darkScaffold1.withOpacity(0.8)
+            : AppColors.lightContainer1;
+    final borderColor = isDark ? AppColors.darkBorder : AppColors.lightBlueGrey;
+    final textColor =
+        isDark ? AppColors.darkBackgroundText : AppColors.lightBackgroundText;
+    final rowColor =
+        isDark
+            ? AppColors.darkScaffold1.withOpacity(0.3)
+            : Colors.white.withOpacity(0.5);
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color:
-            isDark
-                ? AppColors.darkScaffold1.withOpacity(0.5)
-                : AppColors.lightContainer1,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDark ? AppColors.darkBorder : AppColors.lightBlueGrey,
-        ),
+        border: Border.all(color: borderColor, width: 1),
+        borderRadius: BorderRadius.circular(8),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        formatTime(alarm.time),
-                        style: AppTextStyles.large(context).copyWith(
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold,
-                          color:
-                              alarm.enabled
-                                  ? null
-                                  : (isDark
-                                      ? AppColors.darkBackgroundText
-                                          .withOpacity(0.4)
-                                      : AppColors.lightBackgroundText
-                                          .withOpacity(0.4)),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: DataTable(
+          headingRowHeight: 56,
+          dataRowMinHeight: 48,
+          dataRowMaxHeight: 80,
+          headingRowColor: WidgetStateProperty.all(headerColor),
+          dataRowColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) {
+              return isDark
+                  ? Colors.blue.withOpacity(0.2)
+                  : Colors.blue.withOpacity(0.1);
+            }
+            return rowColor;
+          }),
+          border: TableBorder.symmetric(
+            inside: BorderSide(color: borderColor, width: 0.5),
+          ),
+          columns: [
+            DataColumn(
+              label: Expanded(
+                child: Text(
+                  'TIME',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: textColor,
+                  ),
+                ),
+              ),
+            ),
+            DataColumn(
+              label: Expanded(
+                child: Text(
+                  'DAYS',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: textColor,
+                  ),
+                ),
+              ),
+            ),
+            DataColumn(
+              label: Expanded(
+                child: Text(
+                  'ENABLED',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: textColor,
+                  ),
+                ),
+              ),
+            ),
+            DataColumn(
+              label: Expanded(
+                child: Text(
+                  'BODY',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: textColor,
+                  ),
+                ),
+              ),
+            ),
+            DataColumn(
+              label: Expanded(
+                child: Text(
+                  'ACTIONS',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: textColor,
+                  ),
+                ),
+              ),
+            ),
+          ],
+          rows:
+              alarms.asMap().entries.map((entry) {
+                final index = entry.key;
+                final alarm = entry.value;
+
+                return DataRow(
+                  cells: [
+                    DataCell(
+                      Container(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: Text(
+                          formatTime(alarm.time),
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontFamily: 'monospace',
+                            color: textColor,
+                          ),
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      if (!alarm.enabled)
-                        Container(
+                    ),
+                    DataCell(
+                      Container(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: Text(
+                          formatDays(alarm.days),
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontFamily: 'monospace',
+                            color: textColor.withOpacity(0.8),
+                          ),
+                        ),
+                      ),
+                    ),
+                    DataCell(
+                      Container(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 8,
-                            vertical: 2,
+                            vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.grey.withOpacity(0.3),
+                            color:
+                                alarm.enabled
+                                    ? Colors.green.withOpacity(0.2)
+                                    : Colors.red.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(4),
+                            border: Border.all(
+                              color:
+                                  alarm.enabled
+                                      ? Colors.green.withOpacity(0.5)
+                                      : Colors.red.withOpacity(0.5),
+                            ),
                           ),
-                          child: const Text(
-                            'OFF',
+                          child: Text(
+                            alarm.enabled ? '1' : '0',
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: 14,
                               fontWeight: FontWeight.bold,
-                              color: Colors.grey,
+                              color: alarm.enabled ? Colors.green : Colors.red,
                             ),
                           ),
                         ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    formatDays(alarm.days),
-                    style: TextStyle(
-                      fontSize: 14,
-                      color:
-                          isDark
-                              ? AppColors.darkBackgroundText.withOpacity(0.7)
-                              : AppColors.lightBackgroundText.withOpacity(0.7),
+                      ),
                     ),
-                  ),
-                  if (alarm.body.isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color:
-                            isDark
-                                ? AppColors.darkScaffold2.withOpacity(0.5)
-                                : AppColors.lightScaffold2.withOpacity(0.3),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        alarm.body,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color:
-                              isDark
-                                  ? AppColors.darkBackgroundText.withOpacity(
-                                    0.8,
-                                  )
-                                  : AppColors.lightBackgroundText.withOpacity(
-                                    0.8,
-                                  ),
+                    DataCell(
+                      Container(
+                        constraints: const BoxConstraints(maxWidth: 200),
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: Text(
+                          alarm.body.isEmpty ? '(empty)' : alarm.body,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color:
+                                alarm.body.isEmpty
+                                    ? textColor.withOpacity(0.4)
+                                    : textColor.withOpacity(0.8),
+                            fontStyle:
+                                alarm.body.isEmpty
+                                    ? FontStyle.italic
+                                    : FontStyle.normal,
+                          ),
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    DataCell(
+                      Container(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: IconButton(
+                          icon: const Icon(Icons.delete_outline),
+                          color: Colors.red.withOpacity(0.7),
+                          iconSize: 20,
+                          onPressed: () => onDelete(alarm),
+                          tooltip: 'Delete',
+                        ),
                       ),
                     ),
                   ],
-                ],
-              ),
-            ),
-            Column(
-              children: [
-                Switch(
-                  value: alarm.enabled,
-                  onChanged: (_) => onToggle(),
-                  activeColor: Colors.blue,
-                ),
-                const SizedBox(height: 8),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline),
-                  color: Colors.red.withOpacity(0.7),
-                  onPressed: onDelete,
-                  tooltip: 'Delete',
-                ),
-              ],
-            ),
-          ],
+                );
+              }).toList(),
         ),
       ),
     );

@@ -35,13 +35,13 @@ class _AddAlarmScreenState extends State<AddAlarmScreen> {
     } else {
       _selectedTime = TimeOfDay.now();
       _selectedDays = <int>{
+        DateTime.sunday,
         DateTime.monday,
         DateTime.tuesday,
         DateTime.wednesday,
         DateTime.thursday,
         DateTime.friday,
         DateTime.saturday,
-        DateTime.sunday,
       };
     }
   }
@@ -121,13 +121,13 @@ class _AddAlarmScreenState extends State<AddAlarmScreen> {
     const dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
     final localizations = context.localization;
     final dayNames = [
+      localizations.sunday,
       localizations.monday,
       localizations.tuesday,
       localizations.wednesday,
       localizations.thursday,
       localizations.friday,
       localizations.saturday,
-      localizations.sunday,
     ];
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,

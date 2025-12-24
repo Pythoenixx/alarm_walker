@@ -158,13 +158,13 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
   Future<void> setPeriodicAlarms({
     required TimeOfDay timeOfDay,
     List<int> days = const [
+      DateTime.sunday,
       DateTime.monday,
       DateTime.tuesday,
       DateTime.wednesday,
       DateTime.thursday,
       DateTime.friday,
       DateTime.saturday,
-      DateTime.sunday,
     ],
     String body = '',
   }) async {
