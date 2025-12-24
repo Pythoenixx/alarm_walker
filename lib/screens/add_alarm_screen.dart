@@ -118,7 +118,7 @@ class _AddAlarmScreenState extends State<AddAlarmScreen> {
   }
 
   Widget _daySelector(bool isDark) {
-    const dayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'Su'];
+    const dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
     final localizations = context.localization;
     final dayNames = [
       localizations.monday,
