@@ -46,7 +46,7 @@ class _AlarmTileState extends State<AlarmTile> {
   }
 
   Widget _repeatDayText(bool isDark) {
-    const dayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'Su'];
+    const dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
     final textSpans = <TextSpan>[];
 
     for (int i = 0; i < dayLabels.length; i++) {

@@ -81,7 +81,8 @@ class _HomeState extends State<Home> {
     final name = switch (screenType) {
       AlarmScreenType.math => AppRoute.mathAlarm.name,
       AlarmScreenType.shake => AppRoute.shakeAlarm.name,
-      AlarmScreenType.qr => AppRoute.qrAlarm.name,
+      AlarmScreenType.retype => AppRoute.retypeAlarm.name,
+      // AlarmScreenType.qr => AppRoute.qrAlarm.name,
       AlarmScreenType.tap => AppRoute.tapAlarm.name,
       _ => AppRoute.alarmRinging.name,
     };

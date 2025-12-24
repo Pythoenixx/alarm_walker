@@ -4,7 +4,8 @@ import 'package:alarm_walker/screens/add_alarm_screen.dart';
 import 'package:alarm_walker/screens/alarm_ringing_screen.dart';
 import 'package:alarm_walker/screens/home.dart';
 import 'package:alarm_walker/screens/math_alarm_screen.dart';
-import 'package:alarm_walker/screens/qr_alarm_screen.dart';
+// import 'package:alarm_walker/screens/qr_alarm_screen.dart';
+import 'package:alarm_walker/screens/retype_alarm_screen.dart';
 import 'package:alarm_walker/screens/settings_screen.dart';
 import 'package:alarm_walker/screens/shake_alarm_screen.dart';
 import 'package:alarm_walker/screens/tap_alarm_screen.dart';
@@ -17,6 +18,7 @@ enum AppRoute {
   alarmRinging,
   mathAlarm,
   shakeAlarm,
+  retypeAlarm,
   qrAlarm,
   tapAlarm,
 }
@@ -68,12 +70,20 @@ GoRouter createRouter() {
                 ),
           ),
           GoRoute(
-            path: AppRoute.qrAlarm.name,
-            name: AppRoute.qrAlarm.name,
+            path: AppRoute.retypeAlarm.name,
+            name: AppRoute.retypeAlarm.name,
             builder:
-                (context, state) =>
-                    QrAlarmScreen(alarmSettings: state.extra! as AlarmSettings),
+                (context, state) => RetypeAlarmScreen(
+                  alarmSettings: state.extra! as AlarmSettings,
+                ),
           ),
+          // GoRoute(
+          //   path: AppRoute.qrAlarm.name,
+          //   name: AppRoute.qrAlarm.name,
+          //   builder:
+          //       (context, state) =>
+          //           QrAlarmScreen(alarmSettings: state.extra! as AlarmSettings),
+          // ),
           GoRoute(
             path: AppRoute.tapAlarm.name,
             name: AppRoute.tapAlarm.name,

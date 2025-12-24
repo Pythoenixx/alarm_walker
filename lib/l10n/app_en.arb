@@ -142,6 +142,10 @@
   "@shakeToStop": {
     "description": "Label for shake-to-stop alarm challenge"
   },
+  "retypeToStop": "Retype to Stop",
+  "@shakeToStop": {
+    "description": "Label for retype-to-stop alarm challenge"
+  },
   "tapChallenge": "Tap Challenge",
   "@tapChallenge": {
     "description": "Label for tap-the-screen alarm challenge"
