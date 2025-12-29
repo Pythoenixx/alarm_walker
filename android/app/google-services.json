@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "77600582850",
+    "project_id": "alarm-walker",
+    "storage_bucket": "alarm-walker.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:77600582850:android:2e3269abc40fff9164df5b",
+        "android_client_info": {
+          "package_name": "com.faizany.alarm_walker"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBSrWzHDHhEDHnvASABSjb39NOCU57jTXw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

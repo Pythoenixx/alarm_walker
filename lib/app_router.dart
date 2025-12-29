@@ -2,15 +2,19 @@ import 'package:alarm/alarm.dart';
 import 'package:alarm_walker/models/alarm_model.dart';
 import 'package:alarm_walker/screens/add_alarm_screen.dart';
 import 'package:alarm_walker/screens/alarm_ringing_screen.dart';
+import 'package:alarm_walker/screens/authenticate.dart';
 import 'package:alarm_walker/screens/database_screen.dart';
 import 'package:alarm_walker/screens/home.dart';
 import 'package:alarm_walker/screens/math_alarm_screen.dart';
 import 'package:alarm_walker/screens/retype_alarm_screen.dart';
 import 'package:alarm_walker/screens/settings_screen.dart';
 import 'package:alarm_walker/screens/shake_alarm_screen.dart';
+import 'package:alarm_walker/screens/wrapper.dart';
 import 'package:go_router/go_router.dart';
 
 enum AppRoute {
+  wrapper,
+  authenticate,
   home,
   addAlarm,
   settings,
@@ -27,9 +31,19 @@ GoRouter createRouter() {
     routes: [
       GoRoute(
         path: '/',
-        name: AppRoute.home.name,
-        builder: (context, state) => const Home(),
+        name: AppRoute.wrapper.name,
+        builder: (context, state) => const Wrapper(),
         routes: [
+          GoRoute(
+            path: AppRoute.authenticate.name,
+            name: AppRoute.authenticate.name,
+            builder: (context, state) => const Authenticate(),
+          ),
+          GoRoute(
+            path: AppRoute.home.name,
+            name: AppRoute.home.name,
+            builder: (context, state) => const Home(),
+          ),
           GoRoute(
             path: AppRoute.addAlarm.name,
             name: AppRoute.addAlarm.name,
