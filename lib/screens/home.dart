@@ -84,7 +84,7 @@ class _HomeState extends State<Home> {
       AlarmScreenType.retype => AppRoute.retypeAlarm.name,
       _ => AppRoute.alarmRinging.name,
     };
-    context.goNamed(name, extra: alarms.alarms.first);
+    context.pushNamed(name, extra: alarms.alarms.first);
   }
 
   @override
@@ -105,7 +105,7 @@ class _HomeState extends State<Home> {
           _isFabVisible
               ? IconButton(
                 tooltip: context.localization.addAlarm,
-                onPressed: () => context.goNamed(AppRoute.addAlarm.name),
+                onPressed: () => context.pushNamed(AppRoute.addAlarm.name),
                 icon: const AddButton(),
               )
               : null,
@@ -294,7 +294,7 @@ class _HomeState extends State<Home> {
                                         icon: const Icon(Icons.settings),
                                         tooltip: context.localization.settings,
                                         onPressed:
-                                            () => context.goNamed(
+                                            () => context.pushNamed(
                                               AppRoute.settings.name,
                                             ),
                                         style: IconButton.styleFrom(

@@ -139,7 +139,7 @@ class _AlarmTileState extends State<AlarmTile> {
                 type: MaterialType.transparency,
                 child: InkWell(
                   onTap:
-                      () => context.goNamed(
+                      () => context.pushNamed(
                         AppRoute.addAlarm.name,
                         extra: widget.alarmModel,
                       ),
