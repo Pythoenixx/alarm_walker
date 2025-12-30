@@ -14,6 +14,7 @@ import 'package:alarm_walker/widgets/gradient_switch.dart';
 import 'package:alarm_walker/widgets/settings_tile.dart';
 import 'package:alarm_walker/widgets/theme_list_tile.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -46,6 +47,49 @@ class SettingsScreen extends StatelessWidget {
         centerTitle: true,
         title: Text(context.localization.settings),
         titleTextStyle: AppTextStyles.heading(context),
+        actions: [
+          IconButton(
+            tooltip: 'Logout',
+            onPressed: () async {
+              // Show confirmation dialog
+              final confirmed = await showDialog<bool>(
+                context: context,
+                builder:
+                    (context) => AlertDialog(
+                      title: const Text('Logout'),
+                      content: const Text('Are you sure you want to logout?'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: const Text('Cancel'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.red,
+                          ),
+                          child: const Text('Logout'),
+                        ),
+                      ],
+                    ),
+              );
+
+              if (confirmed == true && context.mounted) {
+                await FirebaseAuth.instance.signOut();
+                if (context.mounted) {
+                  context.goNamed(AppRoute.login.name);
+                }
+              }
+            },
+            style: IconButton.styleFrom(
+              foregroundColor:
+                  isDark
+                      ? AppColors.darkBackgroundText
+                      : AppColors.lightBackgroundText,
+            ),
+            icon: const Icon(Icons.logout),
+          ),
+        ],
       ),
       body: DecoratedBox(
         decoration: BoxDecoration(
@@ -214,7 +258,7 @@ class SettingsScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 23),
                 SettingsTile(
-                  onTap: () => context.goNamed(AppRoute.database.name),
+                  onTap: () => context.pushNamed(AppRoute.database.name),
                   child: Row(
                     children: [
                       Text(
