@@ -1,38 +1,61 @@
-import 'package:alarm/alarm.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 class AlarmModel {
-  final TimeOfDay timeOfDay;
-  final List<int> days;
+  final int? alarmId;
+  final String title;
+  final TimeOfDay time;
+  final List<int> days; // 1–7
   final bool enabled;
-  final String body;
-  final List<AlarmSettings> alarmSettings;
+  final bool isOnce;
+  final String sound;
+  final int volume;
+  final bool vibration;
+  final bool fadeIn;
+  final String disarmMode;
 
   AlarmModel({
-    required this.timeOfDay,
+    required this.alarmId,
+    required this.title,
+    required this.time,
     required this.days,
     this.enabled = true,
-    this.body = '',
-    this.alarmSettings = const [],
+    this.isOnce = false,
+    this.sound = 'default',
+    this.volume = 5,
+    this.vibration = true,
+    this.fadeIn = false,
+    required this.disarmMode,
   });
 
   @override
   bool operator ==(Object other) {
     return other is AlarmModel &&
-        other.timeOfDay == timeOfDay &&
+        other.alarmId == alarmId &&
+        other.title == title &&
+        other.time == time &&
         listEquals(other.days, days) &&
         other.enabled == enabled &&
-        other.body == body &&
-        listEquals(other.alarmSettings, alarmSettings);
+        other.isOnce == isOnce &&
+        other.sound == sound &&
+        other.volume == volume &&
+        other.vibration == vibration &&
+        other.fadeIn == fadeIn &&
+        other.disarmMode == disarmMode;
   }
 
   @override
-  int get hashCode =>
-      Object.hash(timeOfDay, days, enabled, body, alarmSettings);
-
-  @override
-  String toString() {
-    return 'AlarmModel(timeOfDay: $timeOfDay, days: $days, enabled: $enabled, body: $body, alarmSettings: $alarmSettings)';
-  }
+  int get hashCode => Object.hash(
+    alarmId,
+    title,
+    time,
+    days,
+    enabled,
+    isOnce,
+    sound,
+    volume,
+    vibration,
+    fadeIn,
+    disarmMode,
+  );
 }

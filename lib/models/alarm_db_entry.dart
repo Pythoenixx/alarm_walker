@@ -1,44 +1,67 @@
-import 'package:flutter/material.dart';
+import 'dart:convert';
 
 class AlarmDbEntry {
-  final TimeOfDay time;
+  final int? alarmId;
+  final String title;
+  final int hour;
+  final int minute;
   final List<int> days;
   final bool enabled;
-  final String body;
+  final bool isOnce;
+  final String sound;
+  final int volume;
+  final bool vibration;
+  final bool fadeIn;
+  final String disarmMode;
+  final String userId;
 
   AlarmDbEntry({
-    required this.time,
+    this.alarmId,
+    required this.title,
+    required this.hour,
+    required this.minute,
     required this.days,
-    this.enabled = true,
-    this.body = '',
+    required this.enabled,
+    required this.isOnce,
+    required this.sound,
+    required this.volume,
+    required this.vibration,
+    required this.fadeIn,
+    required this.disarmMode,
+    required this.userId,
   });
 
-  Map<String, dynamic> toMap() {
-    final timeString = '${time.hour}:${time.minute}';
-    return {
-      'time': timeString,
-      'days': days.join(','),
-      'enabled': enabled ? 1 : 0,
-      'body': body,
-    };
-  }
+  Map<String, dynamic> toMap() => {
+    'alarm_id': alarmId,
+    'title': title,
+    'hour': hour,
+    'minute': minute,
+    'days': jsonEncode(days),
+    'enabled': enabled ? 1 : 0,
+    'is_once': isOnce ? 1 : 0,
+    'sound': sound,
+    'volume': volume,
+    'vibration': vibration ? 1 : 0,
+    'fade_in': fadeIn ? 1 : 0,
+    'disarm_mode': disarmMode,
+    'user_id': userId,
+  };
 
   factory AlarmDbEntry.fromMap(Map<String, dynamic> map) {
-    final parts = (map['time'] as String).split(':');
-    final hour = int.parse(parts[0]);
-    final minute = int.parse(parts[1]);
-    final daysString = map['days'] as String? ?? '';
-    final dayList =
-        daysString.isEmpty
-            ? <int>[]
-            : daysString.split(',').map(int.parse).toList();
-    final enabled = (map['enabled'] as int?) ?? 1;
-    final body = map['body'] as String? ?? '';
     return AlarmDbEntry(
-      time: TimeOfDay(hour: hour, minute: minute),
-      days: dayList,
-      enabled: enabled == 1,
-      body: body,
+      alarmId: map['alarm_id'] as int,
+      title: map['title'],
+      hour: map['hour'] as int,
+      minute: map['minute'] as int,
+      days: List<int>.from(jsonDecode(map['days'])),
+      enabled: map['enabled'] == 1,
+      isOnce: map['is_once'] == 1,
+      sound: map['sound'],
+      volume: map['volume'],
+      vibration: map['vibration'] == 1,
+      fadeIn: map['fade_in'] == 1,
+      disarmMode: map['disarm_mode'],
+      userId: map['user_id'],
     );
   }
 }
