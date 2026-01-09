@@ -40,8 +40,8 @@ class _HomeState extends State<Home> {
         now.year,
         now.month,
         now.day,
-        alarm.timeOfDay.hour,
-        alarm.timeOfDay.minute,
+        alarm.time.hour,
+        alarm.time.minute,
       ).add(Duration(days: i));
       if (!alarm.days.contains(candidate.weekday)) continue;
       if (i == 0 && candidate.isBefore(now)) continue;
@@ -51,8 +51,8 @@ class _HomeState extends State<Home> {
       now.year,
       now.month,
       now.day,
-      alarm.timeOfDay.hour,
-      alarm.timeOfDay.minute,
+      alarm.time.hour,
+      alarm.time.minute,
     );
   }
 
@@ -315,22 +315,20 @@ class _HomeState extends State<Home> {
                                       index++
                                     )
                                       AlarmTile(
-                                        key: ValueKey(
-                                          sortedAlarms[index].timeOfDay,
-                                        ),
+                                        key: ValueKey(sortedAlarms[index].time),
                                         alarmModel: sortedAlarms[index],
                                         onEnabledChanged:
                                             (v) => context
                                                 .read<AlarmCubit>()
                                                 .toggleAlarmEnabled(
-                                                  sortedAlarms[index].timeOfDay,
+                                                  sortedAlarms[index],
                                                   v,
                                                 ),
                                         onDaysChanged:
                                             (days) => context
                                                 .read<AlarmCubit>()
                                                 .updateAlarmDays(
-                                                  sortedAlarms[index].timeOfDay,
+                                                  sortedAlarms[index],
                                                   days,
                                                 ),
                                         onDelete:
