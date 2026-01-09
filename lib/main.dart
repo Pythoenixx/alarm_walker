@@ -3,6 +3,7 @@ import 'package:alarm_walker/app_router.dart';
 import 'package:alarm_walker/extensions/context_extensions.dart';
 import 'package:alarm_walker/firebase_options.dart';
 import 'package:alarm_walker/l10n/generated/app_localizations.dart';
+import 'package:alarm_walker/models/alarm_repository.dart';
 import 'package:alarm_walker/services/alarm_cubit.dart';
 import 'package:alarm_walker/services/alarm_database.dart';
 import 'package:alarm_walker/services/custom_sounds_cubit.dart';
@@ -33,7 +34,9 @@ void main() async {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  static final GoRouter _router = createRouterWithStream();
+  static final alarmRepo = AlarmRepository(AlarmDatabase.database);
+
+  static final GoRouter _router = createRouterWithStream(alarmRepo);
 
   @override
   Widget build(BuildContext context) {
@@ -41,14 +44,14 @@ class MyApp extends StatelessWidget {
 
     return MultiBlocProvider(
       providers: [
-        BlocProvider(create: (_) => AlarmCubit()),
+        BlocProvider(create: (_) => AlarmCubit(alarmRepo)),
         BlocProvider(create: (_) => SettingsCubit()),
         BlocProvider(create: (_) => CustomSoundsCubit()),
       ],
       child: BlocBuilder<SettingsCubit, SettingsState>(
         builder: (context, state) {
           return MaterialApp.router(
-            debugShowCheckedModeBanner: false,
+            // debugShowCheckedModeBanner: true,
             onGenerateTitle: (context) => context.localization.appTitle,
             themeMode: state.mode,
             theme: AppTheme.lightTheme,
