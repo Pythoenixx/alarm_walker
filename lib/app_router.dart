@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:alarm/alarm.dart';
 import 'package:alarm_walker/models/alarm_model.dart';
+import 'package:alarm_walker/models/alarm_repository.dart';
 import 'package:alarm_walker/screens/add_alarm_screen.dart';
 import 'package:alarm_walker/screens/alarm_ringing_screen.dart';
 import 'package:alarm_walker/screens/authenticate.dart';
@@ -33,7 +34,7 @@ enum AppRoute {
   database,
 }
 
-GoRouter createRouterWithStream() {
+GoRouter createRouterWithStream(AlarmRepository repo) {
   return GoRouter(
     initialLocation: '/',
     refreshListenable: GoRouterRefreshStream(
@@ -103,7 +104,7 @@ GoRouter createRouterWithStream() {
       GoRoute(
         path: '/database',
         name: AppRoute.database.name,
-        builder: (context, state) => const DatabaseScreen(),
+        builder: (context, state) => DatabaseScreen(repository: repo),
       ),
       GoRoute(
         path: '/alarmRinging',
