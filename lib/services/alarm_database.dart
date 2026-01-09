@@ -5,28 +5,64 @@ import 'package:sqflite/sqflite.dart';
 class AlarmDatabase {
   static Database? _db;
 
+  static Future<void> _createAllTables(Database db) async {
+    await db.execute('''
+    CREATE TABLE user_profile (
+      user_id TEXT PRIMARY KEY,
+      name TEXT,
+      language TEXT,
+      theme TEXT
+    )
+  ''');
+
+    await db.execute('''
+    CREATE TABLE alarm (
+  alarm_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  title TEXT,
+  hour INTEGER,
+  minute INTEGER,
+  days TEXT,                -- JSON array
+  enabled INTEGER,
+  is_once INTEGER,
+  sound TEXT,
+  volume INTEGER,
+  vibration INTEGER,
+  fade_in INTEGER,
+  disarm_mode TEXT,
+  user_id TEXT
+)
+  ''');
+
+    await db.execute('''
+    CREATE TABLE wake_log (
+      log_id INTEGER PRIMARY KEY AUTOINCREMENT,
+      alarm_id INTEGER,
+      wake_time TEXT,
+      snooze_count INTEGER,
+      success INTEGER,
+      disarm_mode TEXT,
+      disarm_duration INTEGER,
+      FOREIGN KEY (alarm_id) REFERENCES alarm(alarm_id)
+    )
+  ''');
+  }
+
   static Future<void> initialize() async {
     final dir = await getDatabasesPath();
     final path = '$dir/alarms.db';
     _db = await openDatabase(
       path,
-      version: 3,
+      version: 6,
       onCreate: (db, version) async {
-        await db.execute(
-          'CREATE TABLE alarms(time TEXT PRIMARY KEY, days TEXT, enabled INTEGER, body TEXT)',
-        );
+        await _createAllTables(db);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
-        if (oldVersion < 2 && newVersion >= 2) {
-          await db.execute(
-            'ALTER TABLE alarms ADD COLUMN enabled INTEGER DEFAULT 1',
-          );
-        }
-        if (oldVersion < 3 && newVersion >= 3) {
-          await db.execute(
-            "ALTER TABLE alarms ADD COLUMN body TEXT DEFAULT ''",
-          );
-        }
+        await db.execute('DROP TABLE IF EXISTS wake_log');
+        await db.execute('DROP TABLE IF EXISTS alarm_day');
+        await db.execute('DROP TABLE IF EXISTS alarm');
+        await db.execute('DROP TABLE IF EXISTS user_profile');
+
+        await _createAllTables(db);
       },
     );
   }
@@ -62,6 +98,8 @@ class AlarmDatabase {
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
   }
+
+  static Database get database => _database;
 
   static Future<void> delete(TimeOfDay time) async {
     final key = '${time.hour}:${time.minute}';
