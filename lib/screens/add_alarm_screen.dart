@@ -29,19 +29,19 @@ class _AddAlarmScreenState extends State<AddAlarmScreen> {
   void initState() {
     super.initState();
     if (widget.alarmModel != null) {
-      _selectedTime = widget.alarmModel!.timeOfDay;
+      _selectedTime = widget.alarmModel!.time;
       _selectedDays = widget.alarmModel!.days.toSet();
-      _titleController.text = widget.alarmModel!.body;
+      _titleController.text = widget.alarmModel!.title;
     } else {
       _selectedTime = TimeOfDay.now();
       _selectedDays = <int>{
-        DateTime.sunday,
         DateTime.monday,
         DateTime.tuesday,
         DateTime.wednesday,
         DateTime.thursday,
         DateTime.friday,
         DateTime.saturday,
+        DateTime.sunday,
       };
     }
   }
@@ -69,20 +69,20 @@ class _AddAlarmScreenState extends State<AddAlarmScreen> {
     final cubit = context.read<AlarmCubit>();
     if (widget.alarmModel != null) {
       final oldModel = widget.alarmModel!;
-      await cubit.deleteAlarmModel(oldModel);
       await cubit.setPeriodicAlarms(
+        alarmId: widget.alarmModel?.alarmId,
         timeOfDay: _selectedTime,
         days: _selectedDays.toList(),
-        body: title,
+        title: title,
       );
       if (!oldModel.enabled) {
-        await cubit.toggleAlarmEnabled(_selectedTime, false);
+        await cubit.toggleAlarmEnabled(oldModel, false);
       }
     } else {
       await cubit.setPeriodicAlarms(
         timeOfDay: _selectedTime,
         days: _selectedDays.toList(),
-        body: title,
+        title: title,
       );
     }
     if (mounted) context.pop();
