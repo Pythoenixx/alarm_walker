@@ -24,21 +24,6 @@ class AlarmRepository {
     return alarms;
   }
 
-  // Future<AlarmModel?> getAlarmByTime(TimeOfDay time) async {
-  //   final rows = await db.query(
-  //     'alarm',
-  //     where: 'hour = ? AND minute = ?',
-  //     whereArgs: [time.hour, time.minute],
-  //     limit: 1,
-  //   );
-
-  //   if (rows.isEmpty) return null;
-
-  //   final alarmEntry = AlarmDbEntry.fromMap(rows.first);
-
-  //   return _toModel(alarmEntry);
-  // }
-
   Future<AlarmModel?> getAlarmById(int alarmId) async {
     final rows = await db.query(
       'alarm',
