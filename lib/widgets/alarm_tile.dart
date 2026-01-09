@@ -151,7 +151,7 @@ class _AlarmTileState extends State<AlarmTile> {
                         Expanded(
                           child: Text(
                             MaterialLocalizations.of(context).formatTimeOfDay(
-                              widget.alarmModel.timeOfDay,
+                              widget.alarmModel.time,
                               alwaysUse24HourFormat: use24h,
                             ),
                             style: AppTextStyles.bigTime(context),
