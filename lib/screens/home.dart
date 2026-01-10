@@ -291,6 +291,25 @@ class _HomeState extends State<Home> {
                                       ),
                                       const Spacer(),
                                       IconButton(
+                                        icon: const Icon(
+                                          Icons.supervised_user_circle,
+                                        ),
+                                        tooltip:
+                                            context.localization.manageProfile,
+                                        onPressed:
+                                            () => context.pushNamed(
+                                              AppRoute.manageProfile.name,
+                                            ),
+                                        style: IconButton.styleFrom(
+                                          foregroundColor:
+                                              isDark
+                                                  ? AppColors.darkBackgroundText
+                                                  : AppColors
+                                                      .lightBackgroundText,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      IconButton(
                                         icon: const Icon(Icons.settings),
                                         tooltip: context.localization.settings,
                                         onPressed:
@@ -305,7 +324,7 @@ class _HomeState extends State<Home> {
                                                       .lightBackgroundText,
                                         ),
                                       ),
-                                      const SizedBox(width: 15),
+                                      const SizedBox(width: 8),
                                     ],
                                   ),
                                   ...[

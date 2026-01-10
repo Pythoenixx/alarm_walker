@@ -4,9 +4,11 @@ import 'package:alarm_walker/extensions/context_extensions.dart';
 import 'package:alarm_walker/firebase_options.dart';
 import 'package:alarm_walker/l10n/generated/app_localizations.dart';
 import 'package:alarm_walker/models/alarm_repository.dart';
+import 'package:alarm_walker/models/user_profile_repository.dart';
 import 'package:alarm_walker/services/alarm_cubit.dart';
 import 'package:alarm_walker/services/alarm_database.dart';
 import 'package:alarm_walker/services/custom_sounds_cubit.dart';
+import 'package:alarm_walker/services/profile_cubit.dart';
 import 'package:alarm_walker/services/settings_cubit.dart';
 import 'package:alarm_walker/services/shared_prefs_with_cache.dart';
 import 'package:alarm_walker/theme/app_theme.dart';
@@ -35,6 +37,7 @@ class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   static final alarmRepo = AlarmRepository(AlarmDatabase.database);
+  static final profileRepo = UserProfileRepository(AlarmDatabase.database);
 
   static final GoRouter _router = createRouterWithStream(alarmRepo);
 
@@ -45,6 +48,9 @@ class MyApp extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider(create: (_) => AlarmCubit(alarmRepo)),
+        BlocProvider(
+          create: (_) => ProfileCubit(profileRepo)..loadProfile('local'),
+        ),
         BlocProvider(create: (_) => SettingsCubit()),
         BlocProvider(create: (_) => CustomSoundsCubit()),
       ],

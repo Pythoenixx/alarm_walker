@@ -10,6 +10,7 @@ import 'package:alarm_walker/screens/database_screen.dart';
 import 'package:alarm_walker/screens/home.dart';
 import 'package:alarm_walker/screens/login_screen.dart';
 import 'package:alarm_walker/screens/math_alarm_screen.dart';
+import 'package:alarm_walker/screens/profile_screen.dart';
 import 'package:alarm_walker/screens/retype_alarm_screen.dart';
 import 'package:alarm_walker/screens/settings_screen.dart';
 import 'package:alarm_walker/screens/shake_alarm_screen.dart';
@@ -26,6 +27,7 @@ enum AppRoute {
   authenticate,
   home,
   addAlarm,
+  manageProfile,
   settings,
   alarmRinging,
   mathAlarm,
@@ -95,6 +97,11 @@ GoRouter createRouterWithStream(AlarmRepository repo) {
           final alarmModel = state.extra as AlarmModel?;
           return AddAlarmScreen(alarmModel: alarmModel);
         },
+      ),
+      GoRoute(
+        path: '/manageProfile',
+        name: AppRoute.manageProfile.name,
+        builder: (context, state) => const ProfileScreen(),
       ),
       GoRoute(
         path: '/settings',
