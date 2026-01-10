@@ -54,9 +54,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
       // Update display name
       await userCredential.user?.updateDisplayName(_nameController.text.trim());
-
+      final name = await userCredential.user?.displayName;
+      print("name$name");
       // Send verification email
-      await userCredential.user?.sendEmailVerification();
+      // await userCredential.user?.sendEmailVerification();
 
       if (mounted) {
         setState(() => _isLoading = false);

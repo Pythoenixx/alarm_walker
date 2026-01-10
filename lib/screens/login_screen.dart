@@ -47,50 +47,50 @@ class _LoginScreenState extends State<LoginScreen> {
           );
 
       // Check if email is verified
-      if (userCredential.user != null && !userCredential.user!.emailVerified) {
-        if (mounted) {
-          setState(() => _isLoading = false);
+      // if (userCredential.user != null && !userCredential.user!.emailVerified) {
+      //   if (mounted) {
+      //     setState(() => _isLoading = false);
 
-          // Show verification dialog
-          final resend = await showDialog<bool>(
-            context: context,
-            builder:
-                (context) => AlertDialog(
-                  title: const Text('Email Not Verified'),
-                  content: const Text(
-                    'Please verify your email address before logging in. '
-                    'Would you like us to resend the verification email?',
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context, false),
-                      child: const Text('Cancel'),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.pop(context, true),
-                      child: const Text('Resend'),
-                    ),
-                  ],
-                ),
-          );
+      //     // Show verification dialog
+      //     final resend = await showDialog<bool>(
+      //       context: context,
+      //       builder:
+      //           (context) => AlertDialog(
+      //             title: const Text('Email Not Verified'),
+      //             content: const Text(
+      //               'Please verify your email address before logging in. '
+      //               'Would you like us to resend the verification email?',
+      //             ),
+      //             actions: [
+      //               TextButton(
+      //                 onPressed: () => Navigator.pop(context, false),
+      //                 child: const Text('Cancel'),
+      //               ),
+      //               TextButton(
+      //                 onPressed: () => Navigator.pop(context, true),
+      //                 child: const Text('Resend'),
+      //               ),
+      //             ],
+      //           ),
+      //     );
 
-          if (resend == true) {
-            await userCredential.user!.sendEmailVerification();
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Verification email sent!'),
-                  backgroundColor: Colors.green,
-                ),
-              );
-            }
-          }
+      //     if (resend == true) {
+      //       await userCredential.user!.sendEmailVerification();
+      //       if (mounted) {
+      //         ScaffoldMessenger.of(context).showSnackBar(
+      //           const SnackBar(
+      //             content: Text('Verification email sent!'),
+      //             backgroundColor: Colors.green,
+      //           ),
+      //         );
+      //       }
+      //     }
 
-          // Sign out the user
-          await FirebaseAuth.instance.signOut();
-        }
-        return;
-      }
+      //     // Sign out the user
+      //     await FirebaseAuth.instance.signOut();
+      //   }
+      //   return;
+      // }
 
       if (mounted) {
         setState(() => _isLoading = false);
