@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:alarm/alarm.dart';
 import 'package:alarm_walker/models/alarm_model.dart';
 import 'package:alarm_walker/models/alarm_repository.dart';
+import 'package:alarm_walker/models/user_profile_repository.dart';
 import 'package:alarm_walker/screens/add_alarm_screen.dart';
 import 'package:alarm_walker/screens/alarm_ringing_screen.dart';
 import 'package:alarm_walker/screens/authenticate.dart';
@@ -36,17 +37,35 @@ enum AppRoute {
   database,
 }
 
-GoRouter createRouterWithStream(AlarmRepository repo) {
+GoRouter createRouterWithStream(
+  AlarmRepository alarmRepo,
+  UserProfileRepository userRepo,
+) {
   return GoRouter(
     initialLocation: '/',
     refreshListenable: GoRouterRefreshStream(
       FirebaseAuth.instance.authStateChanges(),
     ),
-    // klo nk paksa login
 
+    redirect: (context, state) {
+      final user = FirebaseAuth.instance.currentUser;
+      final isLoggedIn = user != null;
+      //final isLoggedIn = user != null && user.emailVerified;
+
+      final requiresAuth =
+          state.matchedLocation == '/manageProfile' ||
+          state.matchedLocation == '/database';
+
+      if (requiresAuth && !isLoggedIn) {
+        return '/login';
+      }
+
+      return null;
+    },
+    // // klo nk paksa login
     // redirect: (context, state) {
     //   final user = FirebaseAuth.instance.currentUser;
-    //   final isAuthenticated = user != null && user.emailVerified;
+    //   final isAuthenticated = user != null; //&& user.emailVerified;
 
     //   final isLoggingIn = state.matchedLocation == '/login';
     //   final isSigningUp = state.matchedLocation == '/signUp';
@@ -69,14 +88,14 @@ GoRouter createRouterWithStream(AlarmRepository repo) {
       GoRoute(
         path: '/',
         name: AppRoute.wrapper.name,
-        redirect: (context, state) => '/login',
+        redirect: (context, state) => '/home',
       ),
 
       // Auth routes
       GoRoute(
         path: '/login',
         name: AppRoute.login.name,
-        builder: (context, state) => const LoginScreen(),
+        builder: (context, state) => LoginScreen(userRepo: userRepo),
       ),
       GoRoute(
         path: '/signUp',
@@ -101,7 +120,7 @@ GoRouter createRouterWithStream(AlarmRepository repo) {
       GoRoute(
         path: '/manageProfile',
         name: AppRoute.manageProfile.name,
-        builder: (context, state) => const ProfileScreen(),
+        builder: (context, state) => ProfileScreen(userRepo: userRepo),
       ),
       GoRoute(
         path: '/settings',
@@ -111,7 +130,7 @@ GoRouter createRouterWithStream(AlarmRepository repo) {
       GoRoute(
         path: '/database',
         name: AppRoute.database.name,
-        builder: (context, state) => DatabaseScreen(repository: repo),
+        builder: (context, state) => DatabaseScreen(repository: alarmRepo),
       ),
       GoRoute(
         path: '/alarmRinging',
