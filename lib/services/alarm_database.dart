@@ -8,42 +8,54 @@ class AlarmDatabase {
   static Future<void> _createAllTables(Database db) async {
     await db.execute('''
     CREATE TABLE user_profile (
-      user_id TEXT PRIMARY KEY,
-      name TEXT,
-      language TEXT,
-      theme TEXT
-    )
+  user_id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  language TEXT NOT NULL DEFAULT 'en',
+  theme TEXT NOT NULL DEFAULT 'system'
+);
   ''');
 
     await db.execute('''
     CREATE TABLE alarm (
   alarm_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  title TEXT,
-  hour INTEGER,
-  minute INTEGER,
-  days TEXT,                -- JSON array
-  enabled INTEGER,
-  is_once INTEGER,
-  sound TEXT,
-  volume INTEGER,
-  vibration INTEGER,
-  fade_in INTEGER,
-  disarm_mode TEXT,
-  user_id TEXT
-)
+  user_id TEXT NOT NULL,
+
+  title TEXT NOT NULL,
+  hour INTEGER NOT NULL CHECK(hour BETWEEN 0 AND 23),
+  minute INTEGER NOT NULL CHECK(minute BETWEEN 0 AND 59),
+
+  days TEXT NOT NULL,              -- JSON array: [1,2,3]
+  enabled INTEGER NOT NULL DEFAULT 1,
+  is_once INTEGER NOT NULL DEFAULT 0,
+
+  sound TEXT NOT NULL,
+  volume INTEGER NOT NULL,
+  vibration INTEGER NOT NULL,
+  fade_in INTEGER NOT NULL,
+  disarm_mode TEXT NOT NULL,
+
+  FOREIGN KEY (user_id)
+    REFERENCES user_profile(user_id)
+    ON DELETE CASCADE
+);
   ''');
 
     await db.execute('''
     CREATE TABLE wake_log (
-      log_id INTEGER PRIMARY KEY AUTOINCREMENT,
-      alarm_id INTEGER,
-      wake_time TEXT,
-      snooze_count INTEGER,
-      success INTEGER,
-      disarm_mode TEXT,
-      disarm_duration INTEGER,
-      FOREIGN KEY (alarm_id) REFERENCES alarm(alarm_id)
-    )
+  log_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  alarm_id INTEGER NOT NULL,
+
+  wake_time TEXT NOT NULL,          -- ISO8601
+  snooze_count INTEGER NOT NULL DEFAULT 0,
+  success INTEGER NOT NULL,
+  disarm_mode TEXT NOT NULL,
+  disarm_duration INTEGER NOT NULL,
+
+  FOREIGN KEY (alarm_id)
+    REFERENCES alarm(alarm_id)
+    ON DELETE CASCADE
+);
+
   ''');
   }
 
@@ -52,13 +64,12 @@ class AlarmDatabase {
     final path = '$dir/alarms.db';
     _db = await openDatabase(
       path,
-      version: 6,
+      version: 7,
       onCreate: (db, version) async {
         await _createAllTables(db);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         await db.execute('DROP TABLE IF EXISTS wake_log');
-        await db.execute('DROP TABLE IF EXISTS alarm_day');
         await db.execute('DROP TABLE IF EXISTS alarm');
         await db.execute('DROP TABLE IF EXISTS user_profile');
 

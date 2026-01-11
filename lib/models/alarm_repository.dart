@@ -107,12 +107,16 @@ class AlarmRepository {
   // ADMIN / DEBUG METHODS
   // =======================
 
-  Future<List<String>> getTables() async {
-    final rows = await db.rawQuery(
-      "SELECT name FROM sqlite_master "
-      "WHERE type='table' AND name NOT LIKE 'sqlite_%'",
-    );
-    return rows.map((e) => e['name'] as String).toList();
+  /// Ignore SQLite system tables
+  Future<List<String>> getUserTables() async {
+    final result = await db.rawQuery('''
+      SELECT name FROM sqlite_master
+      WHERE type='table'
+      AND name NOT LIKE 'sqlite_%'
+      AND name != 'android_metadata'
+    ''');
+
+    return result.map((e) => e['name'] as String).toList();
   }
 
   Future<List<Map<String, dynamic>>> getTableColumns(String table) async {
@@ -121,6 +125,21 @@ class AlarmRepository {
 
   Future<List<Map<String, dynamic>>> getTableRows(String table) async {
     return await db.query(table);
+  }
+
+  /// Auto-detect PRIMARY KEY column
+  Future<String?> getPrimaryKeyColumn(String table) async {
+    final info = await db.rawQuery('PRAGMA table_info($table)');
+    final pk = info.where((c) => c['pk'] == 1).map((c) => c['name']).toList();
+    return pk.isEmpty ? null : pk.first as String;
+  }
+
+  Future<void> deleteByPrimaryKey({
+    required String table,
+    required String pkColumn,
+    required dynamic pkValue,
+  }) async {
+    await db.delete(table, where: '$pkColumn = ?', whereArgs: [pkValue]);
   }
 
   /// ---------- PRIVATE MAPPERS ----------
