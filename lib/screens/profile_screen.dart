@@ -29,9 +29,77 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _loadProfile() async {
-    final profile = await widget.userRepo.getProfile(_user!.uid);
+    final uid = _user?.uid;
+    if (uid == null) return;
+    final profile = await widget.userRepo.getProfile(uid);
     if (!mounted) return;
     setState(() => _profile = profile);
+  }
+
+  Future<void> _editName(BuildContext context) async {
+    final controller = TextEditingController(text: _profile?.name ?? '');
+    final isDark = context.isDarkMode;
+
+    final result = await showDialog<String>(
+      context: context,
+      builder: (_) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          backgroundColor:
+              isDark ? AppColors.darkGradient1 : AppColors.lightContainer1,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Edit name', style: AppTextStyles.heading(context)),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: controller,
+                  style: AppTextStyles.body(context),
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancel'),
+                    ),
+                    const Spacer(),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                      ),
+                      onPressed:
+                          () => Navigator.pop(context, controller.text.trim()),
+                      child: const Text('Save'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (result == null || result.isEmpty) return;
+
+    final uid = _user?.uid;
+    if (uid == null) return;
+
+    await widget.userRepo.updateName(userId: uid, name: result);
+    await FirebaseAuth.instance.currentUser?.updateDisplayName(result);
+
+    setState(() {
+      _profile = _profile?.copyWith(name: result);
+    });
   }
 
   @override
@@ -62,7 +130,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 _ProfileCard(user: _user, profile: _profile),
                 const SizedBox(height: 16),
 
-                const _PreferencesCard(),
+                ListTile(
+                  leading: const Icon(Icons.edit),
+                  title: const Text('Edit name'),
+                  onTap: () => _editName(context),
+                ),
+
                 const Spacer(),
 
                 _AccountActionSection(user: _user),
@@ -102,7 +175,7 @@ class _ProfileCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const CircleAvatar(radius: 28),
+          // const CircleAvatar(radius: 28),
           const SizedBox(width: 16),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -124,26 +197,6 @@ class _ProfileCard extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _PreferencesCard extends StatelessWidget {
-  const _PreferencesCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        ListTile(
-          title: Text('Theme', style: AppTextStyles.body(context)),
-          trailing: const Icon(Icons.chevron_right),
-        ),
-        ListTile(
-          title: Text('Language', style: AppTextStyles.body(context)),
-          trailing: const Icon(Icons.chevron_right),
-        ),
-      ],
     );
   }
 }

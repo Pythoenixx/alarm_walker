@@ -40,6 +40,23 @@ class UserProfileRepository {
     }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
+  /// Update user's display name in local profile
+  Future<void> updateName({
+    required String userId,
+    required String name,
+  }) async {
+    final count = await db.update(
+      'user_profile',
+      {'name': name},
+      where: 'user_id = ?',
+      whereArgs: [userId],
+    );
+
+    if (count == 0) {
+      throw Exception('User profile not found for userId=$userId');
+    }
+  }
+
   /// Get currently stored local profile
   Future<UserProfile?> getLocalProfile() async {
     final rows = await db.query('user_profile', limit: 1);
