@@ -31,6 +31,36 @@ class UserProfileRepository {
     );
   }
 
+  Future<void> upsertLocalProfile(UserProfile profile) async {
+    await db.insert('user_profile', {
+      'user_id': profile.userId,
+      'name': profile.name,
+      'language': profile.language,
+      'theme': profile.theme,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  /// Get currently stored local profile
+  Future<UserProfile?> getLocalProfile() async {
+    final rows = await db.query('user_profile', limit: 1);
+
+    if (rows.isEmpty) return null;
+
+    final row = rows.first;
+
+    return UserProfile(
+      userId: row['user_id'] as String,
+      name: row['name'] as String,
+      language: row['language'] as String,
+      theme: row['theme'] as String,
+    );
+  }
+
+  /// Optional: clear profile on logout
+  Future<void> clearLocalProfile() async {
+    await db.delete('user_profile');
+  }
+
   // 🔁 Mapping
   UserProfile _toModel(UserProfileDbEntry entry) => UserProfile(
     userId: entry.userId,

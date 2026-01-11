@@ -1,8 +1,11 @@
 import 'package:alarm_walker/app_router.dart';
 import 'package:alarm_walker/extensions/context_extensions.dart';
+import 'package:alarm_walker/models/user_profile_model.dart';
 import 'package:alarm_walker/theme/app_colors.dart';
 import 'package:alarm_walker/theme/app_text_styles.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -52,10 +55,29 @@ class _SignUpScreenState extends State<SignUpScreen> {
             password: _passwordController.text,
           );
 
-      // Update display name
       await userCredential.user?.updateDisplayName(_nameController.text.trim());
-      final name = await userCredential.user?.displayName;
-      print("name$name");
+
+      await userCredential.user
+          ?.reload(); //blh buang ke reload ni nnti sbb takguna display name property tu?
+      final user = FirebaseAuth.instance.currentUser;
+
+      if (user == null) {
+        throw Exception('User not logged in');
+      }
+
+      final profile = UserProfile(
+        userId: user.uid,
+        name: _nameController.text.trim(),
+        language: 'en',
+        theme: 'system',
+      );
+
+      await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+        'userId': profile.userId,
+        'name': profile.name,
+        'language': profile.language,
+        'theme': profile.theme,
+      });
       // Send verification email
       // await userCredential.user?.sendEmailVerification();
 

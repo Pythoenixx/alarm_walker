@@ -1,13 +1,17 @@
 import 'package:alarm_walker/app_router.dart';
 import 'package:alarm_walker/extensions/context_extensions.dart';
+import 'package:alarm_walker/models/user_profile_model.dart';
+import 'package:alarm_walker/models/user_profile_repository.dart';
 import 'package:alarm_walker/theme/app_colors.dart';
 import 'package:alarm_walker/theme/app_text_styles.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  final UserProfileRepository userRepo;
+  const LoginScreen({super.key, required this.userRepo});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -45,6 +49,32 @@ class _LoginScreenState extends State<LoginScreen> {
             email: _emailController.text.trim(),
             password: _passwordController.text,
           );
+
+      final user = userCredential.user;
+      if (user == null) {
+        throw Exception('Login succeeded but user is null');
+      }
+
+      final snap =
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .get();
+
+      if (!snap.exists) {
+        throw Exception('User profile not found in Firestore');
+      }
+
+      final data = snap.data()!;
+
+      final profile = UserProfile(
+        userId: user.uid,
+        name: data['name'],
+        language: data['language'],
+        theme: data['theme'],
+      );
+
+      await widget.userRepo.upsertLocalProfile(profile);
 
       // Check if email is verified
       // if (userCredential.user != null && !userCredential.user!.emailVerified) {

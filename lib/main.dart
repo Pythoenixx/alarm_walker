@@ -39,7 +39,10 @@ class MyApp extends StatelessWidget {
   static final alarmRepo = AlarmRepository(AlarmDatabase.database);
   static final profileRepo = UserProfileRepository(AlarmDatabase.database);
 
-  static final GoRouter _router = createRouterWithStream(alarmRepo);
+  static final GoRouter _router = createRouterWithStream(
+    alarmRepo,
+    profileRepo,
+  );
 
   @override
   Widget build(BuildContext context) {
