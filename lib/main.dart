@@ -5,6 +5,7 @@ import 'package:alarm_walker/firebase_options.dart';
 import 'package:alarm_walker/l10n/generated/app_localizations.dart';
 import 'package:alarm_walker/models/alarm_repository.dart';
 import 'package:alarm_walker/models/user_profile_repository.dart';
+import 'package:alarm_walker/models/wake_up_repository.dart';
 import 'package:alarm_walker/services/alarm_cubit.dart';
 import 'package:alarm_walker/services/alarm_database.dart';
 import 'package:alarm_walker/services/custom_sounds_cubit.dart';
@@ -38,10 +39,12 @@ class MyApp extends StatelessWidget {
 
   static final alarmRepo = AlarmRepository(AlarmDatabase.database);
   static final profileRepo = UserProfileRepository(AlarmDatabase.database);
+  static final wakeRepo = WakeLogRepository(AlarmDatabase.database);
 
   static final GoRouter _router = createRouterWithStream(
     alarmRepo,
     profileRepo,
+    wakeRepo,
   );
 
   @override

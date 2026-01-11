@@ -4,6 +4,7 @@ import 'package:alarm/alarm.dart';
 import 'package:alarm_walker/models/alarm_model.dart';
 import 'package:alarm_walker/models/alarm_repository.dart';
 import 'package:alarm_walker/models/user_profile_repository.dart';
+import 'package:alarm_walker/models/wake_up_repository.dart';
 import 'package:alarm_walker/screens/add_alarm_screen.dart';
 import 'package:alarm_walker/screens/alarm_ringing_screen.dart';
 import 'package:alarm_walker/screens/authenticate.dart';
@@ -16,6 +17,7 @@ import 'package:alarm_walker/screens/retype_alarm_screen.dart';
 import 'package:alarm_walker/screens/settings_screen.dart';
 import 'package:alarm_walker/screens/shake_alarm_screen.dart';
 import 'package:alarm_walker/screens/sign_up_screen.dart';
+import 'package:alarm_walker/screens/wake_analytics_screen.dart';
 import 'package:alarm_walker/screens/wrapper.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -29,6 +31,7 @@ enum AppRoute {
   home,
   addAlarm,
   manageProfile,
+  wakeAnalytics,
   settings,
   alarmRinging,
   mathAlarm,
@@ -40,7 +43,9 @@ enum AppRoute {
 GoRouter createRouterWithStream(
   AlarmRepository alarmRepo,
   UserProfileRepository userRepo,
+  WakeLogRepository wakeRepo,
 ) {
+  final user = FirebaseAuth.instance.currentUser;
   return GoRouter(
     initialLocation: '/',
     refreshListenable: GoRouterRefreshStream(
@@ -116,6 +121,11 @@ GoRouter createRouterWithStream(
           final alarmModel = state.extra as AlarmModel?;
           return AddAlarmScreen(alarmModel: alarmModel);
         },
+      ),
+      GoRoute(
+        path: '/wakeAnalytics',
+        name: AppRoute.wakeAnalytics.name,
+        builder: (context, state) => WakeAnalyticsScreen(repo: wakeRepo, userId: user!.uid),
       ),
       GoRoute(
         path: '/manageProfile',

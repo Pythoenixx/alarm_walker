@@ -291,6 +291,23 @@ class _HomeState extends State<Home> {
                                       ),
                                       const Spacer(),
                                       IconButton(
+                                        icon: const Icon(Icons.analytics),
+                                        tooltip:
+                                            context.localization.wakeAnalytics,
+                                        onPressed:
+                                            () => context.pushNamed(
+                                              AppRoute.wakeAnalytics.name,
+                                            ),
+                                        style: IconButton.styleFrom(
+                                          foregroundColor:
+                                              isDark
+                                                  ? AppColors.darkBackgroundText
+                                                  : AppColors
+                                                      .lightBackgroundText,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      IconButton(
                                         icon: const Icon(
                                           Icons.supervised_user_circle,
                                         ),

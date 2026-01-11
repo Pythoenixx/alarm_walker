@@ -197,5 +197,9 @@
   "manageProfile": "Manage Profile",
   "@manageProfile": {
     "description": "To manage profile"
+  },
+  "wakeAnalytics": "Wake Analytics",
+  "@wakeAnalytics": {
+    "description": "View wake up analytics"
   }
 }
