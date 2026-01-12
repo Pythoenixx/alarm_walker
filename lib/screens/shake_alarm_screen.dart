@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:alarm/alarm.dart';
 import 'package:alarm_walker/extensions/context_extensions.dart';
+import 'package:alarm_walker/models/alarm_model.dart';
 import 'package:alarm_walker/services/alarm_cubit.dart';
 import 'package:alarm_walker/theme/app_colors.dart';
 import 'package:alarm_walker/theme/app_text_styles.dart';
@@ -46,9 +47,16 @@ class _ShakeAlarmScreenState extends State<ShakeAlarmScreen> {
         if (_shakeCount >= _requiredShakes) {
           await _subscription.cancel();
           if (mounted) {
-            await context.read<AlarmCubit>().stopAlarm(widget.alarmSettings.id);
-            if (mounted) {
-              context.pop();
+            final alarmCubit = context.read<AlarmCubit>();
+            final ctx = context;
+            await alarmCubit.completeAlarm(
+              alarmId: widget.alarmSettings.id,
+              result: AlarmResult.success,
+              disarmMode: AlarmDisarmMode.shake,
+            );
+            await alarmCubit.stopAlarm(widget.alarmSettings.id);
+            if (ctx.mounted) {
+              ctx.pop();
             }
           }
         }

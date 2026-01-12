@@ -59,3 +59,18 @@ class AlarmModel {
     disarmMode,
   );
 }
+
+enum AlarmResult { success, failed, snoozed }
+
+enum AlarmDisarmMode { math, shake, retype, normal }
+
+extension AlarmDisarmModeX on AlarmDisarmMode {
+  String get dbValue => name; // Dart enum name → string
+
+  static AlarmDisarmMode fromDb(String value) {
+    return AlarmDisarmMode.values.firstWhere(
+      (e) => e.name == value,
+      orElse: () => AlarmDisarmMode.normal,
+    );
+  }
+}

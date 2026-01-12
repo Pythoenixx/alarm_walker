@@ -1,5 +1,6 @@
 import 'package:alarm/alarm.dart';
 import 'package:alarm_walker/extensions/context_extensions.dart';
+import 'package:alarm_walker/models/alarm_model.dart';
 import 'package:alarm_walker/services/alarm_cubit.dart';
 import 'package:alarm_walker/theme/app_colors.dart';
 import 'package:alarm_walker/theme/app_text_styles.dart';
@@ -48,9 +49,19 @@ class AlarmRingingScreen extends StatelessWidget {
               const Spacer(),
               GestureDetector(
                 onTap: () async {
-                  await context.read<AlarmCubit>().stopAlarm(alarmSettings.id);
-                  if (context.mounted) {
-                    context.pop();
+                  final alarmCubit = context.read<AlarmCubit>();
+                  final ctx = context;
+
+                  await alarmCubit.completeAlarm(
+                    alarmId: alarmSettings.id,
+                    result: AlarmResult.success,
+                    disarmMode: AlarmDisarmMode.normal,
+                  );
+
+                  await alarmCubit.stopAlarm(alarmSettings.id);
+
+                  if (ctx.mounted) {
+                    ctx.pop();
                   }
                 },
                 child: const StopButton(),

@@ -4,20 +4,27 @@ import 'package:alarm/alarm.dart';
 import 'package:alarm_walker/models/alarm_db_entry.dart';
 import 'package:alarm_walker/models/alarm_model.dart';
 import 'package:alarm_walker/models/alarm_repository.dart';
+import 'package:alarm_walker/models/wake_log_model.dart';
+import 'package:alarm_walker/models/wake_log_repository.dart';
 import 'package:alarm_walker/services/alarm_database.dart';
 import 'package:alarm_walker/services/shared_prefs_with_cache.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class AlarmCubit extends Cubit<List<AlarmModel>> {
-  final AlarmRepository repository;
+  final AlarmRepository alarmRepo;
+  final WakeLogRepository wakeLogRepo;
 
-  AlarmCubit(this.repository) : super([]) {
+  late final Stopwatch _ringStopwatch;
+  int _snoozeCount = 0;
+
+  AlarmCubit({required this.alarmRepo, required this.wakeLogRepo}) : super([]) {
+    _ringStopwatch = Stopwatch();
     unawaited(_loadAlarms());
   }
 
   Future<void> _loadAlarms({List<AlarmSettings>? presetAlarms}) async {
-    final models = await repository.getAlarms();
+    final models = await alarmRepo.getAlarms();
     final existingAlarms = presetAlarms ?? await Alarm.getAlarms();
 
     final Map<TimeOfDay, List<AlarmSettings>> alarmSettingsSet = {};
@@ -182,7 +189,7 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
     const localUserId = 'local';
     // Handle potential null ID safely
     final existingAlarm =
-        (alarmId != null) ? await repository.getAlarmById(alarmId) : null;
+        (alarmId != null) ? await alarmRepo.getAlarmById(alarmId) : null;
 
     final updatedDays = days.toSet().toList();
     final enabled = existingAlarm?.enabled ?? true;
@@ -201,7 +208,7 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
       disarmMode: existingAlarm?.disarmMode ?? 'math',
     );
 
-    await repository.saveOrUpdate(updatedAlarm, localUserId);
+    await alarmRepo.saveOrUpdate(updatedAlarm, localUserId);
 
     if (enabled) {
       final existing = await Alarm.getAlarms();
@@ -218,6 +225,28 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
     } else {
       await _loadAlarms();
     }
+  }
+
+  Future<void> completeAlarm({
+    required int alarmId,
+    required AlarmResult result,
+    required AlarmDisarmMode disarmMode,
+  }) async {
+    final durationMs = _ringStopwatch.elapsedMilliseconds;
+
+    await wakeLogRepo.insertWakeLog(
+      WakeLog(
+        alarmId: alarmId,
+        wakeTime: DateTime.now(),
+        snoozeCount: _snoozeCount,
+        success: result == AlarmResult.success,
+        disarmMode: disarmMode,
+        disarmDurationMs: durationMs,
+      ),
+    );
+
+    _ringStopwatch.reset();
+    _snoozeCount = 0;
   }
 
   Future<void> stopAlarm(int id) async {
@@ -239,7 +268,7 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
     }
 
     // 2. Delete from DB
-    await repository.deleteAlarm(alarmId);
+    await alarmRepo.deleteAlarm(alarmId);
 
     // 3. Update state
     emit(state.where((e) => e.alarmId != alarmId).toList());
@@ -250,7 +279,7 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
     if (alarmId == null) return;
 
     // 1. Update DB
-    await repository.updateAlarmEnabled(alarmId, enabled);
+    await alarmRepo.updateAlarmEnabled(alarmId, enabled);
 
     // 2. Runtime alarms
     if (!enabled) {
@@ -272,7 +301,7 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
     }
 
     // 3. Reload state
-    emit(await repository.getAlarms());
+    emit(await alarmRepo.getAlarms());
   }
 
   Future<void> updateAlarmDays(AlarmModel alarmModel, List<int> days) async {
@@ -282,7 +311,7 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
     if (alarmId == null) return;
 
     // 1. Persist changes
-    await repository.updateAlarmDays(alarmId, days, enabled);
+    await alarmRepo.updateAlarmDays(alarmId, days, enabled);
 
     // 2. Cancel existing runtime alarms for this alarm
     final runtimeAlarms = await Alarm.getAlarms();
@@ -309,7 +338,7 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
     }
 
     // 4. Reload state
-    final updated = await repository.getAlarms();
+    final updated = await alarmRepo.getAlarms();
     emit(updated);
   }
 

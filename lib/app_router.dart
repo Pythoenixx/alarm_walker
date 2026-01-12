@@ -4,7 +4,7 @@ import 'package:alarm/alarm.dart';
 import 'package:alarm_walker/models/alarm_model.dart';
 import 'package:alarm_walker/models/alarm_repository.dart';
 import 'package:alarm_walker/models/user_profile_repository.dart';
-import 'package:alarm_walker/models/wake_up_repository.dart';
+import 'package:alarm_walker/models/wake_log_repository.dart';
 import 'package:alarm_walker/screens/add_alarm_screen.dart';
 import 'package:alarm_walker/screens/alarm_ringing_screen.dart';
 import 'package:alarm_walker/screens/authenticate.dart';
@@ -125,7 +125,9 @@ GoRouter createRouterWithStream(
       GoRoute(
         path: '/wakeAnalytics',
         name: AppRoute.wakeAnalytics.name,
-        builder: (context, state) => WakeAnalyticsScreen(repo: wakeRepo, userId: user!.uid),
+        builder:
+            (context, state) =>
+                WakeAnalyticsScreen(repo: wakeRepo, userId: user!.uid),
       ),
       GoRoute(
         path: '/manageProfile',

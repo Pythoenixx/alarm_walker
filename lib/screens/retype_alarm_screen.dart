@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:alarm/alarm.dart';
 import 'package:alarm_walker/extensions/context_extensions.dart';
+import 'package:alarm_walker/models/alarm_model.dart';
 import 'package:alarm_walker/services/alarm_cubit.dart';
 import 'package:alarm_walker/theme/app_colors.dart';
 import 'package:alarm_walker/theme/app_text_styles.dart';
@@ -66,6 +67,8 @@ class _RetypeAlarmScreenState extends State<RetypeAlarmScreen> {
     final input = _controller.text.trim();
 
     if (input == _targetSentence) {
+      final alarmCubit = context.read<AlarmCubit>();
+      final ctx = context;
       setState(() {
         _isCorrect = true;
         _error = null;
@@ -73,10 +76,14 @@ class _RetypeAlarmScreenState extends State<RetypeAlarmScreen> {
 
       // Small delay to show success state
       await Future.delayed(const Duration(milliseconds: 300));
-
-      await context.read<AlarmCubit>().stopAlarm(widget.alarmSettings.id);
-      if (mounted) {
-        context.pop();
+      await alarmCubit.completeAlarm(
+        alarmId: widget.alarmSettings.id,
+        result: AlarmResult.success,
+        disarmMode: AlarmDisarmMode.retype,
+      );
+      await alarmCubit.stopAlarm(widget.alarmSettings.id);
+      if (ctx.mounted) {
+        ctx.pop();
       }
     } else {
       setState(() {

@@ -5,7 +5,7 @@ import 'package:alarm_walker/firebase_options.dart';
 import 'package:alarm_walker/l10n/generated/app_localizations.dart';
 import 'package:alarm_walker/models/alarm_repository.dart';
 import 'package:alarm_walker/models/user_profile_repository.dart';
-import 'package:alarm_walker/models/wake_up_repository.dart';
+import 'package:alarm_walker/models/wake_log_repository.dart';
 import 'package:alarm_walker/services/alarm_cubit.dart';
 import 'package:alarm_walker/services/alarm_database.dart';
 import 'package:alarm_walker/services/custom_sounds_cubit.dart';
@@ -53,7 +53,10 @@ class MyApp extends StatelessWidget {
 
     return MultiBlocProvider(
       providers: [
-        BlocProvider(create: (_) => AlarmCubit(alarmRepo)),
+        BlocProvider(
+          create:
+              (_) => AlarmCubit(alarmRepo: alarmRepo, wakeLogRepo: wakeRepo),
+        ),
         BlocProvider(
           create: (_) => ProfileCubit(profileRepo)..loadProfile('local'),
         ),
