@@ -59,7 +59,7 @@ GoRouter createRouterWithStream(
 
       final requiresAuth =
           state.matchedLocation == '/manageProfile' ||
-          state.matchedLocation == '/database';
+          state.matchedLocation == '/wakeAnalytics';
 
       if (requiresAuth && !isLoggedIn) {
         return '/login';
