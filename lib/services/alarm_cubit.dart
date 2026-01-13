@@ -8,6 +8,7 @@ import 'package:alarm_walker/models/wake_log_model.dart';
 import 'package:alarm_walker/models/wake_log_repository.dart';
 import 'package:alarm_walker/services/alarm_database.dart';
 import 'package:alarm_walker/services/shared_prefs_with_cache.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -37,6 +38,8 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
     for (final model in models) {
       if (model.enabled) {
         await _ensureUpcomingWeek(
+          //refactor cara dptkan attribute model
+          model,
           title: model.title,
           model.time,
           model.days,
@@ -72,6 +75,7 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
     int id,
     DateTime scheduledDate, {
     required String title,
+    required AlarmModel alarmModel,
   }) async {
     try {
       final vibrate =
@@ -107,6 +111,7 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
           icon: 'notification_icon',
           iconColor: Colors.white,
         ),
+        payload: alarmModel.alarmId.toString(),
       );
       final alarmSet = await Alarm.set(alarmSettings: alarmSetting);
       if (alarmSet) {
@@ -118,7 +123,9 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
     return null;
   }
 
+  //refactor later
   Future<void> _ensureUpcomingWeek(
+    AlarmModel currentAlarmModel,
     TimeOfDay timeOfDay,
     List<int> days,
     Map<TimeOfDay, List<AlarmSettings>> current, {
@@ -153,6 +160,7 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
           dateTime.millisecondsSinceEpoch.hashCode,
           dateTime,
           title: title,
+          alarmModel: currentAlarmModel,
         );
         if (newAlarm != null) {
           current.putIfAbsent(timeOfDay, () => []).add(newAlarm);
@@ -186,7 +194,7 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
     ],
     String title = '',
   }) async {
-    const localUserId = 'local';
+    final uid = FirebaseAuth.instance.currentUser?.uid ?? 'local';
     // Handle potential null ID safely
     final existingAlarm =
         (alarmId != null) ? await alarmRepo.getAlarmById(alarmId) : null;
@@ -208,7 +216,15 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
       disarmMode: existingAlarm?.disarmMode ?? 'math',
     );
 
-    await alarmRepo.saveOrUpdate(updatedAlarm, localUserId);
+    final modelId = await alarmRepo.saveOrUpdate(updatedAlarm, uid);
+
+    final modelWithId = AlarmModel(
+      alarmId: modelId,
+      title: updatedAlarm.title,
+      time: updatedAlarm.time,
+      days: updatedAlarm.days,
+      disarmMode: updatedAlarm.disarmMode,
+    );
 
     if (enabled) {
       final existing = await Alarm.getAlarms();
@@ -219,7 +235,13 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
         current.putIfAbsent(alarmTime, () => []).add(alarm);
       }
 
-      await _ensureUpcomingWeek(timeOfDay, updatedDays, current, title: title);
+      await _ensureUpcomingWeek(
+        modelWithId,
+        timeOfDay,
+        updatedDays,
+        current,
+        title: title,
+      );
 
       await _loadAlarms(presetAlarms: current.values.expand((e) => e).toList());
     } else {
@@ -293,6 +315,7 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
       }
     } else {
       await _ensureUpcomingWeek(
+        alarmModel,
         alarmModel.time,
         alarmModel.days,
         {},
@@ -330,6 +353,7 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
     // 3. Re-schedule if still enabled
     if (enabled) {
       await _ensureUpcomingWeek(
+        alarmModel,
         alarmModel.time,
         days,
         remaining,

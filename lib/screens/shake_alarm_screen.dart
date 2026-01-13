@@ -49,8 +49,9 @@ class _ShakeAlarmScreenState extends State<ShakeAlarmScreen> {
           if (mounted) {
             final alarmCubit = context.read<AlarmCubit>();
             final ctx = context;
+            final alarmId = int.parse(widget.alarmSettings.payload!);
             await alarmCubit.completeAlarm(
-              alarmId: widget.alarmSettings.id,
+              alarmId: alarmId,
               result: AlarmResult.success,
               disarmMode: AlarmDisarmMode.shake,
             );

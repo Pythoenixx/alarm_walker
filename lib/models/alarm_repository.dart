@@ -40,12 +40,14 @@ class AlarmRepository {
   }
 
   /// Domain → DB mapping
-  Future<void> saveOrUpdate(AlarmModel model, String userId) async {
+  Future<int> saveOrUpdate(AlarmModel model, String userId) async {
     final entry = _toDbEntry(model, userId);
+    int alarmId;
 
     if (model.alarmId == null) {
-      await db.insert('alarm', entry.toMap());
+      alarmId = await db.insert('alarm', entry.toMap());
     } else {
+      alarmId = model.alarmId!;
       await db.update(
         'alarm',
         entry.toMap(),
@@ -53,6 +55,7 @@ class AlarmRepository {
         whereArgs: [model.alarmId],
       );
     }
+    return alarmId;
   }
 
   Future<void> deleteAlarm(int alarmId) async {

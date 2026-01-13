@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:alarm/alarm.dart';
 import 'package:alarm_walker/extensions/context_extensions.dart';
 import 'package:alarm_walker/models/alarm_model.dart';
+import 'package:alarm_walker/models/alarm_repository.dart';
 import 'package:alarm_walker/services/alarm_cubit.dart';
 import 'package:alarm_walker/theme/app_colors.dart';
 import 'package:alarm_walker/theme/app_text_styles.dart';
@@ -81,8 +82,9 @@ class _MathAlarmScreenState extends State<MathAlarmScreen> {
     if (answer == correct) {
       final alarmCubit = context.read<AlarmCubit>();
       final ctx = context;
+      final alarmId = int.parse(widget.alarmSettings.payload!);
       await alarmCubit.completeAlarm(
-        alarmId: widget.alarmSettings.id,
+        alarmId: alarmId,
         result: AlarmResult.success,
         disarmMode: AlarmDisarmMode.math,
       );

@@ -29,16 +29,16 @@ class _RetypeAlarmScreenState extends State<RetypeAlarmScreen> {
 
   // List of sentences to choose from
   static const List<String> _sentences = [
-    'I am awake and ready to start my day',
-    'Today is going to be a productive day',
-    'I choose to be energized and focused',
-    'Getting up early helps me achieve my goals',
-    'I am grateful for this new morning',
-    'Every morning is a fresh start',
-    'I have the power to create a great day',
-    'My morning routine sets the tone for success',
-    'I am capable of accomplishing amazing things',
-    'This is my time to shine and grow',
+    'k9!2z.Q7@4m',
+    'v8?P1@x5.R3',
+    '2!mZ.9q@7B',
+    'x6.1V@p9?3k',
+    '7L@4n.8j!1w',
+    'b3?9m.V1@6z',
+    '4k.7Q!2w@8p',
+    '9!5z.R2@1x',
+    'm7@3k.V9?4j',
+    '1q.8Z!5p@2n',
   ];
 
   @override
@@ -69,6 +69,7 @@ class _RetypeAlarmScreenState extends State<RetypeAlarmScreen> {
     if (input == _targetSentence) {
       final alarmCubit = context.read<AlarmCubit>();
       final ctx = context;
+      final alarmId = int.parse(widget.alarmSettings.payload!);
       setState(() {
         _isCorrect = true;
         _error = null;
@@ -77,7 +78,7 @@ class _RetypeAlarmScreenState extends State<RetypeAlarmScreen> {
       // Small delay to show success state
       await Future.delayed(const Duration(milliseconds: 300));
       await alarmCubit.completeAlarm(
-        alarmId: widget.alarmSettings.id,
+        alarmId: alarmId,
         result: AlarmResult.success,
         disarmMode: AlarmDisarmMode.retype,
       );

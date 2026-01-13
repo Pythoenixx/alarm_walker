@@ -51,9 +51,10 @@ class AlarmRingingScreen extends StatelessWidget {
                 onTap: () async {
                   final alarmCubit = context.read<AlarmCubit>();
                   final ctx = context;
+                  final alarmId = int.parse(alarmSettings.payload!);
 
                   await alarmCubit.completeAlarm(
-                    alarmId: alarmSettings.id,
+                    alarmId: alarmId,
                     result: AlarmResult.success,
                     disarmMode: AlarmDisarmMode.normal,
                   );

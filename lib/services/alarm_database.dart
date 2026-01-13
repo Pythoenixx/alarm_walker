@@ -18,7 +18,7 @@ class AlarmDatabase {
     await db.execute('''
     CREATE TABLE alarm (
   alarm_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id TEXT NOT NULL,
+  user_id TEXT NOT NULL DEFAULT 'local',
 
   title TEXT NOT NULL,
   hour INTEGER NOT NULL CHECK(hour BETWEEN 0 AND 23),
@@ -64,7 +64,7 @@ class AlarmDatabase {
     final path = '$dir/alarms.db';
     _db = await openDatabase(
       path,
-      version: 7,
+      version: 10,
       onCreate: (db, version) async {
         await _createAllTables(db);
       },
