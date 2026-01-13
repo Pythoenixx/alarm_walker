@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ffi';
 
 import 'package:alarm/alarm.dart';
 import 'package:alarm_walker/models/alarm_db_entry.dart';
@@ -255,7 +256,12 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
     required AlarmDisarmMode disarmMode,
   }) async {
     final durationMs = _ringStopwatch.elapsedMilliseconds;
-
+    final model = await alarmRepo.getAlarmById(alarmId);
+    final modelTime = model?.time;
+    int durationInMilliseconds =
+        (modelTime != null)
+            ? DateTime.now().difference(toDateTime(modelTime)).inMilliseconds
+            : durationMs;
     await wakeLogRepo.insertWakeLog(
       WakeLog(
         alarmId: alarmId,
@@ -263,7 +269,7 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
         snoozeCount: _snoozeCount,
         success: result == AlarmResult.success,
         disarmMode: disarmMode,
-        disarmDurationMs: durationMs,
+        disarmDurationMs: durationInMilliseconds,
       ),
     );
 
@@ -273,6 +279,11 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
 
   Future<void> stopAlarm(int id) async {
     await Alarm.stop(id);
+  }
+
+  DateTime toDateTime(TimeOfDay t) {
+    final now = DateTime.now();
+    return DateTime(now.year, now.month, now.day, t.hour, t.minute);
   }
 
   Future<void> deleteAlarmModel(AlarmModel alarmModel) async {
