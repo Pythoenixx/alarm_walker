@@ -55,7 +55,11 @@ class MyApp extends StatelessWidget {
       providers: [
         BlocProvider(
           create:
-              (_) => AlarmCubit(alarmRepo: alarmRepo, wakeLogRepo: wakeRepo),
+              (_) => AlarmCubit(
+                alarmRepo: alarmRepo,
+                wakeLogRepo: wakeRepo,
+                userRepo: profileRepo,
+              ),
         ),
         BlocProvider(
           create: (_) => ProfileCubit(profileRepo)..loadProfile('local'),

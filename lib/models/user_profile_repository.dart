@@ -7,6 +7,18 @@ class UserProfileRepository {
 
   UserProfileRepository(this.db);
 
+  Future<bool> exists(String userId) async {
+    final rows = await db.query(
+      'user_profile',
+      columns: const ['user_id'],
+      where: 'user_id = ?',
+      whereArgs: [userId],
+      limit: 1,
+    );
+
+    return rows.isNotEmpty;
+  }
+
   Future<UserProfile?> getProfile(String userId) async {
     final rows = await db.query(
       'user_profile',

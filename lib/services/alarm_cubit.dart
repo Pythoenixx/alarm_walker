@@ -1,10 +1,10 @@
 import 'dart:async';
-import 'dart:ffi';
 
 import 'package:alarm/alarm.dart';
 import 'package:alarm_walker/models/alarm_db_entry.dart';
 import 'package:alarm_walker/models/alarm_model.dart';
 import 'package:alarm_walker/models/alarm_repository.dart';
+import 'package:alarm_walker/models/user_profile_repository.dart';
 import 'package:alarm_walker/models/wake_log_model.dart';
 import 'package:alarm_walker/models/wake_log_repository.dart';
 import 'package:alarm_walker/services/alarm_database.dart';
@@ -14,13 +14,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class AlarmCubit extends Cubit<List<AlarmModel>> {
+  final UserProfileRepository userRepo;
   final AlarmRepository alarmRepo;
   final WakeLogRepository wakeLogRepo;
 
   late final Stopwatch _ringStopwatch;
   int _snoozeCount = 0;
 
-  AlarmCubit({required this.alarmRepo, required this.wakeLogRepo}) : super([]) {
+  AlarmCubit({
+    required this.alarmRepo,
+    required this.wakeLogRepo,
+    required this.userRepo,
+  }) : super([]) {
     _ringStopwatch = Stopwatch();
     unawaited(_loadAlarms());
   }
@@ -195,7 +200,12 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
     ],
     String title = '',
   }) async {
-    final uid = FirebaseAuth.instance.currentUser?.uid ?? 'local';
+    final firebaseUid = FirebaseAuth.instance.currentUser?.uid;
+    final uid =
+        firebaseUid != null && await userRepo.exists(firebaseUid)
+            ? firebaseUid
+            : 'local';
+
     // Handle potential null ID safely
     final existingAlarm =
         (alarmId != null) ? await alarmRepo.getAlarmById(alarmId) : null;
