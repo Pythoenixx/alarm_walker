@@ -1,3 +1,4 @@
+import 'package:alarm/alarm.dart';
 import 'package:alarm_walker/extensions/context_extensions.dart';
 import 'package:alarm_walker/models/wake_log_model.dart';
 import 'package:alarm_walker/models/wake_log_repository.dart';
@@ -7,14 +8,9 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 class WakeAnalyticsScreen extends StatefulWidget {
-  final WakeLogRepository repo;
-  final String userId;
+  final WakeLogRepository wakeRepo;
 
-  const WakeAnalyticsScreen({
-    super.key,
-    required this.repo,
-    required this.userId,
-  });
+  const WakeAnalyticsScreen({super.key, required this.wakeRepo});
 
   @override
   State<WakeAnalyticsScreen> createState() => _WakeAnalyticsScreenState();
@@ -30,8 +26,10 @@ class _WakeAnalyticsScreenState extends State<WakeAnalyticsScreen> {
   }
 
   Future<_AnalyticsData> _load() async {
-    final logs = await widget.repo.getAllLogs();
-    final summary = await widget.repo.getSummary();
+    final logs = await widget.wakeRepo.getAllLogs();
+    final summary = await widget.wakeRepo.getSummary();
+    final runtimeAlarms = await Alarm.getAlarms(); //debug
+
     return _AnalyticsData(logs, summary);
   }
 
