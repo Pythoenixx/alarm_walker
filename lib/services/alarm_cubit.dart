@@ -201,10 +201,10 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
     String title = '',
   }) async {
     final firebaseUid = FirebaseAuth.instance.currentUser?.uid;
-    final uid =
-        firebaseUid != null && await userRepo.exists(firebaseUid)
-            ? firebaseUid
-            : 'local';
+    final uid = firebaseUid ?? 'local';
+    // firebaseUid != null && await userRepo.exists(firebaseUid)
+    //     ? firebaseUid
+    //     : 'local';
 
     // Handle potential null ID safely
     final existingAlarm =
@@ -289,6 +289,7 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
 
   Future<void> stopAlarm(int id) async {
     await Alarm.stop(id);
+    // await Alarm.stopAll(); //debug
   }
 
   DateTime toDateTime(TimeOfDay t) {
