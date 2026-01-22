@@ -125,9 +125,7 @@ GoRouter createRouterWithStream(
       GoRoute(
         path: '/wakeAnalytics',
         name: AppRoute.wakeAnalytics.name,
-        builder:
-            (context, state) =>
-                WakeAnalyticsScreen(repo: wakeRepo, userId: user!.uid),
+        builder: (context, state) => WakeAnalyticsScreen(wakeRepo: wakeRepo),
       ),
       GoRoute(
         path: '/manageProfile',
