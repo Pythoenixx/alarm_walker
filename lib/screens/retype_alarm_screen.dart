@@ -69,7 +69,9 @@ class _RetypeAlarmScreenState extends State<RetypeAlarmScreen> {
     if (input == _targetSentence) {
       final alarmCubit = context.read<AlarmCubit>();
       final ctx = context;
-      final alarmId = int.parse(widget.alarmSettings.payload!);
+      final alarmId =
+          int.tryParse(widget.alarmSettings.payload ?? '') ??
+          widget.alarmSettings.id;
       setState(() {
         _isCorrect = true;
         _error = null;
