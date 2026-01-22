@@ -69,8 +69,9 @@ class _AddAlarmScreenState extends State<AddAlarmScreen> {
     final cubit = context.read<AlarmCubit>();
     if (widget.alarmModel != null) {
       final oldModel = widget.alarmModel!;
+      await cubit.deleteAlarmModel(oldModel);
       await cubit.setPeriodicAlarms(
-        alarmId: widget.alarmModel?.alarmId,
+        alarmId: oldModel.alarmId,
         timeOfDay: _selectedTime,
         days: _selectedDays.toList(),
         title: title,

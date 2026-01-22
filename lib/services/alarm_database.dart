@@ -64,7 +64,7 @@ class AlarmDatabase {
     final path = '$dir/alarms.db';
     _db = await openDatabase(
       path,
-      version: 10,
+      version: 12,
       onCreate: (db, version) async {
         await _createAllTables(db);
       },
