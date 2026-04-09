@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../pages/dashboard_page.dart';
-import '../pages/tables_page.dart';
+import '../pages/users_table.dart';
 import '../pages/analytics_page.dart';
 import '../widgets/app_sidebar.dart';
 
@@ -14,7 +14,7 @@ class AdminLayout extends StatefulWidget {
 class _AdminLayoutState extends State<AdminLayout> {
   int selectedIndex = 0;
 
-  final pages = const [DashboardPage(), TablesPage(), AnalyticsPage()];
+  final pages = const [DashboardPage(), UsersTable(), AnalyticsPage()];
 
   @override
   Widget build(BuildContext context) {

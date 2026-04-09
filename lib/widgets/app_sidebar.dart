@@ -23,7 +23,7 @@ class AppSidebar extends StatelessWidget {
         ),
         NavigationRailDestination(
           icon: Icon(Icons.table_chart),
-          label: Text('Tables'),
+          label: Text('Users'),
         ),
         NavigationRailDestination(
           icon: Icon(Icons.analytics),
