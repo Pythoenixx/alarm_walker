@@ -9,7 +9,6 @@ import 'package:alarm_walker/theme/app_colors.dart';
 import 'package:alarm_walker/theme/app_text_styles.dart';
 import 'package:alarm_walker/widgets/stop_alarm.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
@@ -139,7 +138,7 @@ class _RetypeAlarmScreenState extends State<RetypeAlarmScreen> {
                     decoration: BoxDecoration(
                       color:
                           isDark
-                              ? AppColors.darkScaffold1.withOpacity(0.5)
+                              ? AppColors.darkScaffold1.withValues(alpha: 0.5)
                               : AppColors.lightContainer1,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
@@ -235,8 +234,12 @@ class _RetypeAlarmScreenState extends State<RetypeAlarmScreen> {
                     style: TextStyle(
                       color:
                           isDark
-                              ? AppColors.darkBackgroundText.withOpacity(0.6)
-                              : AppColors.lightBackgroundText.withOpacity(0.6),
+                              ? AppColors.darkBackgroundText.withValues(
+                                alpha: 0.6,
+                              )
+                              : AppColors.lightBackgroundText.withValues(
+                                alpha: 0.6,
+                              ),
                       fontSize: 12,
                     ),
                     textAlign: TextAlign.center,

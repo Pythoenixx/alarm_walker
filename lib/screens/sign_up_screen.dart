@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:alarm_walker/app_router.dart';
 import 'package:alarm_walker/extensions/context_extensions.dart';
 import 'package:alarm_walker/models/user_profile_model.dart';
@@ -47,7 +49,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
     });
 
     try {
-      // Create user with email and password
       final userCredential = await FirebaseAuth.instance
           .createUserWithEmailAndPassword(
             email: _emailController.text.trim(),
@@ -79,61 +80,65 @@ class _SignUpScreenState extends State<SignUpScreen> {
       if (mounted) {
         setState(() => _isLoading = false);
 
-        // Show success dialog
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) {
-            final isDark = context.isDarkMode;
-            return AlertDialog(
-              backgroundColor:
-                  isDark ? AppColors.darkScaffold1 : AppColors.lightContainer1,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              title: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.green.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.check_circle,
-                      color: Colors.green,
-                      size: 28,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  const Text('Account Created!'),
-                ],
-              ),
-              content: const Text(
-                'Your account has been successfully created. Welcome aboard!',
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    context.goNamed(AppRoute.login.name);
-                  },
-                  style: TextButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 12,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: const Text('Get Started'),
+        unawaited(
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) {
+              final isDark = context.isDarkMode;
+              return AlertDialog(
+                backgroundColor:
+                    isDark
+                        ? AppColors.darkScaffold1
+                        : AppColors.lightContainer1,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
                 ),
-              ],
-            );
-          },
+                title: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        // UPDATED: withValues instead of withOpacity
+                        color: Colors.green.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.check_circle,
+                        color: Colors.green,
+                        size: 28,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    const Text('Account Created!'),
+                  ],
+                ),
+                content: const Text(
+                  'Your account has been successfully created. Welcome aboard!',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      context.goNamed(AppRoute.login.name);
+                    },
+                    style: TextButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: const Text('Get Started'),
+                  ),
+                ],
+              );
+            },
+          ),
         );
       }
     } on FirebaseAuthException catch (e) {
@@ -171,44 +176,29 @@ class _SignUpScreenState extends State<SignUpScreen> {
     }
   }
 
+  // Validators remain the same...
   String? _validateEmail(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Please enter your email';
-    }
+    if (value == null || value.isEmpty) return 'Please enter your email';
     final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-    if (!emailRegex.hasMatch(value)) {
-      return 'Please enter a valid email';
-    }
+    if (!emailRegex.hasMatch(value)) return 'Please enter a valid email';
     return null;
   }
 
   String? _validatePassword(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Please enter a password';
-    }
-    if (value.length < 6) {
-      return 'Password must be at least 6 characters';
-    }
+    if (value == null || value.isEmpty) return 'Please enter a password';
+    if (value.length < 6) return 'Password must be at least 6 characters';
     return null;
   }
 
   String? _validateConfirmPassword(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Please confirm your password';
-    }
-    if (value != _passwordController.text) {
-      return 'Passwords do not match';
-    }
+    if (value == null || value.isEmpty) return 'Please confirm your password';
+    if (value != _passwordController.text) return 'Passwords do not match';
     return null;
   }
 
   String? _validateName(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Please enter your name';
-    }
-    if (value.length < 2) {
-      return 'Name must be at least 2 characters';
-    }
+    if (value == null || value.isEmpty) return 'Please enter your name';
+    if (value.length < 2) return 'Name must be at least 2 characters';
     return null;
   }
 
@@ -231,7 +221,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
         child: SafeArea(
           child: Column(
             children: [
-              // Header with back button
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Row(
@@ -239,12 +228,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     IconButton(
                       icon: const Icon(Icons.arrow_back),
                       onPressed: () => context.goNamed(AppRoute.login.name),
-                      style: IconButton.styleFrom(
-                        foregroundColor:
-                            isDark
-                                ? AppColors.darkBackgroundText
-                                : AppColors.lightBackgroundText,
-                      ),
+                      color:
+                          isDark
+                              ? AppColors.darkBackgroundText
+                              : AppColors.lightBackgroundText,
                     ),
                   ],
                 ),
@@ -258,13 +245,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         const SizedBox(height: 20),
-                        // Icon
                         Container(
                           padding: const EdgeInsets.all(20),
                           decoration: BoxDecoration(
+                            // UPDATED: withValues
                             color:
                                 isDark
-                                    ? AppColors.darkScaffold1.withOpacity(0.5)
+                                    ? AppColors.darkScaffold1.withValues(
+                                      alpha: 0.5,
+                                    )
                                     : AppColors.lightContainer1,
                             shape: BoxShape.circle,
                             border: Border.all(
@@ -284,7 +273,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           ),
                         ),
                         const SizedBox(height: 24),
-                        // Title
                         Text(
                           'Create Account',
                           style: AppTextStyles.large(
@@ -299,17 +287,17 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             fontSize: 14,
                             color:
                                 isDark
-                                    ? AppColors.darkBackgroundText.withOpacity(
-                                      0.7,
+                                    // UPDATED: withValues
+                                    ? AppColors.darkBackgroundText.withValues(
+                                      alpha: 0.7,
                                     )
-                                    : AppColors.lightBackgroundText.withOpacity(
-                                      0.7,
+                                    : AppColors.lightBackgroundText.withValues(
+                                      alpha: 0.7,
                                     ),
                           ),
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 32),
-                        // Name field
                         _InputField(
                           controller: _nameController,
                           label: 'Full Name',
@@ -320,7 +308,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           textInputAction: TextInputAction.next,
                         ),
                         const SizedBox(height: 16),
-                        // Email field
                         _InputField(
                           controller: _emailController,
                           label: 'Email',
@@ -332,7 +319,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           textInputAction: TextInputAction.next,
                         ),
                         const SizedBox(height: 16),
-                        // Password field
                         _InputField(
                           controller: _passwordController,
                           label: 'Password',
@@ -348,15 +334,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                   ? Icons.visibility_outlined
                                   : Icons.visibility_off_outlined,
                             ),
-                            onPressed: () {
-                              setState(
-                                () => _obscurePassword = !_obscurePassword,
-                              );
-                            },
+                            onPressed:
+                                () => setState(
+                                  () => _obscurePassword = !_obscurePassword,
+                                ),
                           ),
                         ),
                         const SizedBox(height: 16),
-                        // Confirm Password field
                         _InputField(
                           controller: _confirmPasswordController,
                           label: 'Confirm Password',
@@ -373,52 +357,43 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                   ? Icons.visibility_outlined
                                   : Icons.visibility_off_outlined,
                             ),
-                            onPressed: () {
-                              setState(
-                                () =>
-                                    _obscureConfirmPassword =
-                                        !_obscureConfirmPassword,
-                              );
-                            },
+                            onPressed:
+                                () => setState(
+                                  () =>
+                                      _obscureConfirmPassword =
+                                          !_obscureConfirmPassword,
+                                ),
                           ),
                         ),
                         const SizedBox(height: 24),
-                        // Error message with fixed space
-                        SizedBox(
-                          height: _errorMessage != null ? null : 0,
-                          child:
-                              _errorMessage != null
-                                  ? Container(
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                      color: Colors.red.withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(
-                                        color: Colors.red.withOpacity(0.3),
-                                      ),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        const Icon(
-                                          Icons.error_outline,
-                                          color: Colors.red,
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                          child: Text(
-                                            _errorMessage!,
-                                            style: const TextStyle(
-                                              color: Colors.red,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  )
-                                  : const SizedBox.shrink(),
-                        ),
+                        if (_errorMessage != null)
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              // UPDATED: withValues
+                              color: Colors.red.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: Colors.red.withValues(alpha: 0.3),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.error_outline,
+                                  color: Colors.red,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    _errorMessage!,
+                                    style: const TextStyle(color: Colors.red),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         const SizedBox(height: 24),
-                        // Sign up button
                         SizedBox(
                           height: 56,
                           child: ElevatedButton(
@@ -444,18 +419,19 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                             ),
                                       ),
                                     )
-                                    : Row(
+                                    : const Row(
                                       mainAxisAlignment:
                                           MainAxisAlignment.center,
                                       children: [
-                                        const Icon(Icons.person_add, size: 20),
-                                        const SizedBox(width: 8),
+                                        Icon(
+                                          Icons.person_add,
+                                          size: 20,
+                                          color: Colors.white,
+                                        ),
+                                        SizedBox(width: 8),
                                         Text(
                                           'Create Account',
-                                          style: AppTextStyles.large(
-                                            context,
-                                          ).copyWith(
-                                            fontSize: 16,
+                                          style: TextStyle(
                                             fontWeight: FontWeight.bold,
                                             color: Colors.white,
                                           ),
@@ -465,7 +441,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           ),
                         ),
                         const SizedBox(height: 24),
-                        // Divider
                         Row(
                           children: [
                             Expanded(
@@ -484,12 +459,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                 'OR',
                                 style: TextStyle(
                                   fontSize: 12,
+                                  // UPDATED: withValues
                                   color:
                                       isDark
                                           ? AppColors.darkBackgroundText
-                                              .withOpacity(0.5)
+                                              .withValues(alpha: 0.5)
                                           : AppColors.lightBackgroundText
-                                              .withOpacity(0.5),
+                                              .withValues(alpha: 0.5),
                                 ),
                               ),
                             ),
@@ -504,15 +480,17 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           ],
                         ),
                         const SizedBox(height: 24),
-                        // Already have account
                         Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
+                            // UPDATED: withValues
                             color:
                                 isDark
-                                    ? AppColors.darkScaffold1.withOpacity(0.3)
-                                    : AppColors.lightContainer1.withOpacity(
-                                      0.5,
+                                    ? AppColors.darkScaffold1.withValues(
+                                      alpha: 0.3,
+                                    )
+                                    : AppColors.lightContainer1.withValues(
+                                      alpha: 0.5,
                                     ),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
@@ -529,12 +507,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                 'Already have an account?',
                                 style: TextStyle(
                                   fontSize: 14,
+                                  // UPDATED: withValues
                                   color:
                                       isDark
                                           ? AppColors.darkBackgroundText
-                                              .withOpacity(0.7)
+                                              .withValues(alpha: 0.7)
                                           : AppColors.lightBackgroundText
-                                              .withOpacity(0.7),
+                                              .withValues(alpha: 0.7),
                                 ),
                               ),
                               const SizedBox(width: 8),
@@ -632,8 +611,9 @@ class _InputField extends StatelessWidget {
             filled: true,
             fillColor:
                 isDark
-                    ? AppColors.darkScaffold1.withOpacity(0.5)
-                    : Colors.white.withOpacity(0.8),
+                    // UPDATED: withValues
+                    ? AppColors.darkScaffold1.withValues(alpha: 0.5)
+                    : Colors.white.withValues(alpha: 0.8),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
@@ -652,7 +632,7 @@ class _InputField extends StatelessWidget {
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.red, width: 1),
+              borderSide: const BorderSide(color: Colors.red),
             ),
             focusedErrorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),

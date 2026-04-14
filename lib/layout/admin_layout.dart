@@ -1,8 +1,8 @@
+import 'package:alarm_walker/pages/analytics_page.dart';
+import 'package:alarm_walker/pages/dashboard_page.dart';
+import 'package:alarm_walker/pages/users_table.dart';
+import 'package:alarm_walker/widgets/app_sidebar.dart';
 import 'package:flutter/material.dart';
-import '../pages/dashboard_page.dart';
-import '../pages/users_table.dart';
-import '../pages/analytics_page.dart';
-import '../widgets/app_sidebar.dart';
 
 class AdminLayout extends StatefulWidget {
   const AdminLayout({super.key});

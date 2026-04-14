@@ -7,7 +7,6 @@ import 'package:alarm_walker/models/user_profile_repository.dart';
 import 'package:alarm_walker/models/wake_log_repository.dart';
 import 'package:alarm_walker/screens/add_alarm_screen.dart';
 import 'package:alarm_walker/screens/alarm_ringing_screen.dart';
-import 'package:alarm_walker/screens/authenticate.dart';
 import 'package:alarm_walker/screens/database_screen.dart';
 import 'package:alarm_walker/screens/home.dart';
 import 'package:alarm_walker/screens/login_screen.dart';
@@ -18,7 +17,6 @@ import 'package:alarm_walker/screens/settings_screen.dart';
 import 'package:alarm_walker/screens/shake_alarm_screen.dart';
 import 'package:alarm_walker/screens/sign_up_screen.dart';
 import 'package:alarm_walker/screens/wake_analytics_screen.dart';
-import 'package:alarm_walker/screens/wrapper.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -45,7 +43,6 @@ GoRouter createRouterWithStream(
   UserProfileRepository userRepo,
   WakeLogRepository wakeRepo,
 ) {
-  final user = FirebaseAuth.instance.currentUser;
   return GoRouter(
     initialLocation: '/',
     refreshListenable: GoRouterRefreshStream(
@@ -188,7 +185,7 @@ class GoRouterRefreshStream extends ChangeNotifier {
 
   @override
   void dispose() {
-    _subscription.cancel();
+    unawaited(_subscription.cancel());
     super.dispose();
   }
 }

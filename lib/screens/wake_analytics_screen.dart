@@ -28,7 +28,7 @@ class _WakeAnalyticsScreenState extends State<WakeAnalyticsScreen> {
   Future<_AnalyticsData> _load() async {
     final logs = await widget.wakeRepo.getAllLogs();
     final summary = await widget.wakeRepo.getSummary();
-    final runtimeAlarms = await Alarm.getAlarms(); //debug
+    await Alarm.getAlarms(); // debug
 
     return _AnalyticsData(logs, summary);
   }
@@ -246,7 +246,7 @@ class _StatCard extends StatelessWidget {
       decoration: BoxDecoration(
         color:
             isDark
-                ? AppColors.darkScaffold1.withOpacity(0.5)
+                ? AppColors.darkScaffold1.withValues(alpha: 0.5)
                 : AppColors.lightContainer1,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
@@ -275,8 +275,8 @@ class _StatCard extends StatelessWidget {
               fontSize: 12,
               color:
                   isDark
-                      ? AppColors.darkBackgroundText.withOpacity(0.7)
-                      : AppColors.lightBackgroundText.withOpacity(0.7),
+                      ? AppColors.darkBackgroundText.withValues(alpha: 0.7)
+                      : AppColors.lightBackgroundText.withValues(alpha: 0.7),
             ),
             textAlign: TextAlign.center,
           ),
@@ -304,7 +304,7 @@ class _WakeLogTable extends StatelessWidget {
         decoration: BoxDecoration(
           color:
               isDark
-                  ? AppColors.darkScaffold1.withOpacity(0.5)
+                  ? AppColors.darkScaffold1.withValues(alpha: 0.5)
                   : AppColors.lightContainer1,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
@@ -318,8 +318,8 @@ class _WakeLogTable extends StatelessWidget {
               size: 48,
               color:
                   isDark
-                      ? AppColors.darkBackgroundText.withOpacity(0.3)
-                      : AppColors.lightBackgroundText.withOpacity(0.3),
+                      ? AppColors.darkBackgroundText.withValues(alpha: 0.3)
+                      : AppColors.lightBackgroundText.withValues(alpha: 0.3),
             ),
             const SizedBox(height: 16),
             Text(
@@ -328,8 +328,8 @@ class _WakeLogTable extends StatelessWidget {
                 fontSize: 16,
                 color:
                     isDark
-                        ? AppColors.darkBackgroundText.withOpacity(0.6)
-                        : AppColors.lightBackgroundText.withOpacity(0.6),
+                        ? AppColors.darkBackgroundText.withValues(alpha: 0.6)
+                        : AppColors.lightBackgroundText.withValues(alpha: 0.6),
               ),
             ),
           ],
@@ -337,7 +337,7 @@ class _WakeLogTable extends StatelessWidget {
       );
     }
 
-    return Container(
+    return DecoratedBox(
       decoration: BoxDecoration(
         border: Border.all(
           color: isDark ? AppColors.darkBorder : AppColors.lightBlueGrey,
@@ -354,18 +354,18 @@ class _WakeLogTable extends StatelessWidget {
             dataRowMaxHeight: 60,
             headingRowColor: WidgetStateProperty.all(
               isDark
-                  ? AppColors.darkScaffold1.withOpacity(0.8)
+                  ? AppColors.darkScaffold1.withValues(alpha: 0.8)
                   : AppColors.lightContainer1,
             ),
             dataRowColor: WidgetStateProperty.resolveWith((states) {
               if (states.contains(WidgetState.selected)) {
                 return isDark
-                    ? Colors.blue.withOpacity(0.2)
-                    : Colors.blue.withOpacity(0.1);
+                    ? Colors.blue.withValues(alpha: 0.2)
+                    : Colors.blue.withValues(alpha: 0.1);
               }
               return isDark
-                  ? AppColors.darkScaffold1.withOpacity(0.3)
-                  : Colors.white.withOpacity(0.5);
+                  ? AppColors.darkScaffold1.withValues(alpha: 0.3)
+                  : Colors.white.withValues(alpha: 0.5);
             }),
             border: TableBorder.symmetric(
               inside: BorderSide(
@@ -453,14 +453,14 @@ class _WakeLogTable extends StatelessWidget {
                           decoration: BoxDecoration(
                             color:
                                 log.success
-                                    ? Colors.green.withOpacity(0.2)
-                                    : Colors.red.withOpacity(0.2),
+                                    ? Colors.green.withValues(alpha: 0.2)
+                                    : Colors.red.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(4),
                             border: Border.all(
                               color:
                                   log.success
-                                      ? Colors.green.withOpacity(0.5)
-                                      : Colors.red.withOpacity(0.5),
+                                      ? Colors.green.withValues(alpha: 0.5)
+                                      : Colors.red.withValues(alpha: 0.5),
                             ),
                           ),
                           child: Row(
@@ -494,8 +494,12 @@ class _WakeLogTable extends StatelessWidget {
                           decoration: BoxDecoration(
                             color:
                                 isDark
-                                    ? AppColors.darkScaffold2.withOpacity(0.5)
-                                    : AppColors.lightScaffold2.withOpacity(0.3),
+                                    ? AppColors.darkScaffold2.withValues(
+                                      alpha: 0.5,
+                                    )
+                                    : AppColors.lightScaffold2.withValues(
+                                      alpha: 0.3,
+                                    ),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
@@ -519,11 +523,11 @@ class _WakeLogTable extends StatelessWidget {
                             fontFamily: 'monospace',
                             color:
                                 isDark
-                                    ? AppColors.darkBackgroundText.withOpacity(
-                                      0.8,
+                                    ? AppColors.darkBackgroundText.withValues(
+                                      alpha: 0.8,
                                     )
-                                    : AppColors.lightBackgroundText.withOpacity(
-                                      0.8,
+                                    : AppColors.lightBackgroundText.withValues(
+                                      alpha: 0.8,
                                     ),
                           ),
                         ),

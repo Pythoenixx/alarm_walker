@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:alarm_walker/app_router.dart';
 import 'package:alarm_walker/extensions/context_extensions.dart';
 import 'package:alarm_walker/models/user_profile_model.dart';
@@ -192,22 +194,24 @@ class _LoginScreenState extends State<LoginScreen> {
       await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
 
       if (mounted) {
-        showDialog(
-          context: context,
-          builder:
-              (context) => AlertDialog(
-                title: const Text('Password Reset'),
-                content: Text(
-                  'A password reset link has been sent to $email. '
-                  'Please check your email.',
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('OK'),
+        unawaited(
+          showDialog(
+            context: context,
+            builder:
+                (context) => AlertDialog(
+                  title: const Text('Password Reset'),
+                  content: Text(
+                    'A password reset link has been sent to $email. '
+                    'Please check your email.',
                   ),
-                ],
-              ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('OK'),
+                    ),
+                  ],
+                ),
+          ),
         );
       }
     } on FirebaseAuthException catch (e) {
@@ -369,7 +373,6 @@ class _LoginScreenState extends State<LoginScreen> {
                             ],
                           ),
 
-                          const SizedBox(height: 16),
                           // Error message with fixed space
                           SizedBox(
                             height: _errorMessage != null ? null : 0,
@@ -378,10 +381,14 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ? Container(
                                       padding: const EdgeInsets.all(12),
                                       decoration: BoxDecoration(
-                                        color: Colors.red.withOpacity(0.1),
+                                        color: Colors.red.withValues(
+                                          alpha: 0.1,
+                                        ),
                                         borderRadius: BorderRadius.circular(8),
                                         border: Border.all(
-                                          color: Colors.red.withOpacity(0.3),
+                                          color: Colors.red.withValues(
+                                            alpha: 0.3,
+                                          ),
                                         ),
                                       ),
                                       child: Row(
@@ -404,6 +411,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     )
                                     : const SizedBox.shrink(),
                           ),
+                          const SizedBox(height: 16),
                           SizedBox(
                             width: double.infinity,
                             height: 52,
@@ -485,8 +493,6 @@ class _InputField extends StatelessWidget {
   final String? Function(String?)? validator;
   final bool isDark;
   final Widget? suffixIcon;
-  final TextInputAction? textInputAction;
-  final void Function(String)? onFieldSubmitted;
 
   const _InputField({
     required this.controller,
@@ -498,8 +504,6 @@ class _InputField extends StatelessWidget {
     this.validator,
     required this.isDark,
     this.suffixIcon,
-    this.textInputAction,
-    this.onFieldSubmitted,
   });
 
   @override
@@ -524,8 +528,6 @@ class _InputField extends StatelessWidget {
           obscureText: obscureText,
           keyboardType: keyboardType,
           validator: validator,
-          textInputAction: textInputAction,
-          onFieldSubmitted: onFieldSubmitted,
           style: TextStyle(
             fontSize: 16,
             color:
@@ -541,8 +543,8 @@ class _InputField extends StatelessWidget {
             filled: true,
             fillColor:
                 isDark
-                    ? AppColors.darkScaffold1.withOpacity(0.5)
-                    : Colors.white.withOpacity(0.8),
+                    ? AppColors.darkScaffold1.withValues(alpha: 0.5)
+                    : Colors.white.withValues(alpha: 0.8),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
@@ -561,7 +563,7 @@ class _InputField extends StatelessWidget {
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.red, width: 1),
+              borderSide: const BorderSide(color: Colors.red),
             ),
             focusedErrorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
