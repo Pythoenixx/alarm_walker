@@ -17,6 +17,7 @@ import 'package:alarm_walker/screens/settings_screen.dart';
 import 'package:alarm_walker/screens/shake_alarm_screen.dart';
 import 'package:alarm_walker/screens/sign_up_screen.dart';
 import 'package:alarm_walker/screens/wake_analytics_screen.dart';
+import 'package:alarm_walker/screens/walk_alarm_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -35,6 +36,7 @@ enum AppRoute {
   mathAlarm,
   shakeAlarm,
   retypeAlarm,
+  walkAlarm,
   database,
 }
 
@@ -167,6 +169,13 @@ GoRouter createRouterWithStream(
         builder:
             (context, state) =>
                 RetypeAlarmScreen(alarmSettings: state.extra! as AlarmSettings),
+      ),
+      GoRoute(
+        path: '/walkAlarm',
+        name: AppRoute.walkAlarm.name,
+        builder:
+            (context, state) =>
+                WalkAlarmScreen(alarmSettings: state.extra! as AlarmSettings),
       ),
     ],
   );

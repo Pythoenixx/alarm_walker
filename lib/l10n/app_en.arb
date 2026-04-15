@@ -106,8 +106,12 @@
     "description": "Label for shake-to-stop alarm challenge"
   },
   "retypeToStop": "Retype to Stop",
-  "@shakeToStop": {
+  "@retypeToStop": {
     "description": "Label for retype-to-stop alarm challenge"
+  },
+  "walkToStop": "Walk to Stop",
+  "@walkToStop": {
+    "description": "Label for walk-to-stop alarm challenge"
   },
   "alarmSound": "Alarm Sound",
   "@alarmSound": {

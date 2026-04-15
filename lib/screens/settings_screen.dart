@@ -243,6 +243,10 @@ class SettingsScreen extends StatelessWidget {
                               value: AlarmScreenType.retype,
                               child: Text(context.localization.retypeToStop),
                             ),
+                            DropdownMenuItem(
+                              value: AlarmScreenType.walk,
+                              child: Text(context.localization.walkToStop),
+                            ),
                           ],
                           onChanged: (v) async {
                             if (v == null) return;
