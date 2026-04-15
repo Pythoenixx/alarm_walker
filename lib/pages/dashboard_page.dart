@@ -16,9 +16,9 @@ class DashboardPage extends StatelessWidget {
           spacing: 16,
           runSpacing: 16,
           children: [
-            StatCard(title: 'Total Logs', value: '0'),
-            StatCard(title: 'Success Rate', value: '0%'),
-            StatCard(title: 'Avg Snooze', value: '0'),
+            StatCard(title: 'Users', value: 'N/A'),
+            StatCard(title: 'Logs', value: 'N/A'),
+            StatCard(title: 'Issues', value: 'N/A'),
           ],
         ),
       ],
