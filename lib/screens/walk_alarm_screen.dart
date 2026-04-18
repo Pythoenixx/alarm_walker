@@ -49,7 +49,7 @@ class _WalkAlarmScreenState extends State<WalkAlarmScreen>
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
 
-    _initPedometer();
+    unawaited(_initPedometer());
   }
 
   Future<void> _initPedometer() async {
@@ -91,14 +91,16 @@ class _WalkAlarmScreenState extends State<WalkAlarmScreen>
 
     // Animate when steps increase
     if (stepsTaken > 0 && stepsTaken <= _requiredSteps) {
-      _animationController.forward().then((_) {
-        _animationController.reverse();
-      });
+      unawaited(
+        _animationController.forward().then((_) {
+          unawaited(_animationController.reverse());
+        }),
+      );
     }
 
     // Check if goal reached
     if (stepsTaken >= _requiredSteps) {
-      _dismissAlarm();
+      unawaited(_dismissAlarm());
     }
   }
 
@@ -108,13 +110,13 @@ class _WalkAlarmScreenState extends State<WalkAlarmScreen>
     });
   }
 
-  void _onStepCountError(error) {
+  void _onStepCountError(Object error) {
     setState(() {
       _error = 'Step counter error: $error';
     });
   }
 
-  void _onPedestrianStatusError(error) {
+  void _onPedestrianStatusError(Object error) {
     // Pedestrian status errors are less critical
     debugPrint('Pedestrian status error: $error');
   }
@@ -128,8 +130,8 @@ class _WalkAlarmScreenState extends State<WalkAlarmScreen>
 
   @override
   void dispose() {
-    _stepCountSubscription?.cancel();
-    _pedestrianStatusSubscription?.cancel();
+    unawaited(_stepCountSubscription?.cancel());
+    unawaited(_pedestrianStatusSubscription?.cancel());
     _animationController.dispose();
     super.dispose();
   }
@@ -177,7 +179,7 @@ class _WalkAlarmScreenState extends State<WalkAlarmScreen>
                         shape: BoxShape.circle,
                         color:
                             isDark
-                                ? AppColors.darkScaffold1.withOpacity(0.5)
+                                ? AppColors.darkScaffold1.withValues(alpha: 0.5)
                                 : AppColors.lightContainer1,
                         border: Border.all(
                           color:
@@ -213,8 +215,12 @@ class _WalkAlarmScreenState extends State<WalkAlarmScreen>
                       fontSize: 18,
                       color:
                           isDark
-                              ? AppColors.darkBackgroundText.withOpacity(0.7)
-                              : AppColors.lightBackgroundText.withOpacity(0.7),
+                              ? AppColors.darkBackgroundText.withValues(
+                                alpha: 0.7,
+                              )
+                              : AppColors.lightBackgroundText.withValues(
+                                alpha: 0.7,
+                              ),
                     ),
                   ),
                   const SizedBox(height: 40),
@@ -237,7 +243,7 @@ class _WalkAlarmScreenState extends State<WalkAlarmScreen>
                         backgroundColor:
                             isDark
                                 ? AppColors.darkScaffold1
-                                : Colors.white.withOpacity(0.5),
+                                : Colors.white.withValues(alpha: 0.5),
                         valueColor: AlwaysStoppedAnimation<Color>(
                           progress >= 1.0 ? Colors.green : Colors.blue,
                         ),
@@ -254,18 +260,18 @@ class _WalkAlarmScreenState extends State<WalkAlarmScreen>
                     decoration: BoxDecoration(
                       color:
                           _status == 'walking'
-                              ? Colors.green.withOpacity(0.2)
+                              ? Colors.green.withValues(alpha: 0.2)
                               : (_status == 'stopped'
-                                  ? Colors.orange.withOpacity(0.2)
-                                  : Colors.blue.withOpacity(0.2)),
+                                  ? Colors.orange.withValues(alpha: 0.2)
+                                  : Colors.blue.withValues(alpha: 0.2)),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
                         color:
                             _status == 'walking'
-                                ? Colors.green.withOpacity(0.5)
+                                ? Colors.green.withValues(alpha: 0.5)
                                 : (_status == 'stopped'
-                                    ? Colors.orange.withOpacity(0.5)
-                                    : Colors.blue.withOpacity(0.5)),
+                                    ? Colors.orange.withValues(alpha: 0.5)
+                                    : Colors.blue.withValues(alpha: 0.5)),
                       ),
                     ),
                     child: Row(
@@ -311,9 +317,11 @@ class _WalkAlarmScreenState extends State<WalkAlarmScreen>
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.red.withOpacity(0.1),
+                        color: Colors.red.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.red.withOpacity(0.3)),
+                        border: Border.all(
+                          color: Colors.red.withValues(alpha: 0.3),
+                        ),
                       ),
                       child: Row(
                         children: [
@@ -340,8 +348,12 @@ class _WalkAlarmScreenState extends State<WalkAlarmScreen>
                       fontWeight: FontWeight.w500,
                       color:
                           isDark
-                              ? AppColors.darkBackgroundText.withOpacity(0.8)
-                              : AppColors.lightBackgroundText.withOpacity(0.8),
+                              ? AppColors.darkBackgroundText.withValues(
+                                alpha: 0.8,
+                              )
+                              : AppColors.lightBackgroundText.withValues(
+                                alpha: 0.8,
+                              ),
                     ),
                     textAlign: TextAlign.center,
                   ),
