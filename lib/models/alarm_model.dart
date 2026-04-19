@@ -62,7 +62,7 @@ class AlarmModel {
 
 enum AlarmResult { success, failed, snoozed }
 
-enum AlarmDisarmMode { math, shake, retype, normal }
+enum AlarmDisarmMode { walk, math, shake, retype, normal }
 
 extension AlarmDisarmModeX on AlarmDisarmMode {
   String get dbValue => name; // Dart enum name → string

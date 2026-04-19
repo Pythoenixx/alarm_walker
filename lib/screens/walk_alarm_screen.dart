@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:alarm/alarm.dart';
 import 'package:alarm_walker/extensions/context_extensions.dart';
+import 'package:alarm_walker/models/alarm_model.dart';
 import 'package:alarm_walker/services/alarm_cubit.dart';
 import 'package:alarm_walker/theme/app_colors.dart';
 import 'package:alarm_walker/theme/app_text_styles.dart';
@@ -11,6 +12,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pedometer/pedometer.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:sensors_plus/sensors_plus.dart';
 
 class WalkAlarmScreen extends StatefulWidget {
   final AlarmSettings alarmSettings;
@@ -27,10 +29,15 @@ class _WalkAlarmScreenState extends State<WalkAlarmScreen>
   int _initialSteps = 0;
   bool _isInitialized = false;
   String? _error;
+  bool _permissionDenied = false;
 
   StreamSubscription<StepCount>? _stepCountSubscription;
   StreamSubscription<PedestrianStatus>? _pedestrianStatusSubscription;
+  StreamSubscription<AccelerometerEvent>? _accelerometerSubscription;
+
   String _status = 'stopped';
+  bool _isShaking = false;
+  DateTime? _lastShakeTime;
 
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
@@ -50,17 +57,31 @@ class _WalkAlarmScreenState extends State<WalkAlarmScreen>
     );
 
     unawaited(_initPedometer());
+    _startShakeDetection();
   }
 
   Future<void> _initPedometer() async {
-    // Request activity recognition permission
-    final status = await Permission.activityRecognition.request();
+    // Check current permission status
+    final status = await Permission.activityRecognition.status;
 
     if (status.isGranted) {
       _startListening();
-    } else {
+    } else if (status.isDenied) {
+      // Request permission
+      final result = await Permission.activityRecognition.request();
+      if (result.isGranted) {
+        _startListening();
+      } else {
+        setState(() {
+          _permissionDenied = true;
+          _error =
+              'Activity recognition permission is required to use this feature.';
+        });
+      }
+    } else if (status.isPermanentlyDenied) {
       setState(() {
-        _error = 'Permission denied. Please enable activity recognition.';
+        _permissionDenied = true;
+        _error = 'Permission permanently denied. Please enable it in settings.';
       });
     }
   }
@@ -77,10 +98,47 @@ class _WalkAlarmScreenState extends State<WalkAlarmScreen>
     );
   }
 
+  // Shake detection to prevent cheating
+  void _startShakeDetection() {
+    _accelerometerSubscription = accelerometerEventStream().listen((
+      AccelerometerEvent event,
+    ) {
+      // Calculate total acceleration
+      final totalAcceleration =
+          event.x * event.x + event.y * event.y + event.z * event.z;
+
+      // Detect shaking (threshold for intense shaking)
+      if (totalAcceleration > 100) {
+        final now = DateTime.now();
+        if (_lastShakeTime == null ||
+            now.difference(_lastShakeTime!).inSeconds > 2) {
+          _lastShakeTime = now;
+          setState(() {
+            _isShaking = true;
+          });
+
+          // Reset shake warning after 3 seconds
+          Future.delayed(const Duration(seconds: 3), () {
+            if (mounted) {
+              setState(() {
+                _isShaking = false;
+              });
+            }
+          });
+        }
+      }
+    });
+  }
+
   void _onStepCount(StepCount event) {
     if (!_isInitialized) {
       _initialSteps = event.steps;
       _isInitialized = true;
+    }
+
+    // Don't count steps if shaking is detected
+    if (_isShaking) {
+      return;
     }
 
     final stepsTaken = event.steps - _initialSteps;
@@ -122,9 +180,61 @@ class _WalkAlarmScreenState extends State<WalkAlarmScreen>
   }
 
   Future<void> _dismissAlarm() async {
-    await context.read<AlarmCubit>().stopAlarm(widget.alarmSettings.id);
-    if (mounted) {
-      context.pop();
+    final alarmCubit = context.read<AlarmCubit>();
+    final ctx = context;
+    final alarmId =
+        int.tryParse(widget.alarmSettings.payload ?? '') ??
+        widget.alarmSettings.id;
+    await alarmCubit.completeAlarm(
+      alarmId: alarmId,
+      result: AlarmResult.success,
+      disarmMode: AlarmDisarmMode.walk,
+    );
+    await alarmCubit.stopAlarm(widget.alarmSettings.id);
+    if (ctx.mounted) {
+      ctx.pop();
+    }
+  }
+
+  Future<void> _openSettings() async {
+    await openAppSettings();
+  }
+
+  Future<void> _fallbackDismiss() async {
+    // Show confirmation dialog before allowing fallback dismiss
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        final isDark = context.isDarkMode;
+        return AlertDialog(
+          backgroundColor:
+              isDark ? AppColors.darkScaffold1 : AppColors.lightContainer1,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Text('Dismiss Alarm?'),
+          content: const Text(
+            "You haven't completed the walking goal. "
+            'Are you sure you want to dismiss the alarm?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: const Text('Dismiss Anyway'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed == true && mounted) {
+      await _dismissAlarm();
     }
   }
 
@@ -132,6 +242,7 @@ class _WalkAlarmScreenState extends State<WalkAlarmScreen>
   void dispose() {
     unawaited(_stepCountSubscription?.cancel());
     unawaited(_pedestrianStatusSubscription?.cancel());
+    unawaited(_accelerometerSubscription?.cancel());
     _animationController.dispose();
     super.dispose();
   }
@@ -170,137 +281,163 @@ class _WalkAlarmScreenState extends State<WalkAlarmScreen>
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 40),
-                  // Walking icon with animation
-                  ScaleTransition(
-                    scale: _scaleAnimation,
-                    child: Container(
-                      padding: const EdgeInsets.all(32),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
+
+                  // Show permission denied state
+                  if (_permissionDenied)
+                    _PermissionDeniedWidget(
+                      isDark: isDark,
+                      error: _error,
+                      onOpenSettings: _openSettings,
+                      onDismiss: _fallbackDismiss,
+                    )
+                  else ...[
+                    // Walking icon with animation
+                    ScaleTransition(
+                      scale: _scaleAnimation,
+                      child: Container(
+                        padding: const EdgeInsets.all(32),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color:
+                              isDark
+                                  ? AppColors.darkScaffold1.withValues(
+                                    alpha: 0.5,
+                                  )
+                                  : AppColors.lightContainer1,
+                          border: Border.all(
+                            color:
+                                isDark
+                                    ? AppColors.darkBorder
+                                    : AppColors.lightBlueGrey,
+                            width: 2,
+                          ),
+                        ),
+                        child: Icon(
+                          _status == 'walking'
+                              ? Icons.directions_walk
+                              : Icons.directions_run,
+                          size: 80,
+                          color: progress >= 1.0 ? Colors.green : Colors.blue,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 40),
+                    // Steps counter
+                    Text(
+                      '$_currentSteps',
+                      style: AppTextStyles.large(context).copyWith(
+                        fontSize: 72,
+                        fontWeight: FontWeight.bold,
+                        color: progress >= 1.0 ? Colors.green : null,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'of $_requiredSteps steps',
+                      style: TextStyle(
+                        fontSize: 18,
                         color:
                             isDark
-                                ? AppColors.darkScaffold1.withValues(alpha: 0.5)
-                                : AppColors.lightContainer1,
+                                ? AppColors.darkBackgroundText.withValues(
+                                  alpha: 0.7,
+                                )
+                                : AppColors.lightBackgroundText.withValues(
+                                  alpha: 0.7,
+                                ),
+                      ),
+                    ),
+                    const SizedBox(height: 40),
+                    // Progress bar
+                    Container(
+                      height: 24,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color:
                               isDark
                                   ? AppColors.darkBorder
                                   : AppColors.lightBlueGrey,
-                          width: 2,
                         ),
                       ),
-                      child: Icon(
-                        _status == 'walking'
-                            ? Icons.directions_walk
-                            : Icons.directions_run,
-                        size: 80,
-                        color: progress >= 1.0 ? Colors.green : Colors.blue,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(11),
+                        child: LinearProgressIndicator(
+                          value: progress,
+                          backgroundColor:
+                              isDark
+                                  ? AppColors.darkScaffold1
+                                  : Colors.white.withValues(alpha: 0.5),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            progress >= 1.0 ? Colors.green : Colors.blue,
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 40),
-                  // Steps counter
-                  Text(
-                    '$_currentSteps',
-                    style: AppTextStyles.large(context).copyWith(
-                      fontSize: 72,
-                      fontWeight: FontWeight.bold,
-                      color: progress >= 1.0 ? Colors.green : null,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'of $_requiredSteps steps',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color:
-                          isDark
-                              ? AppColors.darkBackgroundText.withValues(
-                                alpha: 0.7,
-                              )
-                              : AppColors.lightBackgroundText.withValues(
-                                alpha: 0.7,
+                    const SizedBox(height: 24),
+                    // Shake warning
+                    if (_isShaking)
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: Colors.red.withValues(alpha: 0.5),
+                          ),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.warning, size: 16, color: Colors.red),
+                            SizedBox(width: 6),
+                            Text(
+                              'Stop shaking! Walk naturally.',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.red,
                               ),
-                    ),
-                  ),
-                  const SizedBox(height: 40),
-                  // Progress bar
-                  Container(
-                    height: 24,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color:
-                            isDark
-                                ? AppColors.darkBorder
-                                : AppColors.lightBlueGrey,
-                      ),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(11),
-                      child: LinearProgressIndicator(
-                        value: progress,
-                        backgroundColor:
-                            isDark
-                                ? AppColors.darkScaffold1
-                                : Colors.white.withValues(alpha: 0.5),
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          progress >= 1.0 ? Colors.green : Colors.blue,
+                            ),
+                          ],
                         ),
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  // Status text
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color:
-                          _status == 'walking'
-                              ? Colors.green.withValues(alpha: 0.2)
-                              : (_status == 'stopped'
-                                  ? Colors.orange.withValues(alpha: 0.2)
-                                  : Colors.blue.withValues(alpha: 0.2)),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
+                    // Status text
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
                         color:
                             _status == 'walking'
-                                ? Colors.green.withValues(alpha: 0.5)
+                                ? Colors.green.withValues(alpha: 0.2)
                                 : (_status == 'stopped'
-                                    ? Colors.orange.withValues(alpha: 0.5)
-                                    : Colors.blue.withValues(alpha: 0.5)),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          _status == 'walking'
-                              ? Icons.directions_walk
-                              : _status == 'stopped'
-                              ? Icons.pause_circle_outline
-                              : Icons.help_outline,
-                          size: 16,
+                                    ? Colors.orange.withValues(alpha: 0.2)
+                                    : Colors.blue.withValues(alpha: 0.2)),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
                           color:
                               _status == 'walking'
-                                  ? Colors.green
+                                  ? Colors.green.withValues(alpha: 0.5)
                                   : (_status == 'stopped'
-                                      ? Colors.orange
-                                      : Colors.blue),
+                                      ? Colors.orange.withValues(alpha: 0.5)
+                                      : Colors.blue.withValues(alpha: 0.5)),
                         ),
-                        const SizedBox(width: 6),
-                        Text(
-                          _status == 'walking'
-                              ? 'Walking detected'
-                              : _status == 'stopped'
-                              ? 'Start walking!'
-                              : 'Unknown status',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            _status == 'walking'
+                                ? Icons.directions_walk
+                                : _status == 'stopped'
+                                ? Icons.pause_circle_outline
+                                : Icons.help_outline,
+                            size: 16,
                             color:
                                 _status == 'walking'
                                     ? Colors.green
@@ -308,64 +445,82 @@ class _WalkAlarmScreenState extends State<WalkAlarmScreen>
                                         ? Colors.orange
                                         : Colors.blue),
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (_error != null) ...[
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.red.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: Colors.red.withValues(alpha: 0.3),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.error_outline, color: Colors.red),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              _error!,
-                              style: const TextStyle(color: Colors.red),
+                          const SizedBox(width: 6),
+                          Text(
+                            _status == 'walking'
+                                ? 'Walking detected'
+                                : _status == 'stopped'
+                                ? 'Start walking!'
+                                : 'Unknown status',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color:
+                                  _status == 'walking'
+                                      ? Colors.green
+                                      : (_status == 'stopped'
+                                          ? Colors.orange
+                                          : Colors.blue),
                             ),
                           ),
                         ],
                       ),
                     ),
-                  ],
-                  const SizedBox(height: 32),
-                  // Instruction text
-                  Text(
-                    progress >= 1.0
-                        ? '✓ Goal reached! Tap below to dismiss'
-                        : 'Walk around to dismiss the alarm',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color:
-                          isDark
-                              ? AppColors.darkBackgroundText.withValues(
-                                alpha: 0.8,
-                              )
-                              : AppColors.lightBackgroundText.withValues(
-                                alpha: 0.8,
+                    if (_error != null && !_permissionDenied) ...[
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: Colors.red.withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.error_outline, color: Colors.red),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                _error!,
+                                style: const TextStyle(color: Colors.red),
                               ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 32),
+                    // Instruction text
+                    Text(
+                      progress >= 1.0
+                          ? '✓ Goal reached! Tap below to dismiss'
+                          : 'Walk around to dismiss the alarm',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color:
+                            isDark
+                                ? AppColors.darkBackgroundText.withValues(
+                                  alpha: 0.8,
+                                )
+                                : AppColors.lightBackgroundText.withValues(
+                                  alpha: 0.8,
+                                ),
+                      ),
+                      textAlign: TextAlign.center,
                     ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 24),
-                  // Dismiss button (only enabled when goal reached)
-                  GestureDetector(
-                    onTap: progress >= 1.0 ? _dismissAlarm : null,
-                    child: Opacity(
-                      opacity: progress >= 1.0 ? 1.0 : 0.5,
-                      child: const StopButton(),
+                    const SizedBox(height: 24),
+                    // Dismiss button (only enabled when goal reached)
+                    GestureDetector(
+                      onTap: progress >= 1.0 ? _dismissAlarm : null,
+                      child: Opacity(
+                        opacity: progress >= 1.0 ? 1.0 : 0.5,
+                        child: const StopButton(),
+                      ),
                     ),
-                  ),
+                  ],
                   const Spacer(),
                 ],
               ),
@@ -373,6 +528,96 @@ class _WalkAlarmScreenState extends State<WalkAlarmScreen>
           ),
         ),
       ),
+    );
+  }
+}
+
+class _PermissionDeniedWidget extends StatelessWidget {
+  final bool isDark;
+  final String? error;
+  final VoidCallback onOpenSettings;
+  final VoidCallback onDismiss;
+
+  const _PermissionDeniedWidget({
+    required this.isDark,
+    required this.error,
+    required this.onOpenSettings,
+    required this.onDismiss,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          Icons.lock_outline,
+          size: 80,
+          color:
+              isDark
+                  ? AppColors.darkBackgroundText.withValues(alpha: 0.5)
+                  : AppColors.lightBackgroundText.withValues(alpha: 0.5),
+        ),
+        const SizedBox(height: 24),
+        Text(
+          'Permission Required',
+          style: AppTextStyles.large(
+            context,
+          ).copyWith(fontSize: 24, fontWeight: FontWeight.bold),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.orange.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+          ),
+          child: Column(
+            children: [
+              const Icon(Icons.info_outline, color: Colors.orange, size: 32),
+              const SizedBox(height: 12),
+              Text(
+                error ?? 'Activity recognition permission is needed',
+                style: const TextStyle(color: Colors.orange, fontSize: 14),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 32),
+        SizedBox(
+          width: double.infinity,
+          height: 56,
+          child: ElevatedButton.icon(
+            onPressed: onOpenSettings,
+            icon: const Icon(Icons.settings),
+            label: const Text('Open Settings'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        TextButton(
+          onPressed: onDismiss,
+          child: Text(
+            'Dismiss Anyway',
+            style: TextStyle(
+              color:
+                  isDark
+                      ? AppColors.darkBackgroundText
+                      : AppColors.lightBackgroundText,
+              decoration: TextDecoration.underline,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
