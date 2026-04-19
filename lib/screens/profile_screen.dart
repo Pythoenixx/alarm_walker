@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:alarm_walker/app_router.dart';
 import 'package:alarm_walker/extensions/context_extensions.dart';
 import 'package:alarm_walker/models/user_profile_model.dart';
@@ -25,7 +27,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.initState();
     _user = FirebaseAuth.instance.currentUser;
 
-    _loadProfile();
+    unawaited(_loadProfile());
   }
 
   Future<void> _loadProfile() async {
@@ -107,7 +109,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final isDark = context.isDarkMode;
 
     return Scaffold(
-      body: Container(
+      body: DecoratedBox(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors:
@@ -230,8 +232,13 @@ class _AccountActionSection extends StatelessWidget {
       ),
       onPressed: () async {
         await FirebaseAuth.instance.signOut();
+
+        // This satisfies the "async gap" check
+        if (!context.mounted) return;
+
         context.goNamed(AppRoute.login.name);
       },
+
       child: const Text('Sign out'),
     );
   }

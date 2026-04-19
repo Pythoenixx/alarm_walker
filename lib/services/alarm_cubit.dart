@@ -219,7 +219,6 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
       time: timeOfDay,
       days: updatedDays,
       enabled: enabled,
-      isOnce: false,
       sound: existingAlarm?.sound ?? 'default',
       volume: existingAlarm?.volume ?? 5,
       vibration: existingAlarm?.vibration ?? true,
@@ -268,7 +267,7 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
     final durationMs = _ringStopwatch.elapsedMilliseconds;
     final model = await alarmRepo.getAlarmById(alarmId);
     final modelTime = model?.time;
-    int durationInMilliseconds =
+    final int durationInMilliseconds =
         (modelTime != null)
             ? DateTime.now().difference(toDateTime(modelTime)).inMilliseconds
             : durationMs;

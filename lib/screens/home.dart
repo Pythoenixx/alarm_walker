@@ -85,7 +85,8 @@ class _HomeState extends State<Home> {
       AlarmScreenType.walk => AppRoute.walkAlarm.name,
       _ => AppRoute.alarmRinging.name,
     };
-    context.pushNamed(name, extra: alarms.alarms.first);
+    if (!mounted) return;
+    unawaited(context.pushNamed(name, extra: alarms.alarms.first));
   }
 
   @override

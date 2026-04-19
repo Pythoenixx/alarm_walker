@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:alarm/alarm.dart';
 import 'package:alarm_walker/app_router.dart';
 import 'package:alarm_walker/extensions/context_extensions.dart';
@@ -62,7 +64,13 @@ class MyApp extends StatelessWidget {
               ),
         ),
         BlocProvider(
-          create: (_) => ProfileCubit(profileRepo)..loadProfile('local'),
+          create: (_) {
+            final cubit = ProfileCubit(profileRepo);
+            unawaited(
+              cubit.loadProfile('local'),
+            ); // Call it without the cascade
+            return cubit; // Return the actual Cubit instance
+          },
         ),
         BlocProvider(create: (_) => SettingsCubit()),
         BlocProvider(create: (_) => CustomSoundsCubit()),

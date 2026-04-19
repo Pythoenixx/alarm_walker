@@ -1,7 +1,7 @@
-import 'package:sqflite/sqflite.dart';
-import 'alarm_model.dart';
-import 'alarm_db_entry.dart';
+import 'package:alarm_walker/models/alarm_db_entry.dart';
+import 'package:alarm_walker/models/alarm_model.dart';
 import 'package:flutter/material.dart';
+import 'package:sqflite/sqflite.dart';
 
 class AlarmRepository {
   final Database db;
@@ -123,11 +123,11 @@ class AlarmRepository {
   }
 
   Future<List<Map<String, dynamic>>> getTableColumns(String table) async {
-    return await db.rawQuery('PRAGMA table_info($table)');
+    return db.rawQuery('PRAGMA table_info($table)');
   }
 
   Future<List<Map<String, dynamic>>> getTableRows(String table) async {
-    return await db.query(table);
+    return db.query(table);
   }
 
   /// Auto-detect PRIMARY KEY column

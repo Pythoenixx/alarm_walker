@@ -65,7 +65,6 @@ class _UsersTableState extends State<UsersTable> {
               return LayoutBuilder(
                 builder: (context, constraints) {
                   return SingleChildScrollView(
-                    scrollDirection: Axis.vertical,
                     child: Container(
                       // 1. Define the rounded corners here
                       decoration: BoxDecoration(
@@ -88,7 +87,7 @@ class _UsersTableState extends State<UsersTable> {
                           ),
                           child: DataTable(
                             // 3. Header Styling
-                            headingRowColor: MaterialStateProperty.all(
+                            headingRowColor: WidgetStateProperty.all(
                               const Color.fromARGB(255, 74, 66, 66),
                             ),
                             columnSpacing: 24,
@@ -190,8 +189,13 @@ class _UsersTableState extends State<UsersTable> {
   }
 
   // 4. Delete Confirmation Dialog
-  void _confirmDelete(BuildContext context, String name, String docId) {
-    showDialog(
+  Future<void> _confirmDelete(
+    BuildContext context,
+    String name,
+    String docId,
+  ) async {
+    // 2. Await the showDialog so the function waits for the user's decision
+    await showDialog(
       context: context,
       builder:
           (ctx) => AlertDialog(
@@ -203,12 +207,14 @@ class _UsersTableState extends State<UsersTable> {
                 child: const Text('Cancel'),
               ),
               TextButton(
-                onPressed: () {
-                  FirebaseFirestore.instance
+                onPressed: () async {
+                  // 3. Await the database call so we know it finished
+                  await FirebaseFirestore.instance
                       .collection('users')
                       .doc(docId)
                       .delete();
-                  Navigator.pop(ctx);
+
+                  if (ctx.mounted) Navigator.pop(ctx);
                 },
                 child: const Text(
                   'Delete',

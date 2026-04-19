@@ -21,7 +21,7 @@ class _DatabaseScreenState extends State<DatabaseScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Database Admin')),
-      body: Container(
+      body: DecoratedBox(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors:
@@ -88,7 +88,7 @@ class _DatabaseScreenState extends State<DatabaseScreen> {
         return SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: DataTable(
-            headingRowColor: MaterialStateProperty.all(
+            headingRowColor: WidgetStateProperty.all(
               context.isDarkMode
                   ? AppColors.darkGradient1
                   : AppColors.lightGradient1,
