@@ -329,6 +329,8 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
       final runtimeAlarms = await Alarm.getAlarms();
 
       for (final alarm in runtimeAlarms) {
+        // improve this later alarm_cubit.dart line 332 atau sume yg guna TimeOfDay.fromDateTime(alarm.dateTime)
+        // maybe better dpt store and match guna id lebih better drpd check sama ada time sama tak dgn alarm model?
         final alarmTime = TimeOfDay.fromDateTime(alarm.dateTime);
         if (alarmTime == alarmModel.time) {
           await stopAlarm(alarm.id);
