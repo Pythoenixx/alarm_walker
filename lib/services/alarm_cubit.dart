@@ -1,13 +1,11 @@
 import 'dart:async';
 
 import 'package:alarm/alarm.dart';
-import 'package:alarm_walker/models/alarm_db_entry.dart';
 import 'package:alarm_walker/models/alarm_model.dart';
 import 'package:alarm_walker/models/alarm_repository.dart';
 import 'package:alarm_walker/models/user_profile_repository.dart';
 import 'package:alarm_walker/models/wake_log_model.dart';
 import 'package:alarm_walker/models/wake_log_repository.dart';
-import 'package:alarm_walker/services/alarm_database.dart';
 import 'package:alarm_walker/services/shared_prefs_with_cache.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
