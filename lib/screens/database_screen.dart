@@ -1,8 +1,7 @@
 import 'package:alarm_walker/extensions/context_extensions.dart';
-import 'package:alarm_walker/theme/app_colors.dart';
-import 'package:alarm_walker/theme/app_text_styles.dart';
-import 'package:flutter/material.dart';
 import 'package:alarm_walker/models/alarm_repository.dart';
+import 'package:alarm_walker/theme/app_colors.dart';
+import 'package:flutter/material.dart';
 
 class DatabaseScreen extends StatefulWidget {
   final AlarmRepository repository;
