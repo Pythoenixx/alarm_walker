@@ -45,7 +45,7 @@ class _WalkAlarmScreenState extends State<WalkAlarmScreen>
   @override
   void initState() {
     super.initState();
-    _requiredSteps = 50; // Require 50 steps to dismiss
+    _requiredSteps = 30; // Require 50 steps to dismiss
 
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 300),
@@ -100,32 +100,53 @@ class _WalkAlarmScreenState extends State<WalkAlarmScreen>
 
   // Shake detection to prevent cheating
   void _startShakeDetection() {
+    // Configuration Variables
+    const double shakeForceThreshold = 120.0; // Square of magnitude
+    const int requiredShakeSamples = 5; // Number of consecutive events
+    const int shakeCooldownSeconds = 10; // Time between warning triggers
+    const int warningDisplayDuration = 3; // How long the UI stays active
+
+    int shakeCount = 0;
+
     _accelerometerSubscription = accelerometerEventStream().listen((
       AccelerometerEvent event,
     ) {
-      // Calculate total acceleration
+      // Calculate total acceleration magnitude (using square of magnitude for performance)
       final totalAcceleration =
           event.x * event.x + event.y * event.y + event.z * event.z;
 
-      // Detect shaking (threshold for intense shaking)
-      if (totalAcceleration > 100) {
-        final now = DateTime.now();
-        if (_lastShakeTime == null ||
-            now.difference(_lastShakeTime!).inSeconds > 2) {
-          _lastShakeTime = now;
-          setState(() {
-            _isShaking = true;
-          });
+      // Detect intense shaking
+      if (totalAcceleration > shakeForceThreshold) {
+        shakeCount++;
 
-          // Reset shake warning after 3 seconds
-          Future.delayed(const Duration(seconds: 3), () {
-            if (mounted) {
-              setState(() {
-                _isShaking = false;
-              });
-            }
-          });
+        // Only show warning if sustained shaking is detected
+        if (shakeCount >= requiredShakeSamples) {
+          final now = DateTime.now();
+
+          final bool isCooldownOver =
+              _lastShakeTime == null ||
+              now.difference(_lastShakeTime!).inSeconds > shakeCooldownSeconds;
+
+          if (isCooldownOver) {
+            _lastShakeTime = now;
+            setState(() {
+              _isShaking = true;
+            });
+
+            // Reset shake warning after the specified duration
+            Future.delayed(const Duration(seconds: warningDisplayDuration), () {
+              if (mounted) {
+                setState(() {
+                  _isShaking = false;
+                });
+              }
+            });
+          }
+          shakeCount = 0; // Reset after triggering or checking cooldown
         }
+      } else {
+        // Reset counter if motion falls below the threshold
+        shakeCount = 0;
       }
     });
   }
@@ -136,19 +157,18 @@ class _WalkAlarmScreenState extends State<WalkAlarmScreen>
       _isInitialized = true;
     }
 
-    // Don't count steps if shaking is detected
-    if (_isShaking) {
-      return;
+    // Reduce steps if shaking is detected (penalty instead of blocking)
+    int stepsTaken = event.steps - _initialSteps;
+    if (_isShaking && stepsTaken > 0) {
+      stepsTaken = (stepsTaken * 0.5).round(); // 50% penalty during shake
     }
-
-    final stepsTaken = event.steps - _initialSteps;
 
     setState(() {
       _currentSteps = stepsTaken;
     });
 
     // Animate when steps increase
-    if (stepsTaken > 0 && stepsTaken <= _requiredSteps) {
+    if (stepsTaken > 0 && stepsTaken <= _requiredSteps && !_isShaking) {
       unawaited(
         _animationController.forward().then((_) {
           unawaited(_animationController.reverse());
@@ -374,7 +394,7 @@ class _WalkAlarmScreenState extends State<WalkAlarmScreen>
                       ),
                     ),
                     const SizedBox(height: 24),
-                    // Shake warning
+                    // Shake warning - gentler message
                     if (_isShaking)
                       Container(
                         margin: const EdgeInsets.only(bottom: 12),
@@ -383,23 +403,27 @@ class _WalkAlarmScreenState extends State<WalkAlarmScreen>
                           vertical: 8,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.red.withValues(alpha: 0.2),
+                          color: Colors.orange.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color: Colors.red.withValues(alpha: 0.5),
+                            color: Colors.orange.withValues(alpha: 0.5),
                           ),
                         ),
                         child: const Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.warning, size: 16, color: Colors.red),
+                            Icon(
+                              Icons.info_outline,
+                              size: 16,
+                              color: Colors.orange,
+                            ),
                             SizedBox(width: 6),
                             Text(
-                              'Stop shaking! Walk naturally.',
+                              'Walk naturally for best results',
                               style: TextStyle(
                                 fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.red,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.orange,
                               ),
                             ),
                           ],
