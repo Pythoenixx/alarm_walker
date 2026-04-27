@@ -1,3 +1,6 @@
+import 'package:alarm_walker/models/dismiss_settings.dart';
+import 'package:alarm_walker/models/snooze_settings.dart';
+import 'package:alarm_walker/models/sound_settings.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -5,27 +8,25 @@ class AlarmModel {
   final int? alarmId;
   final String title;
   final TimeOfDay time;
-  final List<int> days; // 1–7
+  final List<int> days;
   final bool enabled;
   final bool isOnce;
-  final String sound;
-  final int volume;
-  final bool vibration;
-  final bool fadeIn;
-  final String disarmMode;
+  final bool wakeupCheck;
+  final SnoozeSettings snoozeSettings;
+  final SoundSettings soundSettings;
+  final DismissSettings dismissSettings;
 
   AlarmModel({
-    required this.alarmId,
+    this.alarmId,
     required this.title,
     required this.time,
     required this.days,
     this.enabled = true,
     this.isOnce = false,
-    this.sound = 'default',
-    this.volume = 5,
-    this.vibration = true,
-    this.fadeIn = false,
-    required this.disarmMode,
+    this.wakeupCheck = false,
+    required this.snoozeSettings,
+    required this.soundSettings,
+    required this.dismissSettings,
   });
 
   @override
@@ -37,27 +38,25 @@ class AlarmModel {
         listEquals(other.days, days) &&
         other.enabled == enabled &&
         other.isOnce == isOnce &&
-        other.sound == sound &&
-        other.volume == volume &&
-        other.vibration == vibration &&
-        other.fadeIn == fadeIn &&
-        other.disarmMode == disarmMode;
+        other.wakeupCheck == wakeupCheck &&
+        other.snoozeSettings == snoozeSettings &&
+        other.soundSettings == soundSettings &&
+        other.dismissSettings == dismissSettings;
   }
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     alarmId,
     title,
     time,
     days,
     enabled,
     isOnce,
-    sound,
-    volume,
-    vibration,
-    fadeIn,
-    disarmMode,
-  );
+    wakeupCheck,
+    snoozeSettings,
+    soundSettings,
+    dismissSettings,
+  ]);
 }
 
 enum AlarmResult { success, failed, snoozed }

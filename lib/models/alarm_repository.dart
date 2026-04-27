@@ -155,11 +155,9 @@ class AlarmRepository {
       days: entry.days,
       enabled: entry.enabled,
       isOnce: entry.isOnce,
-      sound: entry.sound,
-      volume: entry.volume,
-      vibration: entry.vibration,
-      fadeIn: entry.fadeIn,
-      disarmMode: entry.disarmMode,
+      snoozeSettings: entry.snoozeSettings,
+      soundSettings: entry.soundSettings,
+      dismissSettings: entry.dismissSettings,
     );
   }
 
@@ -172,12 +170,11 @@ class AlarmRepository {
       days: model.days,
       enabled: model.enabled,
       isOnce: model.isOnce,
-      sound: model.sound,
-      volume: model.volume,
-      vibration: model.vibration,
-      fadeIn: model.fadeIn,
-      disarmMode: model.disarmMode,
       userId: userId,
+      wakeupCheck: model.wakeupCheck,
+      snoozeSettings: model.snoozeSettings,
+      soundSettings: model.soundSettings,
+      dismissSettings: model.dismissSettings,
     );
   }
 }

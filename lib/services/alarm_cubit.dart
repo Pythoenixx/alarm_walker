@@ -3,6 +3,9 @@ import 'dart:async';
 import 'package:alarm/alarm.dart';
 import 'package:alarm_walker/models/alarm_model.dart';
 import 'package:alarm_walker/models/alarm_repository.dart';
+import 'package:alarm_walker/models/dismiss_settings.dart';
+import 'package:alarm_walker/models/snooze_settings.dart';
+import 'package:alarm_walker/models/sound_settings.dart';
 import 'package:alarm_walker/models/user_profile_repository.dart';
 import 'package:alarm_walker/models/wake_log_model.dart';
 import 'package:alarm_walker/models/wake_log_repository.dart';
@@ -68,7 +71,9 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
             title: model.title,
             time: model.time,
             days: model.days,
-            disarmMode: model.disarmMode,
+            snoozeSettings: model.snoozeSettings,
+            soundSettings: model.soundSettings,
+            dismissSettings: model.dismissSettings,
           );
         }).toList();
 
@@ -197,6 +202,10 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
       DateTime.sunday,
     ],
     String title = '',
+    required SnoozeSettings snoozeSettings,
+    required SoundSettings soundSettings,
+    required DismissSettings dismissSettings,
+    required bool wakeupCheck,
   }) async {
     final firebaseUid = FirebaseAuth.instance.currentUser?.uid;
     final uid = firebaseUid ?? 'local';
@@ -217,11 +226,10 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
       time: timeOfDay,
       days: updatedDays,
       enabled: enabled,
-      sound: existingAlarm?.sound ?? 'default',
-      volume: existingAlarm?.volume ?? 5,
-      vibration: existingAlarm?.vibration ?? true,
-      fadeIn: existingAlarm?.fadeIn ?? true,
-      disarmMode: existingAlarm?.disarmMode ?? 'math',
+      snoozeSettings: snoozeSettings,
+      soundSettings: soundSettings,
+      dismissSettings: dismissSettings,
+      wakeupCheck: wakeupCheck,
     );
 
     final modelId = await alarmRepo.saveOrUpdate(updatedAlarm, uid);
@@ -231,7 +239,9 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
       title: updatedAlarm.title,
       time: updatedAlarm.time,
       days: updatedAlarm.days,
-      disarmMode: updatedAlarm.disarmMode,
+      snoozeSettings: updatedAlarm.snoozeSettings,
+      soundSettings: updatedAlarm.soundSettings,
+      dismissSettings: updatedAlarm.dismissSettings,
     );
 
     if (enabled) {

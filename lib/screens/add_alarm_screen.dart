@@ -1,5 +1,10 @@
 import 'package:alarm_walker/extensions/context_extensions.dart';
 import 'package:alarm_walker/models/alarm_model.dart';
+import 'package:alarm_walker/models/dismiss_settings.dart';
+import 'package:alarm_walker/models/snooze_settings.dart';
+import 'package:alarm_walker/models/sound_settings.dart';
+import 'package:alarm_walker/screens/dismiss_settings_screen.dart';
+import 'package:alarm_walker/screens/sound_settings_screen.dart';
 import 'package:alarm_walker/services/alarm_cubit.dart';
 import 'package:alarm_walker/services/settings_cubit.dart';
 import 'package:alarm_walker/theme/app_colors.dart';
@@ -24,14 +29,23 @@ class _AddAlarmScreenState extends State<AddAlarmScreen> {
   final TextEditingController _titleController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
   late Set<int> _selectedDays;
+  late SnoozeSettings _snoozeSettings;
+  late SoundSettings _soundSettings;
+  late DismissSettings _dismissSettings;
+  late bool _wakeupCheck;
 
   @override
   void initState() {
     super.initState();
     if (widget.alarmModel != null) {
-      _selectedTime = widget.alarmModel!.time;
-      _selectedDays = widget.alarmModel!.days.toSet();
-      _titleController.text = widget.alarmModel!.title;
+      final m = widget.alarmModel!;
+      _selectedTime = m.time;
+      _selectedDays = m.days.toSet();
+      _titleController.text = m.title;
+      _snoozeSettings = m.snoozeSettings;
+      _soundSettings = m.soundSettings;
+      _dismissSettings = m.dismissSettings;
+      _wakeupCheck = m.wakeupCheck;
     } else {
       _selectedTime = TimeOfDay.now();
       _selectedDays = <int>{
@@ -43,6 +57,10 @@ class _AddAlarmScreenState extends State<AddAlarmScreen> {
         DateTime.saturday,
         DateTime.sunday,
       };
+      _snoozeSettings = const SnoozeSettings();
+      _soundSettings = const SoundSettings();
+      _dismissSettings = const DismissSettings();
+      _wakeupCheck = false;
     }
   }
 
@@ -75,6 +93,10 @@ class _AddAlarmScreenState extends State<AddAlarmScreen> {
         timeOfDay: _selectedTime,
         days: _selectedDays.toList(),
         title: title,
+        snoozeSettings: _snoozeSettings,
+        soundSettings: _soundSettings,
+        dismissSettings: _dismissSettings,
+        wakeupCheck: _wakeupCheck,
       );
       if (!oldModel.enabled) {
         await cubit.toggleAlarmEnabled(oldModel, false);
@@ -84,6 +106,10 @@ class _AddAlarmScreenState extends State<AddAlarmScreen> {
         timeOfDay: _selectedTime,
         days: _selectedDays.toList(),
         title: title,
+        snoozeSettings: _snoozeSettings,
+        soundSettings: _soundSettings,
+        dismissSettings: _dismissSettings,
+        wakeupCheck: _wakeupCheck,
       );
     }
     if (mounted) context.pop();
@@ -113,10 +139,219 @@ class _AddAlarmScreenState extends State<AddAlarmScreen> {
 
     if (!mounted || !confirmed) return;
 
-    final cubit = context.read<AlarmCubit>();
-    await cubit.deleteAlarmModel(widget.alarmModel!);
+    await context.read<AlarmCubit>().deleteAlarmModel(widget.alarmModel!);
     if (mounted) context.pop();
   }
+
+  Future<void> _openSoundSettings() async {
+    final result = await Navigator.of(context).push<SoundSettings>(
+      MaterialPageRoute(
+        builder: (_) => SoundSettingsScreen(initial: _soundSettings),
+      ),
+    );
+    if (result != null) setState(() => _soundSettings = result);
+  }
+
+  Future<void> _openDismissSettings() async {
+    final result = await Navigator.of(context).push<DismissSettings>(
+      MaterialPageRoute(
+        builder: (_) => DismissSettingsScreen(initial: _dismissSettings),
+      ),
+    );
+    if (result != null) setState(() => _dismissSettings = result);
+  }
+
+  // ── helpers ────────────────────────────────────────────────────────────────
+
+  Widget _buildSectionHeader(String label, bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      child: Row(
+        children: [
+          Text(
+            label.toUpperCase(),
+            style: AppTextStyles.caption(context).copyWith(
+              color: AppColors.primary,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.8,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Divider(
+              color: isDark ? AppColors.darkBorder : AppColors.lightBlueGrey,
+              height: 1,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNavRow({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+    required bool isDark,
+  }) {
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+      leading: _iconBox(icon),
+      title: Text(title, style: AppTextStyles.body(context)),
+      subtitle: Text(
+        subtitle,
+        style: AppTextStyles.caption(context).copyWith(
+          color:
+              isDark
+                  ? AppColors.darkBackgroundText
+                  : AppColors.lightBackgroundText,
+        ),
+      ),
+      trailing: Icon(
+        Icons.chevron_right,
+        color:
+            isDark
+                ? AppColors.darkBackgroundText
+                : AppColors.lightBackgroundText,
+      ),
+      onTap: onTap,
+    );
+  }
+
+  Widget _buildSwitchRow({
+    required IconData icon,
+    required String title,
+    String? subtitle,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+      leading: _iconBox(icon),
+      title: Text(title, style: AppTextStyles.body(context)),
+      subtitle:
+          subtitle != null
+              ? Text(subtitle, style: AppTextStyles.caption(context))
+              : null,
+      trailing: Switch(
+        value: value,
+        onChanged: onChanged,
+        activeColor: AppColors.primary,
+      ),
+    );
+  }
+
+  Widget _iconBox(IconData icon) {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Icon(icon, color: AppColors.primary, size: 20),
+    );
+  }
+
+  // ── snooze section ─────────────────────────────────────────────────────────
+
+  Widget _buildSnoozeSection(bool isDark) {
+    final s = _snoozeSettings;
+    final subtitle =
+        s.enabled
+            ? '${s.durationMinutes} min · max ${s.maxCount == 0 ? '∞' : '${s.maxCount}×'}'
+            : 'Off'; // TODO: localize
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSwitchRow(
+          icon: Icons.snooze,
+          title: 'Snooze', // TODO: localize
+          subtitle: subtitle,
+          value: s.enabled,
+          onChanged:
+              (v) => setState(() => _snoozeSettings = s.copyWith(enabled: v)),
+        ),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInOut,
+          alignment: Alignment.topCenter,
+          child:
+              s.enabled
+                  ? Padding(
+                    padding: const EdgeInsets.fromLTRB(60, 0, 16, 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Duration',
+                          style: AppTextStyles.caption(context),
+                        ), // TODO: localize
+                        const SizedBox(height: 6),
+                        _chipRow(
+                          options: const [1, 5, 10, 15, 20, 30],
+                          selected: s.durationMinutes,
+                          labelBuilder: (v) => '${v}m',
+                          onSelected:
+                              (v) => setState(
+                                () =>
+                                    _snoozeSettings = s.copyWith(
+                                      durationMinutes: v,
+                                    ),
+                              ),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          'Max snoozes',
+                          style: AppTextStyles.caption(context),
+                        ), // TODO: localize
+                        const SizedBox(height: 6),
+                        _chipRow(
+                          options: const [1, 2, 3, 5, 0],
+                          selected: s.maxCount,
+                          labelBuilder: (v) => v == 0 ? '∞' : '${v}×',
+                          onSelected:
+                              (v) => setState(
+                                () => _snoozeSettings = s.copyWith(maxCount: v),
+                              ),
+                        ),
+                      ],
+                    ),
+                  )
+                  : const SizedBox.shrink(),
+        ),
+      ],
+    );
+  }
+
+  Widget _chipRow({
+    required List<int> options,
+    required int selected,
+    required String Function(int) labelBuilder,
+    required ValueChanged<int> onSelected,
+  }) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children:
+          options
+              .map(
+                (v) => ChoiceChip(
+                  label: Text(labelBuilder(v)),
+                  selected: selected == v,
+                  onSelected: (_) => onSelected(v),
+                  selectedColor: AppColors.primary,
+                  labelStyle: AppTextStyles.caption(
+                    context,
+                  ).copyWith(color: selected == v ? Colors.white : null),
+                ),
+              )
+              .toList(),
+    );
+  }
+
+  // ── day selector ───────────────────────────────────────────────────────────
 
   Widget _daySelector(bool isDark) {
     const dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
@@ -166,9 +401,13 @@ class _AddAlarmScreenState extends State<AddAlarmScreen> {
     );
   }
 
+  // ── build ──────────────────────────────────────────────────────────────────
+
   @override
   Widget build(BuildContext context) {
     final bool isDark = context.isDarkMode;
+    final dismissMode = _dismissSettings.mode;
+
     return GestureDetector(
       onTap: _focusNode.unfocus,
       child: Scaffold(
@@ -235,41 +474,82 @@ class _AddAlarmScreenState extends State<AddAlarmScreen> {
                     child: TimePickerWidget(
                       initialTime: _selectedTime,
                       onTimeChanged: (time) {
-                        setState(() {
-                          _selectedTime = time;
-                        });
+                        setState(() => _selectedTime = time);
                       },
                     ),
                   ),
                 ),
-                SingleChildScrollView(
-                  padding: const EdgeInsets.only(top: 16, bottom: 8),
-                  child: Column(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                        child: _daySelector(isDark),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: TextField(
-                          controller: _titleController,
-                          focusNode: _focusNode,
-                          decoration: InputDecoration(
-                            labelText: context.localization.titleLabel,
-                          ),
-                          onSubmitted: (_) => _addAlarm(),
+                Expanded(
+                  flex: 3,
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.only(top: 16, bottom: 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Day picker
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          child: _daySelector(isDark),
                         ),
-                      ),
-                      IconButton(
-                        tooltip:
-                            widget.alarmModel == null
-                                ? context.localization.addAlarm
-                                : context.localization.editAlarm,
-                        onPressed: _addAlarm,
-                        icon: const AddButton(),
-                      ),
-                    ],
+
+                        // Title field
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                          child: TextField(
+                            controller: _titleController,
+                            focusNode: _focusNode,
+                            decoration: InputDecoration(
+                              labelText: context.localization.titleLabel,
+                            ),
+                            onSubmitted: (_) => _addAlarm(),
+                          ),
+                        ),
+
+                        // ── Settings ──────────────────────────────────────
+                        _buildSectionHeader(
+                          'Settings',
+                          isDark,
+                        ), // TODO: localize
+
+                        _buildSnoozeSection(isDark),
+
+                        _buildNavRow(
+                          icon: Icons.music_note_outlined,
+                          title: 'Sound', // TODO: localize
+                          subtitle: _soundSettings.soundName ?? 'Default',
+                          onTap: _openSoundSettings,
+                          isDark: isDark,
+                        ),
+
+                        _buildNavRow(
+                          icon: _dismissModeIcon(dismissMode),
+                          title: 'Dismiss', // TODO: localize
+                          subtitle: _dismissModeLabel(dismissMode),
+                          onTap: _openDismissSettings,
+                          isDark: isDark,
+                        ),
+
+                        _buildSwitchRow(
+                          icon: Icons.health_and_safety_outlined,
+                          title: 'Wakeup check', // TODO: localize
+                          subtitle: 'Confirm you\'re awake after dismissing',
+                          value: _wakeupCheck,
+                          onChanged: (v) => setState(() => _wakeupCheck = v),
+                        ),
+
+                        const SizedBox(height: 8),
+
+                        // Save button
+                        IconButton(
+                          tooltip:
+                              widget.alarmModel == null
+                                  ? context.localization.addAlarm
+                                  : context.localization.editAlarm,
+                          onPressed: _addAlarm,
+                          icon: const AddButton(),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 SizedBox(height: MediaQuery.paddingOf(context).bottom),
@@ -279,5 +559,26 @@ class _AddAlarmScreenState extends State<AddAlarmScreen> {
         ),
       ),
     );
+  }
+
+  IconData _dismissModeIcon(AlarmDisarmMode mode) {
+    return switch (mode) {
+      AlarmDisarmMode.normal => Icons.alarm_off_outlined,
+      AlarmDisarmMode.walk => Icons.directions_walk_outlined,
+      AlarmDisarmMode.math => Icons.calculate_outlined,
+      AlarmDisarmMode.shake => Icons.vibration,
+      AlarmDisarmMode.retype => Icons.keyboard_outlined,
+    };
+  }
+
+  String _dismissModeLabel(AlarmDisarmMode mode) {
+    return switch (mode) {
+      AlarmDisarmMode.normal => 'Normal', // TODO: localize all
+      AlarmDisarmMode.walk => 'Walk ${_dismissSettings.walkSteps} steps',
+      AlarmDisarmMode.math =>
+        'Math · ${['Easy', 'Medium', 'Hard'][_dismissSettings.mathDifficulty - 1]}',
+      AlarmDisarmMode.shake => 'Shake ${_dismissSettings.shakeCount}×',
+      AlarmDisarmMode.retype => 'Retype phrase',
+    };
   }
 }
