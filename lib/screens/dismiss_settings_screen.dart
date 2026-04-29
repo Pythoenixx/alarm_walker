@@ -210,7 +210,7 @@ class _DismissSettingsScreenState extends State<DismissSettingsScreen> {
                           label: const Text('Configure'), // TODO: localize
                           style: OutlinedButton.styleFrom(
                             foregroundColor: AppColors.primary,
-                            side: BorderSide(color: AppColors.primary),
+                            side: const BorderSide(color: AppColors.primary),
                           ),
                         ),
                       )

@@ -4,12 +4,14 @@ import 'package:alarm_walker/models/dismiss_settings.dart';
 import 'package:alarm_walker/models/snooze_settings.dart';
 import 'package:alarm_walker/models/sound_settings.dart';
 import 'package:alarm_walker/screens/dismiss_settings_screen.dart';
+import 'package:alarm_walker/screens/snooze_settings_screen.dart';
 import 'package:alarm_walker/screens/sound_settings_screen.dart';
 import 'package:alarm_walker/services/alarm_cubit.dart';
 import 'package:alarm_walker/services/settings_cubit.dart';
 import 'package:alarm_walker/theme/app_colors.dart';
 import 'package:alarm_walker/theme/app_text_styles.dart';
 import 'package:alarm_walker/widgets/add_button.dart';
+import 'package:alarm_walker/widgets/gradient_switch.dart';
 import 'package:alarm_walker/widgets/time_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -234,11 +236,7 @@ class _AddAlarmScreenState extends State<AddAlarmScreen> {
           subtitle != null
               ? Text(subtitle, style: AppTextStyles.caption(context))
               : null,
-      trailing: Switch(
-        value: value,
-        onChanged: onChanged,
-        activeColor: AppColors.primary,
-      ),
+      trailing: GradientSwitch(value: value, onChanged: onChanged),
     );
   }
 
@@ -246,109 +244,21 @@ class _AddAlarmScreenState extends State<AddAlarmScreen> {
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.12),
+        color: AppColors.primary.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Icon(icon, color: AppColors.primary, size: 20),
     );
   }
 
-  // ── snooze section ─────────────────────────────────────────────────────────
-
-  Widget _buildSnoozeSection(bool isDark) {
-    final s = _snoozeSettings;
-    final subtitle =
-        s.enabled
-            ? '${s.durationMinutes} min · max ${s.maxCount == 0 ? '∞' : '${s.maxCount}×'}'
-            : 'Off'; // TODO: localize
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSwitchRow(
-          icon: Icons.snooze,
-          title: 'Snooze', // TODO: localize
-          subtitle: subtitle,
-          value: s.enabled,
-          onChanged:
-              (v) => setState(() => _snoozeSettings = s.copyWith(enabled: v)),
-        ),
-        AnimatedSize(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeInOut,
-          alignment: Alignment.topCenter,
-          child:
-              s.enabled
-                  ? Padding(
-                    padding: const EdgeInsets.fromLTRB(60, 0, 16, 8),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Duration',
-                          style: AppTextStyles.caption(context),
-                        ), // TODO: localize
-                        const SizedBox(height: 6),
-                        _chipRow(
-                          options: const [1, 5, 10, 15, 20, 30],
-                          selected: s.durationMinutes,
-                          labelBuilder: (v) => '${v}m',
-                          onSelected:
-                              (v) => setState(
-                                () =>
-                                    _snoozeSettings = s.copyWith(
-                                      durationMinutes: v,
-                                    ),
-                              ),
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          'Max snoozes',
-                          style: AppTextStyles.caption(context),
-                        ), // TODO: localize
-                        const SizedBox(height: 6),
-                        _chipRow(
-                          options: const [1, 2, 3, 5, 0],
-                          selected: s.maxCount,
-                          labelBuilder: (v) => v == 0 ? '∞' : '${v}×',
-                          onSelected:
-                              (v) => setState(
-                                () => _snoozeSettings = s.copyWith(maxCount: v),
-                              ),
-                        ),
-                      ],
-                    ),
-                  )
-                  : const SizedBox.shrink(),
-        ),
-      ],
+  // replace _buildSnoozeSection() and _chipRow() with:
+  Future<void> _openSnoozeSettings() async {
+    final result = await Navigator.of(context).push<SnoozeSettings>(
+      MaterialPageRoute(
+        builder: (_) => SnoozeSettingsScreen(initial: _snoozeSettings),
+      ),
     );
-  }
-
-  Widget _chipRow({
-    required List<int> options,
-    required int selected,
-    required String Function(int) labelBuilder,
-    required ValueChanged<int> onSelected,
-  }) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children:
-          options
-              .map(
-                (v) => ChoiceChip(
-                  label: Text(labelBuilder(v)),
-                  selected: selected == v,
-                  onSelected: (_) => onSelected(v),
-                  selectedColor: AppColors.primary,
-                  labelStyle: AppTextStyles.caption(
-                    context,
-                  ).copyWith(color: selected == v ? Colors.white : null),
-                ),
-              )
-              .toList(),
-    );
+    if (result != null) setState(() => _snoozeSettings = result);
   }
 
   // ── day selector ───────────────────────────────────────────────────────────
@@ -413,6 +323,8 @@ class _AddAlarmScreenState extends State<AddAlarmScreen> {
       child: Scaffold(
         backgroundColor: isDark ? AppColors.darkBorder : Colors.white,
         appBar: AppBar(
+          surfaceTintColor: Colors.transparent, // Prevents automatic tint
+          scrolledUnderElevation: 0, // Prevents color shift on scroll
           backgroundColor:
               isDark ? AppColors.darkScaffold1 : AppColors.lightScaffold1,
           leading: IconButton(
@@ -465,7 +377,7 @@ class _AddAlarmScreenState extends State<AddAlarmScreen> {
             child: Column(
               children: [
                 Expanded(
-                  flex: 2,
+                  flex: 3,
                   child: MediaQuery(
                     data: MediaQuery.of(context).copyWith(
                       alwaysUse24HourFormat:
@@ -511,7 +423,16 @@ class _AddAlarmScreenState extends State<AddAlarmScreen> {
                           isDark,
                         ), // TODO: localize
 
-                        _buildSnoozeSection(isDark),
+                        _buildNavRow(
+                          icon: Icons.snooze,
+                          title: 'Snooze', // TODO: localize
+                          subtitle:
+                              _snoozeSettings.enabled
+                                  ? '${_snoozeSettings.durationMinutes} min · max ${_snoozeSettings.maxCount == 0 ? '∞' : '${_snoozeSettings.maxCount}×'}'
+                                  : 'Off',
+                          onTap: _openSnoozeSettings,
+                          isDark: isDark,
+                        ),
 
                         _buildNavRow(
                           icon: Icons.music_note_outlined,

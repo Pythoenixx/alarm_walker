@@ -8,54 +8,52 @@ class AlarmDatabase {
   static Future<void> _createAllTables(Database db) async {
     await db.execute('''
     CREATE TABLE user_profile (
-  user_id TEXT PRIMARY KEY,
-  name TEXT NOT NULL,
-  language TEXT NOT NULL DEFAULT 'en',
-  theme TEXT NOT NULL DEFAULT 'system'
-);
+      user_id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      language TEXT NOT NULL DEFAULT 'en',
+      theme TEXT NOT NULL DEFAULT 'system'
+    );
   ''');
 
     await db.execute('''
     CREATE TABLE alarm (
-  alarm_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id TEXT NOT NULL DEFAULT 'local',
+      alarm_id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id TEXT NOT NULL DEFAULT 'local',
 
-  title TEXT NOT NULL,
-  hour INTEGER NOT NULL CHECK(hour BETWEEN 0 AND 23),
-  minute INTEGER NOT NULL CHECK(minute BETWEEN 0 AND 59),
+      title TEXT NOT NULL,
+      hour INTEGER NOT NULL CHECK(hour BETWEEN 0 AND 23),
+      minute INTEGER NOT NULL CHECK(minute BETWEEN 0 AND 59),
 
-  days TEXT NOT NULL,              -- JSON array: [1,2,3]
-  enabled INTEGER NOT NULL DEFAULT 1,
-  is_once INTEGER NOT NULL DEFAULT 0,
+      days TEXT NOT NULL,              -- JSON array: [1,2,3]
+      enabled INTEGER NOT NULL DEFAULT 1,
+      is_once INTEGER NOT NULL DEFAULT 0,
+      wakeup_check INTEGER NOT NULL DEFAULT 0,
+      snooze_settings TEXT NOT NULL,   
+      sound_settings TEXT NOT NULL,
+      dismiss_settings TEXT NOT NULL,
 
-  sound TEXT NOT NULL,
-  volume INTEGER NOT NULL,
-  vibration INTEGER NOT NULL,
-  fade_in INTEGER NOT NULL,
-  disarm_mode TEXT NOT NULL,
-
-  FOREIGN KEY (user_id)
-    REFERENCES user_profile(user_id)
-    ON DELETE CASCADE
-);
+      FOREIGN KEY (user_id) 
+        REFERENCES user_profile(user_id) 
+        ON DELETE CASCADE
+    );
   ''');
 
     await db.execute('''
     CREATE TABLE wake_log (
-  log_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  alarm_id INTEGER NOT NULL,
+      log_id INTEGER PRIMARY KEY AUTOINCREMENT,
+      alarm_id INTEGER NOT NULL,
 
-  wake_time TEXT NOT NULL,          -- ISO8601
-  snooze_count INTEGER NOT NULL DEFAULT 0,
-  success INTEGER NOT NULL,
-  disarm_mode TEXT NOT NULL,
-  disarm_duration INTEGER NOT NULL,
+      wake_time TEXT NOT NULL,          -- ISO8601
+      snooze_count INTEGER NOT NULL DEFAULT 0,
+      success INTEGER NOT NULL,
+      disarm_mode TEXT NOT NULL,
+      disarm_duration INTEGER NOT NULL,
 
-  FOREIGN KEY (alarm_id)
-    REFERENCES alarm(alarm_id)
-    ON DELETE CASCADE
-);
-
+      FOREIGN KEY (alarm_id) 
+        REFERENCES alarm(alarm_id) 
+        ON DELETE CASCADE
+    );
+    
   ''');
   }
 
@@ -64,7 +62,7 @@ class AlarmDatabase {
     final path = '$dir/alarms.db';
     _db = await openDatabase(
       path,
-      version: 12,
+      version: 13,
       onCreate: (db, version) async {
         await _createAllTables(db);
       },
