@@ -2,7 +2,7 @@
 
 import 'package:alarm_walker/app_router.dart';
 import 'package:alarm_walker/extensions/context_extensions.dart';
-import 'package:alarm_walker/models/alarm_screen_type.dart';
+import 'package:alarm_walker/models/alarm_model.dart';
 import 'package:alarm_walker/services/alarm_cubit.dart';
 // import 'package:alarm_walker/services/alarm_permissions.dart';
 import 'package:alarm_walker/services/custom_sounds_cubit.dart';
@@ -218,8 +218,8 @@ class SettingsScreen extends StatelessWidget {
                       ),
                       const SizedBox(width: 20),
                       Expanded(
-                        child: DropdownButton<AlarmScreenType>(
-                          value: state.alarmScreenType,
+                        child: DropdownButton<AlarmDisarmMode>(
+                          value: state.alarmDisarmMode,
                           underline: const SizedBox(),
                           isExpanded: true,
                           dropdownColor:
@@ -228,23 +228,23 @@ class SettingsScreen extends StatelessWidget {
                                   : AppColors.lightScaffold1,
                           items: [
                             DropdownMenuItem(
-                              value: AlarmScreenType.ringing,
+                              value: AlarmDisarmMode.normal,
                               child: Text(context.localization.defaultOption),
                             ),
                             DropdownMenuItem(
-                              value: AlarmScreenType.math,
+                              value: AlarmDisarmMode.math,
                               child: Text(context.localization.mathChallenge),
                             ),
                             DropdownMenuItem(
-                              value: AlarmScreenType.shake,
+                              value: AlarmDisarmMode.shake,
                               child: Text(context.localization.shakeToStop),
                             ),
                             DropdownMenuItem(
-                              value: AlarmScreenType.retype,
+                              value: AlarmDisarmMode.retype,
                               child: Text(context.localization.retypeToStop),
                             ),
                             DropdownMenuItem(
-                              value: AlarmScreenType.walk,
+                              value: AlarmDisarmMode.walk,
                               child: Text(context.localization.walkToStop),
                             ),
                           ],
@@ -253,7 +253,7 @@ class SettingsScreen extends StatelessWidget {
                             if (!context.mounted) return;
                             await context
                                 .read<SettingsCubit>()
-                                .setAlarmScreenType(v);
+                                .setAlarmDisarmMode(v);
                           },
                         ),
                       ),

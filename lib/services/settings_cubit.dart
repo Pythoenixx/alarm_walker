@@ -1,4 +1,4 @@
-import 'package:alarm_walker/models/alarm_screen_type.dart';
+import 'package:alarm_walker/models/alarm_model.dart';
 import 'package:alarm_walker/services/shared_prefs_with_cache.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -10,7 +10,7 @@ class SettingsState {
   final bool fadeInAlarm;
   final double alarmVolume;
   final String alarmAudioPath;
-  final AlarmScreenType alarmScreenType;
+  final AlarmDisarmMode alarmDisarmMode;
 
   const SettingsState({
     required this.mode,
@@ -19,7 +19,7 @@ class SettingsState {
     required this.fadeInAlarm,
     required this.alarmVolume,
     required this.alarmAudioPath,
-    required this.alarmScreenType,
+    required this.alarmDisarmMode,
   });
 
   SettingsState copyWith({
@@ -29,7 +29,7 @@ class SettingsState {
     bool? fadeInAlarm,
     double? alarmVolume,
     String? alarmAudioPath,
-    AlarmScreenType? alarmScreenType,
+    AlarmDisarmMode? alarmDisarmMode,
   }) {
     return SettingsState(
       mode: mode ?? this.mode,
@@ -38,7 +38,7 @@ class SettingsState {
       fadeInAlarm: fadeInAlarm ?? this.fadeInAlarm,
       alarmVolume: alarmVolume ?? this.alarmVolume,
       alarmAudioPath: alarmAudioPath ?? this.alarmAudioPath,
-      alarmScreenType: alarmScreenType ?? this.alarmScreenType,
+      alarmDisarmMode: alarmDisarmMode ?? this.alarmDisarmMode,
     );
   }
 }
@@ -76,10 +76,14 @@ class SettingsCubit extends Cubit<SettingsState> {
                 'alarmAudioPath',
               ) ??
               'assets/alarm_ringtone.mp3',
-          alarmScreenType:
-              AlarmScreenType.values[SharedPreferencesWithCache.instance
-                      .get<int>('alarmScreenType') ??
-                  AlarmScreenType.ringing.index],
+          alarmDisarmMode: AlarmDisarmMode.values.firstWhere(
+            (e) =>
+                e.name ==
+                SharedPreferencesWithCache.instance.get<String>(
+                  'alarmDisarmMode',
+                ),
+            orElse: () => AlarmDisarmMode.normal,
+          ),
         ),
       );
 
@@ -122,11 +126,12 @@ class SettingsCubit extends Cubit<SettingsState> {
     emit(state.copyWith(alarmAudioPath: path));
   }
 
-  Future<void> setAlarmScreenType(AlarmScreenType type) async {
-    await SharedPreferencesWithCache.instance.setInt(
-      'alarmScreenType',
-      type.index,
+  Future<void> setAlarmDisarmMode(AlarmDisarmMode mode) async {
+    // Save the name (e.g., "walk") instead of the index (e.g., 3)
+    await SharedPreferencesWithCache.instance.setString(
+      'alarmDisarmMode',
+      mode.name,
     );
-    emit(state.copyWith(alarmScreenType: type));
+    emit(state.copyWith(alarmDisarmMode: mode));
   }
 }
