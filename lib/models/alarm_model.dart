@@ -1,6 +1,7 @@
 import 'package:alarm_walker/models/dismiss_settings.dart';
 import 'package:alarm_walker/models/snooze_settings.dart';
 import 'package:alarm_walker/models/sound_settings.dart';
+import 'package:alarm_walker/services/settings_cubit.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -28,6 +29,26 @@ class AlarmModel {
     required this.soundSettings,
     required this.dismissSettings,
   });
+
+  factory AlarmModel.fromSettings(SettingsState s) => AlarmModel(
+    alarmId: null,
+    title: '',
+    time: TimeOfDay.now(),
+    days: const [],
+    enabled: true,
+    isOnce: false,
+    wakeupCheck: false,
+    snoozeSettings: const SnoozeSettings(),
+    soundSettings: SoundSettings(
+      overrideVolume: true,
+      volume: s.defaultVolume,
+      soundPath: s.defaultAudioPath,
+      gradualVolumeIncrease: s.defaultFadeIn,
+      vibrate: s.defaultVibration,
+      flashlight: s.defaultFlashlight,
+    ),
+    dismissSettings: DismissSettings(mode: s.defaultAlarmDisarmMode),
+  );
 
   @override
   bool operator ==(Object other) {

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:alarm/alarm.dart';
 import 'package:alarm_walker/models/alarm_model.dart';
 import 'package:alarm_walker/models/alarm_repository.dart';
+import 'package:alarm_walker/models/dismiss_settings.dart';
 import 'package:alarm_walker/models/user_profile_repository.dart';
 import 'package:alarm_walker/models/wake_log_repository.dart';
 import 'package:alarm_walker/screens/add_alarm_screen.dart';
@@ -32,7 +33,7 @@ enum AppRoute {
   manageProfile,
   wakeAnalytics,
   settings,
-  alarmRinging,
+  normal,
   mathAlarm,
   shakeAlarm,
   retypeAlarm,
@@ -143,7 +144,7 @@ GoRouter createRouterWithStream(
       ),
       GoRoute(
         path: '/alarmRinging',
-        name: AppRoute.alarmRinging.name,
+        name: AppRoute.normal.name,
         builder:
             (context, state) => AlarmRingingScreen(
               alarmSettings: state.extra! as AlarmSettings,
@@ -152,9 +153,15 @@ GoRouter createRouterWithStream(
       GoRoute(
         path: '/mathAlarm',
         name: AppRoute.mathAlarm.name,
-        builder:
-            (context, state) =>
-                MathAlarmScreen(alarmSettings: state.extra! as AlarmSettings),
+        builder: (context, state) {
+          final (alarm, dismiss) =
+              state.extra! as (AlarmSettings, DismissSettings);
+
+          return MathAlarmScreen(
+            alarmSettings: alarm,
+            dismissSettings: dismiss,
+          );
+        },
       ),
       GoRoute(
         path: '/shakeAlarm',

@@ -80,7 +80,7 @@ class MyApp extends StatelessWidget {
           return MaterialApp.router(
             // debugShowCheckedModeBanner: true,
             onGenerateTitle: (context) => context.localization.appTitle,
-            themeMode: state.mode,
+            themeMode: state.themeMode,
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
             routerConfig: _router,

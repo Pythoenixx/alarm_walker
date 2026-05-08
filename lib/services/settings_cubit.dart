@@ -1,137 +1,210 @@
+// lib/services/settings_cubit.dart
+
+import 'dart:convert';
+
 import 'package:alarm_walker/models/alarm_model.dart';
+import 'package:alarm_walker/models/dismiss_settings.dart';
+import 'package:alarm_walker/models/snooze_settings.dart';
+import 'package:alarm_walker/models/sound_settings.dart';
 import 'package:alarm_walker/services/shared_prefs_with_cache.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+// ── Keys ──────────────────────────────────────────────────────────────────────
+
+abstract final class _K {
+  static const themeMode = 'themeMode';
+  static const use24HourFormat = 'use24HourFormat';
+  static const defaultVolume = 'defaultVolume';
+  static const defaultAudioPath = 'defaultAudioPath';
+  static const defaultFadeIn = 'defaultFadeIn';
+  static const defaultVibration = 'defaultVibration';
+  static const defaultDisarmMode = 'defaultDisarmMode';
+  static const defaultFlashlight = 'defaultFlashlight';
+  // ADD THESE:
+  static const defaultSoundSettings = 'defaultSoundSettings';
+  static const defaultDismissSettings = 'defaultDismissSettings';
+  static const defaultSnoozeSettings = 'defaultSnoozeSettings';
+}
+
+// ── State ─────────────────────────────────────────────────────────────────────
+
 class SettingsState {
-  final ThemeMode mode;
+  // UI / system
+  final ThemeMode themeMode;
   final bool use24HourFormat;
-  final bool vibrationEnabled;
-  final bool fadeInAlarm;
-  final double alarmVolume;
-  final String alarmAudioPath;
-  final AlarmDisarmMode alarmDisarmMode;
+
+  // Defaults written into every new AlarmModel
+  final double defaultVolume;
+  final String defaultAudioPath;
+  final bool defaultFadeIn;
+  final bool defaultVibration;
+  final bool defaultFlashlight;
+  final AlarmDisarmMode defaultAlarmDisarmMode;
+  final SoundSettings defaultSoundSettings;
+  final DismissSettings defaultDismissSettings;
+  final SnoozeSettings defaultSnoozeSettings;
 
   const SettingsState({
-    required this.mode,
+    required this.themeMode,
     required this.use24HourFormat,
-    required this.vibrationEnabled,
-    required this.fadeInAlarm,
-    required this.alarmVolume,
-    required this.alarmAudioPath,
-    required this.alarmDisarmMode,
+    required this.defaultVolume,
+    required this.defaultAudioPath,
+    required this.defaultFadeIn,
+    required this.defaultVibration,
+    required this.defaultFlashlight,
+    required this.defaultAlarmDisarmMode,
+    required this.defaultSoundSettings,
+    required this.defaultDismissSettings,
+    required this.defaultSnoozeSettings,
   });
 
   SettingsState copyWith({
-    ThemeMode? mode,
+    ThemeMode? themeMode,
     bool? use24HourFormat,
-    bool? vibrationEnabled,
-    bool? fadeInAlarm,
-    double? alarmVolume,
-    String? alarmAudioPath,
-    AlarmDisarmMode? alarmDisarmMode,
-  }) {
-    return SettingsState(
-      mode: mode ?? this.mode,
-      use24HourFormat: use24HourFormat ?? this.use24HourFormat,
-      vibrationEnabled: vibrationEnabled ?? this.vibrationEnabled,
-      fadeInAlarm: fadeInAlarm ?? this.fadeInAlarm,
-      alarmVolume: alarmVolume ?? this.alarmVolume,
-      alarmAudioPath: alarmAudioPath ?? this.alarmAudioPath,
-      alarmDisarmMode: alarmDisarmMode ?? this.alarmDisarmMode,
-    );
-  }
+    double? defaultVolume,
+    String? defaultAudioPath,
+    bool? defaultFadeIn,
+    bool? defaultVibration,
+    bool? defaultFlashlight,
+    AlarmDisarmMode? defaultAlarmDisarmMode,
+    SoundSettings? defaultSoundSettings,
+    DismissSettings? defaultDismissSettings,
+    SnoozeSettings? defaultSnoozeSettings,
+  }) => SettingsState(
+    themeMode: themeMode ?? this.themeMode,
+    use24HourFormat: use24HourFormat ?? this.use24HourFormat,
+    defaultVolume: defaultVolume ?? this.defaultVolume,
+    defaultAudioPath: defaultAudioPath ?? this.defaultAudioPath,
+    defaultFadeIn: defaultFadeIn ?? this.defaultFadeIn,
+    defaultVibration: defaultVibration ?? this.defaultVibration,
+    defaultFlashlight: defaultFlashlight ?? this.defaultFlashlight,
+    defaultAlarmDisarmMode:
+        defaultAlarmDisarmMode ?? this.defaultAlarmDisarmMode,
+    defaultSoundSettings: defaultSoundSettings ?? this.defaultSoundSettings,
+    defaultDismissSettings:
+        defaultDismissSettings ?? this.defaultDismissSettings,
+    defaultSnoozeSettings: defaultSnoozeSettings ?? this.defaultSnoozeSettings,
+  );
+
+  /// Build a ready-to-use AlarmModel seeded with these defaults.
+  AlarmModel buildDefaultAlarmModel() => AlarmModel.fromSettings(this);
 }
 
+// ── Cubit ─────────────────────────────────────────────────────────────────────
+
 class SettingsCubit extends Cubit<SettingsState> {
-  SettingsCubit()
-    : super(
-        SettingsState(
-          mode:
-              ThemeMode.values[SharedPreferencesWithCache.instance.get<int>(
-                    'themeMode',
-                  ) ??
-                  ThemeMode.system.index],
-          use24HourFormat:
-              (SharedPreferencesWithCache.instance.get<int>(
-                    'use24HourFormat',
-                  ) ??
-                  0) ==
-              1,
-          vibrationEnabled:
-              (SharedPreferencesWithCache.instance.get<int>(
-                    'vibrationEnabled',
-                  ) ??
-                  1) ==
-              1,
-          fadeInAlarm:
-              (SharedPreferencesWithCache.instance.get<int>('fadeInAlarm') ??
-                  0) ==
-              1,
-          alarmVolume:
-              SharedPreferencesWithCache.instance.get<double>('alarmVolume') ??
-              1.0,
-          alarmAudioPath:
-              SharedPreferencesWithCache.instance.get<String>(
-                'alarmAudioPath',
-              ) ??
-              'assets/alarm_ringtone.mp3',
-          alarmDisarmMode: AlarmDisarmMode.values.firstWhere(
-            (e) =>
-                e.name ==
-                SharedPreferencesWithCache.instance.get<String>(
-                  'alarmDisarmMode',
-                ),
-            orElse: () => AlarmDisarmMode.normal,
-          ),
-        ),
-      );
+  SettingsCubit() : super(_load());
 
-  Future<void> setTheme(ThemeMode mode) async {
-    await SharedPreferencesWithCache.instance.setInt('themeMode', mode.index);
-    emit(state.copyWith(mode: mode));
-  }
-
-  Future<void> setUse24HourFormat(bool use24Hour) async {
-    await SharedPreferencesWithCache.instance.setInt(
-      'use24HourFormat',
-      use24Hour ? 1 : 0,
+  static SettingsState _load() {
+    final p = SharedPreferencesWithCache.instance;
+    return SettingsState(
+      themeMode:
+          ThemeMode.values[p.get<int>(_K.themeMode) ?? ThemeMode.system.index],
+      use24HourFormat: (p.get<int>(_K.use24HourFormat) ?? 0) == 1,
+      defaultVolume: p.get<double>(_K.defaultVolume) ?? 0.8,
+      defaultAudioPath:
+          p.get<String>(_K.defaultAudioPath) ?? 'assets/alarm_ringtone.mp3',
+      defaultFadeIn: (p.get<int>(_K.defaultFadeIn) ?? 0) == 1,
+      defaultVibration: (p.get<int>(_K.defaultVibration) ?? 1) == 1,
+      defaultFlashlight: (p.get<int>(_K.defaultFlashlight) ?? 0) == 1,
+      defaultAlarmDisarmMode: AlarmDisarmMode.values.firstWhere(
+        (e) => e.name == p.get<String>(_K.defaultDisarmMode),
+        orElse: () => AlarmDisarmMode.normal,
+      ),
+      defaultSoundSettings: SoundSettings.fromJson(
+        jsonDecode(p.get<String>(_K.defaultSoundSettings) ?? '{}')
+            as Map<String, dynamic>,
+      ),
+      defaultDismissSettings: DismissSettings.fromJson(
+        jsonDecode(p.get<String>(_K.defaultDismissSettings) ?? '{}')
+            as Map<String, dynamic>,
+      ),
+      defaultSnoozeSettings: SnoozeSettings.fromJson(
+        jsonDecode(p.get<String>(_K.defaultSnoozeSettings) ?? '{}')
+            as Map<String, dynamic>,
+      ),
     );
-    emit(state.copyWith(use24HourFormat: use24Hour));
   }
 
-  Future<void> setVibrationEnabled(bool enabled) async {
+  // ── setters ────────────────────────────────────────────────────────────────
+
+  Future<void> setTheme(ThemeMode v) async {
+    await SharedPreferencesWithCache.instance.setInt(_K.themeMode, v.index);
+    emit(state.copyWith(themeMode: v));
+  }
+
+  Future<void> setUse24HourFormat(bool v) async {
     await SharedPreferencesWithCache.instance.setInt(
-      'vibrationEnabled',
-      enabled ? 1 : 0,
+      _K.use24HourFormat,
+      v ? 1 : 0,
     );
-    emit(state.copyWith(vibrationEnabled: enabled));
+    emit(state.copyWith(use24HourFormat: v));
   }
 
-  Future<void> setFadeInAlarm(bool enabled) async {
+  Future<void> setDefaultVolume(double v) async {
+    await SharedPreferencesWithCache.instance.setDouble(_K.defaultVolume, v);
+    emit(state.copyWith(defaultVolume: v));
+  }
+
+  Future<void> setDefaultAudioPath(String v) async {
+    await SharedPreferencesWithCache.instance.setString(_K.defaultAudioPath, v);
+    emit(state.copyWith(defaultAudioPath: v));
+  }
+
+  Future<void> setDefaultFadeIn(bool v) async {
     await SharedPreferencesWithCache.instance.setInt(
-      'fadeInAlarm',
-      enabled ? 1 : 0,
+      _K.defaultFadeIn,
+      v ? 1 : 0,
     );
-    emit(state.copyWith(fadeInAlarm: enabled));
+    emit(state.copyWith(defaultFadeIn: v));
   }
 
-  Future<void> setAlarmVolume(double volume) async {
-    await SharedPreferencesWithCache.instance.setDouble('alarmVolume', volume);
-    emit(state.copyWith(alarmVolume: volume));
+  Future<void> setDefaultVibration(bool v) async {
+    await SharedPreferencesWithCache.instance.setInt(
+      _K.defaultVibration,
+      v ? 1 : 0,
+    );
+    emit(state.copyWith(defaultVibration: v));
   }
 
-  Future<void> setAlarmAudioPath(String path) async {
-    await SharedPreferencesWithCache.instance.setString('alarmAudioPath', path);
-    emit(state.copyWith(alarmAudioPath: path));
+  Future<void> setDefaultFlashlight(bool v) async {
+    await SharedPreferencesWithCache.instance.setInt(
+      _K.defaultFlashlight,
+      v ? 1 : 0,
+    );
+    emit(state.copyWith(defaultFlashlight: v));
   }
 
-  Future<void> setAlarmDisarmMode(AlarmDisarmMode mode) async {
-    // Save the name (e.g., "walk") instead of the index (e.g., 3)
+  Future<void> setDefaultAlarmDisarmMode(AlarmDisarmMode v) async {
     await SharedPreferencesWithCache.instance.setString(
-      'alarmDisarmMode',
-      mode.name,
+      _K.defaultDisarmMode,
+      v.name,
     );
-    emit(state.copyWith(alarmDisarmMode: mode));
+    emit(state.copyWith(defaultAlarmDisarmMode: v));
+  }
+
+  Future<void> setDefaultSoundSettings(SoundSettings v) async {
+    await SharedPreferencesWithCache.instance.setString(
+      _K.defaultSoundSettings,
+      jsonEncode(v.toJson()),
+    );
+    emit(state.copyWith(defaultSoundSettings: v));
+  }
+
+  Future<void> setDefaultDismissSettings(DismissSettings v) async {
+    await SharedPreferencesWithCache.instance.setString(
+      _K.defaultDismissSettings,
+      jsonEncode(v.toJson()),
+    );
+    emit(state.copyWith(defaultDismissSettings: v));
+  }
+
+  Future<void> setDefaultSnoozeSettings(SnoozeSettings v) async {
+    await SharedPreferencesWithCache.instance.setString(
+      _K.defaultSnoozeSettings,
+      jsonEncode(v.toJson()),
+    );
+    emit(state.copyWith(defaultSnoozeSettings: v));
   }
 }

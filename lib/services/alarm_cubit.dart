@@ -306,7 +306,7 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
 
   Future<void> deleteAlarmModel(AlarmModel alarmModel) async {
     final alarmId = alarmModel.alarmId;
-    if (alarmId == null) return; // safety guard
+    if (alarmId == null) return;
 
     // 1. Stop runtime alarms
     final runtimeAlarms = await Alarm.getAlarms();

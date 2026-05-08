@@ -6,7 +6,6 @@ import 'package:alarm/utils/alarm_set.dart';
 import 'package:alarm_walker/app_router.dart';
 import 'package:alarm_walker/extensions/context_extensions.dart';
 import 'package:alarm_walker/models/alarm_model.dart';
-import 'package:alarm_walker/models/alarm_screen_type.dart';
 import 'package:alarm_walker/services/alarm_cubit.dart';
 import 'package:alarm_walker/services/alarm_permissions.dart';
 import 'package:alarm_walker/services/settings_cubit.dart';
@@ -75,18 +74,48 @@ class _HomeState extends State<Home> {
     super.dispose();
   }
 
-  void _ringingAlarmsChanged(AlarmSet alarms) {
+  Future<void> _ringingAlarmsChanged(AlarmSet alarms) async {
     if (alarms.alarms.isEmpty) return;
-    final screenType = context.read<SettingsCubit>().state.alarmScreenType;
-    final name = switch (screenType) {
-      AlarmScreenType.math => AppRoute.mathAlarm.name,
-      AlarmScreenType.shake => AppRoute.shakeAlarm.name,
-      AlarmScreenType.retype => AppRoute.retypeAlarm.name,
-      AlarmScreenType.walk => AppRoute.walkAlarm.name,
-      _ => AppRoute.alarmRinging.name,
-    };
+
+    final alarmRinging = alarms.alarms.first;
+    final alarmCubit = context.read<AlarmCubit>();
+    final alarmModel = await () async {
+      final payload = alarmRinging.payload;
+      if (payload == null) return null;
+      final id = int.tryParse(payload);
+      if (id == null) return null;
+      return alarmCubit.alarmRepo.getAlarmById(id);
+    }();
+
     if (!mounted) return;
-    unawaited(context.pushNamed(name, extra: alarms.alarms.first));
+
+    final resolvedModel =
+        alarmModel ??
+        AlarmModel.fromSettings(context.read<SettingsCubit>().state);
+
+    if (alarmModel == null) {
+      debugPrint(
+        '⚠️ Alarm ID ${alarmRinging.id} not found in DB. '
+        'Falling back to settings defaults.',
+      );
+    }
+
+    final routeName = switch (resolvedModel.dismissSettings.mode) {
+      AlarmDisarmMode.math => AppRoute.mathAlarm.name,
+      AlarmDisarmMode.shake => AppRoute.shakeAlarm.name,
+      AlarmDisarmMode.retype => AppRoute.retypeAlarm.name,
+      AlarmDisarmMode.walk => AppRoute.walkAlarm.name,
+      AlarmDisarmMode.normal => AppRoute.normal.name,
+    };
+
+    if (!mounted) return;
+
+    unawaited(
+      context.pushNamed(
+        routeName,
+        extra: (alarmRinging, resolvedModel.dismissSettings),
+      ),
+    );
   }
 
   @override

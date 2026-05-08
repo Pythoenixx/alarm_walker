@@ -1,28 +1,118 @@
-// import 'dart:async';
-
 import 'package:alarm_walker/app_router.dart';
 import 'package:alarm_walker/extensions/context_extensions.dart';
 import 'package:alarm_walker/models/alarm_model.dart';
-import 'package:alarm_walker/services/alarm_cubit.dart';
-// import 'package:alarm_walker/services/alarm_permissions.dart';
-import 'package:alarm_walker/services/custom_sounds_cubit.dart';
+import 'package:alarm_walker/models/dismiss_settings.dart';
+import 'package:alarm_walker/models/snooze_settings.dart';
+import 'package:alarm_walker/models/sound_settings.dart';
+import 'package:alarm_walker/screens/dismiss_settings_screen.dart';
+import 'package:alarm_walker/screens/snooze_settings_screen.dart';
+import 'package:alarm_walker/screens/sound_settings_screen.dart';
 import 'package:alarm_walker/services/settings_cubit.dart';
 import 'package:alarm_walker/theme/app_colors.dart';
 import 'package:alarm_walker/theme/app_text_styles.dart';
-import 'package:alarm_walker/widgets/gradient_slider.dart';
 import 'package:alarm_walker/widgets/gradient_switch.dart';
 import 'package:alarm_walker/widgets/settings_tile.dart';
 import 'package:alarm_walker/widgets/theme_list_tile.dart';
-import 'package:file_picker/file_picker.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-// import 'package:path/path.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:permission_handler/permission_handler.dart';
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  String _version = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadVersion();
+  }
+
+  Future<void> _loadVersion() async {
+    final info = await PackageInfo.fromPlatform();
+    if (mounted)
+      setState(() => _version = 'v${info.version} (${info.buildNumber})');
+  }
+
+  // ── navigation helpers ─────────────────────────────────────────────────────
+
+  Future<void> _openSoundDefaults(
+    SettingsCubit cubit,
+    SettingsState state,
+  ) async {
+    final result = await Navigator.of(context).push<SoundSettings>(
+      MaterialPageRoute(
+        builder:
+            (_) => SoundSettingsScreen(initial: state.defaultSoundSettings),
+      ),
+    );
+    if (result != null) await cubit.setDefaultSoundSettings(result);
+  }
+
+  Future<void> _openDismissDefaults(
+    SettingsCubit cubit,
+    SettingsState state,
+  ) async {
+    final result = await Navigator.of(context).push<DismissSettings>(
+      MaterialPageRoute(
+        builder:
+            (_) => DismissSettingsScreen(initial: state.defaultDismissSettings),
+      ),
+    );
+    if (result != null) await cubit.setDefaultDismissSettings(result);
+  }
+
+  Future<void> _openSnoozeDefaults(
+    SettingsCubit cubit,
+    SettingsState state,
+  ) async {
+    final result = await Navigator.of(context).push<SnoozeSettings>(
+      MaterialPageRoute(
+        builder:
+            (_) => SnoozeSettingsScreen(initial: state.defaultSnoozeSettings),
+      ),
+    );
+    if (result != null) await cubit.setDefaultSnoozeSettings(result);
+  }
+
+  // ── permissions ────────────────────────────────────────────────────────────
+
+  Future<void> _showPermissionsSheet() async {
+    final notification = await Permission.notification.status;
+    final exactAlarm = await Permission.scheduleExactAlarm.status;
+
+    if (!mounted) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder:
+          (_) => _PermissionsSheet(
+            notificationStatus: notification,
+            exactAlarmStatus: exactAlarm,
+          ),
+    );
+  }
+
+  // ── about ──────────────────────────────────────────────────────────────────
+
+  void _showAboutDialog() {
+    showAboutDialog(
+      context: context,
+      applicationName: 'Alarm Walker',
+      applicationVersion: _version,
+      applicationLegalese: '© ${DateTime.now().year} Alarm Walker',
+    );
+  }
+
+  // ── build ──────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -47,49 +137,6 @@ class SettingsScreen extends StatelessWidget {
         centerTitle: true,
         title: Text(context.localization.settings),
         titleTextStyle: AppTextStyles.heading(context),
-        actions: [
-          IconButton(
-            tooltip: 'Logout',
-            onPressed: () async {
-              // Show confirmation dialog
-              final confirmed = await showDialog<bool>(
-                context: context,
-                builder:
-                    (context) => AlertDialog(
-                      title: const Text('Logout'),
-                      content: const Text('Are you sure you want to logout?'),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, false),
-                          child: const Text('Cancel'),
-                        ),
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, true),
-                          style: TextButton.styleFrom(
-                            foregroundColor: Colors.red,
-                          ),
-                          child: const Text('Logout'),
-                        ),
-                      ],
-                    ),
-              );
-
-              if (confirmed == true && context.mounted) {
-                await FirebaseAuth.instance.signOut();
-                if (context.mounted) {
-                  context.goNamed(AppRoute.login.name);
-                }
-              }
-            },
-            style: IconButton.styleFrom(
-              foregroundColor:
-                  isDark
-                      ? AppColors.darkBackgroundText
-                      : AppColors.lightBackgroundText,
-            ),
-            icon: const Icon(Icons.logout),
-          ),
-        ],
       ),
       body: DecoratedBox(
         decoration: BoxDecoration(
@@ -104,222 +151,438 @@ class SettingsScreen extends StatelessWidget {
         ),
         child: BlocBuilder<SettingsCubit, SettingsState>(
           builder: (context, state) {
-            final color =
-                isDark
-                    ? AppColors.darkBackgroundText
-                    : AppColors.lightBackgroundText;
+            final cubit = context.read<SettingsCubit>();
             return ListView(
-              padding: const EdgeInsets.all(10),
+              padding: EdgeInsets.fromLTRB(
+                12,
+                12,
+                12,
+                12 + MediaQuery.viewPaddingOf(context).bottom,
+              ),
               children: [
+                // ── Appearance ───────────────────────────────────────────
+                _SectionHeader(
+                  label: 'Appearance',
+                  isDark: isDark,
+                ), // TODO: localize
                 ThemeListTile(
-                  mode: state.mode,
-                  onChanged: (m) => context.read<SettingsCubit>().setTheme(m),
+                  mode: state.themeMode,
+                  onChanged: (m) => cubit.setTheme(m),
                 ),
-                const SizedBox(height: 23),
+                const SizedBox(height: 8),
                 SettingsTile(
-                  onTap:
-                      () => context.read<SettingsCubit>().setUse24HourFormat(
-                        !state.use24HourFormat,
-                      ),
-                  child: Row(
-                    children: [
-                      Text(
-                        context.localization.format24h,
-                        style: AppTextStyles.body(
-                          context,
-                        ).copyWith(color: color),
-                      ),
-                      const Spacer(),
-                      GradientSwitch(
-                        value: state.use24HourFormat,
-                        onChanged:
-                            (v) => context
-                                .read<SettingsCubit>()
-                                .setUse24HourFormat(v),
-                      ),
-                    ],
+                  onTap: () => cubit.setUse24HourFormat(!state.use24HourFormat),
+                  child: _SwitchRow(
+                    label: context.localization.format24h,
+                    value: state.use24HourFormat,
+                    onChanged: cubit.setUse24HourFormat,
+                    isDark: isDark,
                   ),
                 ),
-                const SizedBox(height: 23),
+
+                // ── Alarm defaults ───────────────────────────────────────
+                _SectionHeader(
+                  label: 'New alarm defaults',
+                  isDark: isDark,
+                ), // TODO: localize
                 SettingsTile(
-                  onTap: () async {
-                    final settingsCubit = context.read<SettingsCubit>();
-                    final alarmCubit = context.read<AlarmCubit>();
-                    final newValue = !state.vibrationEnabled;
-                    await settingsCubit.setVibrationEnabled(newValue);
-                    await alarmCubit.updateVibrationForAll(newValue);
-                  },
-                  child: Row(
-                    children: [
-                      Text(
-                        context.localization.vibration,
-                        style: AppTextStyles.body(
-                          context,
-                        ).copyWith(color: color),
-                      ),
-                      const Spacer(),
-                      GradientSwitch(
-                        value: state.vibrationEnabled,
-                        onChanged: (v) async {
-                          final settingsCubit = context.read<SettingsCubit>();
-                          final alarmCubit = context.read<AlarmCubit>();
-                          await settingsCubit.setVibrationEnabled(v);
-                          await alarmCubit.updateVibrationForAll(v);
-                        },
-                      ),
-                    ],
+                  onTap: () => _openSoundDefaults(cubit, state),
+                  child: _NavRow(
+                    icon: Icons.music_note_outlined,
+                    label: 'Sound', // TODO: localize
+                    subtitle: state.defaultSoundSettings.soundName ?? 'Default',
+                    isDark: isDark,
                   ),
                 ),
-                const SizedBox(height: 23),
+                const SizedBox(height: 8),
                 SettingsTile(
-                  onTap: () async {
-                    final settingsCubit = context.read<SettingsCubit>();
-                    final alarmCubit = context.read<AlarmCubit>();
-                    final newValue = !state.fadeInAlarm;
-                    await settingsCubit.setFadeInAlarm(newValue);
-                    await alarmCubit.updateVolumeSettingsForAll(
-                      fadeIn: newValue,
-                      volume: state.alarmVolume,
-                    );
-                  },
-                  child: Row(
-                    children: [
-                      Text(
-                        context.localization.fadeIn,
-                        style: AppTextStyles.body(
-                          context,
-                        ).copyWith(color: color),
-                      ),
-                      const Spacer(),
-                      GradientSwitch(
-                        value: state.fadeInAlarm,
-                        onChanged: (v) async {
-                          final settingsCubit = context.read<SettingsCubit>();
-                          final alarmCubit = context.read<AlarmCubit>();
-                          await settingsCubit.setFadeInAlarm(v);
-                          await alarmCubit.updateVolumeSettingsForAll(
-                            fadeIn: v,
-                            volume: state.alarmVolume,
-                          );
-                        },
-                      ),
-                    ],
+                  onTap: () => _openDismissDefaults(cubit, state),
+                  child: _NavRow(
+                    icon: _dismissIcon(state.defaultDismissSettings.mode),
+                    label: 'Dismiss', // TODO: localize
+                    subtitle: _dismissSubtitle(state.defaultDismissSettings),
+                    isDark: isDark,
                   ),
                 ),
-                const SizedBox(height: 23),
+                const SizedBox(height: 8),
                 SettingsTile(
-                  child: Row(
-                    children: [
-                      Text(
-                        context.localization.alarmScreen,
-                        style: AppTextStyles.body(
-                          context,
-                        ).copyWith(color: color),
-                      ),
-                      const SizedBox(width: 20),
-                      Expanded(
-                        child: DropdownButton<AlarmDisarmMode>(
-                          value: state.alarmDisarmMode,
-                          underline: const SizedBox(),
-                          isExpanded: true,
-                          dropdownColor:
-                              isDark
-                                  ? AppColors.darkScaffold1
-                                  : AppColors.lightScaffold1,
-                          items: [
-                            DropdownMenuItem(
-                              value: AlarmDisarmMode.normal,
-                              child: Text(context.localization.defaultOption),
-                            ),
-                            DropdownMenuItem(
-                              value: AlarmDisarmMode.math,
-                              child: Text(context.localization.mathChallenge),
-                            ),
-                            DropdownMenuItem(
-                              value: AlarmDisarmMode.shake,
-                              child: Text(context.localization.shakeToStop),
-                            ),
-                            DropdownMenuItem(
-                              value: AlarmDisarmMode.retype,
-                              child: Text(context.localization.retypeToStop),
-                            ),
-                            DropdownMenuItem(
-                              value: AlarmDisarmMode.walk,
-                              child: Text(context.localization.walkToStop),
-                            ),
-                          ],
-                          onChanged: (v) async {
-                            if (v == null) return;
-                            if (!context.mounted) return;
-                            await context
-                                .read<SettingsCubit>()
-                                .setAlarmDisarmMode(v);
-                          },
-                        ),
-                      ),
-                    ],
+                  onTap: () => _openSnoozeDefaults(cubit, state),
+                  child: _NavRow(
+                    icon: Icons.snooze,
+                    label: 'Snooze', // TODO: localize
+                    subtitle:
+                        state.defaultSnoozeSettings.enabled
+                            ? '${state.defaultSnoozeSettings.durationMinutes} min · '
+                                'max ${state.defaultSnoozeSettings.maxCount == 0 ? '∞' : '${state.defaultSnoozeSettings.maxCount}×'}'
+                            : 'Off',
+                    isDark: isDark,
                   ),
                 ),
-                const SizedBox(height: 23),
+
+                // ── System ───────────────────────────────────────────────
+                _SectionHeader(
+                  label: 'System',
+                  isDark: isDark,
+                ), // TODO: localize
                 SettingsTile(
                   onTap: () => context.pushNamed(AppRoute.database.name),
-                  child: Row(
-                    children: [
-                      Text(
-                        context.localization.database,
-                        style: AppTextStyles.body(
-                          context,
-                        ).copyWith(color: color),
-                      ),
-                      // const Spacer(),
-                      // GradientSwitch(
-                      //   value: state.vibrationEnabled,
-                      //   onChanged: (v) async {
-                      //     final settingsCubit = context.read<SettingsCubit>();
-                      //     final alarmCubit = context.read<AlarmCubit>();
-                      //     await settingsCubit.setVibrationEnabled(v);
-                      //     await alarmCubit.updateVibrationForAll(v);
-                      //   },
-                      // ),
-                    ],
+                  child: _NavRow(
+                    icon: Icons.storage_outlined,
+                    label: context.localization.database,
+                    isDark: isDark,
                   ),
                 ),
-                const SizedBox(height: 23),
+                const SizedBox(height: 8),
                 SettingsTile(
-                  child: Row(
-                    children: [
-                      Icon(
-                        state.alarmVolume > 0.7
-                            ? Icons.volume_up_rounded
-                            : state.alarmVolume > 0.1
-                            ? Icons.volume_down_rounded
-                            : Icons.volume_mute_rounded,
-                        color: color,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: GradientSlider(
-                          value: state.alarmVolume,
-                          onChanged: (v) async {
-                            final settingsCubit = context.read<SettingsCubit>();
-                            final alarmCubit = context.read<AlarmCubit>();
-                            await settingsCubit.setAlarmVolume(v);
-                            await alarmCubit.updateVolumeSettingsForAll(
-                              fadeIn: state.fadeInAlarm,
-                              volume: v,
-                            );
-                          },
-                        ),
-                      ),
-                    ],
+                  onTap: _showPermissionsSheet,
+                  child: _NavRow(
+                    icon: Icons.security_outlined,
+                    label: 'Permissions', // TODO: localize
+                    isDark: isDark,
                   ),
                 ),
-                SizedBox(height: 23 + MediaQuery.viewPaddingOf(context).bottom),
+
+                // ── About ────────────────────────────────────────────────
+                _SectionHeader(
+                  label: 'About',
+                  isDark: isDark,
+                ), // TODO: localize
+                SettingsTile(
+                  onTap: _showAboutDialog,
+                  child: _NavRow(
+                    icon: Icons.info_outline,
+                    label: 'About Alarm Walker', // TODO: localize
+                    subtitle: _version,
+                    isDark: isDark,
+                  ),
+                ),
+
+                const SizedBox(height: 8),
               ],
             );
           },
         ),
       ),
+    );
+  }
+
+  // ── label helpers ──────────────────────────────────────────────────────────
+
+  IconData _dismissIcon(AlarmDisarmMode mode) => switch (mode) {
+    AlarmDisarmMode.normal => Icons.alarm_off_outlined,
+    AlarmDisarmMode.walk => Icons.directions_walk_outlined,
+    AlarmDisarmMode.math => Icons.calculate_outlined,
+    AlarmDisarmMode.shake => Icons.vibration,
+    AlarmDisarmMode.retype => Icons.keyboard_outlined,
+  };
+
+  String _dismissSubtitle(DismissSettings s) => switch (s.mode) {
+    AlarmDisarmMode.normal => 'Normal', // TODO: localize
+    AlarmDisarmMode.walk => 'Walk ${s.walkSteps} steps',
+    AlarmDisarmMode.math =>
+      'Math · ${['Easy', 'Medium', 'Hard'][s.mathDifficulty - 1]}',
+    AlarmDisarmMode.shake => 'Shake ${s.shakeCount}×',
+    AlarmDisarmMode.retype => 'Retype phrase',
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Shared small widgets (private to this file)
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _SectionHeader extends StatelessWidget {
+  final String label;
+  final bool isDark;
+  const _SectionHeader({required this.label, required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 20, 4, 8),
+      child: Row(
+        children: [
+          Text(
+            label.toUpperCase(),
+            style: AppTextStyles.caption(context).copyWith(
+              color: AppColors.primary,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.8,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Divider(
+              color: isDark ? AppColors.darkBorder : AppColors.lightBlueGrey,
+              height: 1,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _NavRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String? subtitle;
+  final bool isDark;
+
+  const _NavRow({
+    required this.icon,
+    required this.label,
+    this.subtitle,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final muted =
+        isDark ? AppColors.darkBackgroundText : AppColors.lightBackgroundText;
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(7),
+          decoration: BoxDecoration(
+            color: AppColors.primary.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, color: AppColors.primary, size: 18),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(label, style: AppTextStyles.body(context)),
+              if (subtitle != null)
+                Text(
+                  subtitle!,
+                  style: AppTextStyles.caption(context).copyWith(color: muted),
+                ),
+            ],
+          ),
+        ),
+        Icon(Icons.chevron_right, color: muted, size: 20),
+      ],
+    );
+  }
+}
+
+class _SwitchRow extends StatelessWidget {
+  final String label;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+  final bool isDark;
+
+  const _SwitchRow({
+    required this.label,
+    required this.value,
+    required this.onChanged,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Text(
+          label,
+          style: AppTextStyles.body(context).copyWith(
+            color:
+                isDark
+                    ? AppColors.darkBackgroundText
+                    : AppColors.lightBackgroundText,
+          ),
+        ),
+        const Spacer(),
+        GradientSwitch(value: value, onChanged: onChanged),
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Permissions bottom sheet
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _PermissionsSheet extends StatefulWidget {
+  final PermissionStatus notificationStatus;
+  final PermissionStatus exactAlarmStatus;
+
+  const _PermissionsSheet({
+    required this.notificationStatus,
+    required this.exactAlarmStatus,
+  });
+
+  @override
+  State<_PermissionsSheet> createState() => _PermissionsSheetState();
+}
+
+class _PermissionsSheetState extends State<_PermissionsSheet> {
+  late PermissionStatus _notification;
+  late PermissionStatus _exactAlarm;
+
+  @override
+  void initState() {
+    super.initState();
+    _notification = widget.notificationStatus;
+    _exactAlarm = widget.exactAlarmStatus;
+  }
+
+  Future<void> _request(Permission p) async {
+    final result = await p.request();
+    if (!mounted) return;
+    setState(() {
+      if (p == Permission.notification) _notification = result;
+      if (p == Permission.scheduleExactAlarm) _exactAlarm = result;
+    });
+    // If permanently denied, bounce to app settings
+    if (result.isPermanentlyDenied) await openAppSettings();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = context.isDarkMode;
+    return Container(
+      margin: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkScaffold1 : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      padding: EdgeInsets.fromLTRB(
+        20,
+        20,
+        20,
+        20 + MediaQuery.viewPaddingOf(context).bottom,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Permissions', // TODO: localize
+            style: AppTextStyles.heading(context),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'These permissions are required for alarms to work reliably.', // TODO: localize
+            style: AppTextStyles.caption(context),
+          ),
+          const SizedBox(height: 20),
+          _PermissionRow(
+            icon: Icons.notifications_outlined,
+            label: 'Notifications', // TODO: localize
+            description: 'Show alarm notifications',
+            status: _notification,
+            onRequest: () => _request(Permission.notification),
+          ),
+          const SizedBox(height: 12),
+          _PermissionRow(
+            icon: Icons.alarm_outlined,
+            label: 'Exact alarms', // TODO: localize
+            description: 'Schedule alarms at precise times',
+            status: _exactAlarm,
+            onRequest: () => _request(Permission.scheduleExactAlarm),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PermissionRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String description;
+  final PermissionStatus status;
+  final VoidCallback onRequest;
+
+  const _PermissionRow({
+    required this.icon,
+    required this.label,
+    required this.description,
+    required this.status,
+    required this.onRequest,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = context.isDarkMode;
+    final granted = status.isGranted;
+    final statusColor = granted ? Colors.green : Colors.orange;
+    final statusLabel = switch (status) {
+      PermissionStatus.granted => 'Granted', // TODO: localize
+      PermissionStatus.denied => 'Denied',
+      PermissionStatus.permanentlyDenied => 'Blocked — tap to open settings',
+      PermissionStatus.restricted => 'Restricted',
+      _ => 'Unknown',
+    };
+
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: AppColors.primary.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, color: AppColors.primary, size: 20),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: AppTextStyles.body(context)),
+              Text(
+                description,
+                style: AppTextStyles.caption(context).copyWith(
+                  color:
+                      isDark
+                          ? AppColors.darkBackgroundText
+                          : AppColors.lightBackgroundText,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 8),
+        granted
+            ? Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.check_circle, color: statusColor, size: 18),
+                const SizedBox(width: 4),
+                Text(
+                  statusLabel,
+                  style: AppTextStyles.caption(
+                    context,
+                  ).copyWith(color: statusColor),
+                ),
+              ],
+            )
+            : TextButton(
+              onPressed: onRequest,
+              style: TextButton.styleFrom(
+                foregroundColor: statusColor,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: Text(
+                status.isPermanentlyDenied
+                    ? 'Open settings'
+                    : statusLabel, // TODO: localize
+                style: AppTextStyles.caption(
+                  context,
+                ).copyWith(color: statusColor, fontWeight: FontWeight.bold),
+              ),
+            ),
+      ],
     );
   }
 }
