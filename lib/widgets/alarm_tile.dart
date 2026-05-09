@@ -47,10 +47,17 @@ class _AlarmTileState extends State<AlarmTile> {
 
   Widget _repeatDayText(bool isDark) {
     const dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+
+    // Same mapping: Sunday is 7, Monday is 1, etc.
+    const daysOrder = [7, 1, 2, 3, 4, 5, 6];
+
     final textSpans = <TextSpan>[];
 
     for (int i = 0; i < dayLabels.length; i++) {
-      final isSelected = _selectedDays.contains(i + 1);
+      // Check against the correct mapped day value
+      final dayValue = daysOrder[i];
+      final isSelected = _selectedDays.contains(dayValue);
+
       final color =
           isSelected
               ? AppColors.primary

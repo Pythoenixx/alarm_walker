@@ -51,13 +51,13 @@ class _AddAlarmScreenState extends State<AddAlarmScreen> {
     } else {
       _selectedTime = TimeOfDay.now();
       _selectedDays = <int>{
+        DateTime.sunday,
         DateTime.monday,
         DateTime.tuesday,
         DateTime.wednesday,
         DateTime.thursday,
         DateTime.friday,
         DateTime.saturday,
-        DateTime.sunday,
       };
       _snoozeSettings = const SnoozeSettings();
       _soundSettings = const SoundSettings();
@@ -265,6 +265,18 @@ class _AddAlarmScreenState extends State<AddAlarmScreen> {
 
   Widget _daySelector(bool isDark) {
     const dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+
+    // This map aligns your UI order (Sunday first) with Dart's DateTime constants
+    const daysOrder = [
+      DateTime.sunday, // 7
+      DateTime.monday, // 1
+      DateTime.tuesday, // 2
+      DateTime.wednesday, // 3
+      DateTime.thursday, // 4
+      DateTime.friday, // 5
+      DateTime.saturday, // 6
+    ];
+
     final localizations = context.localization;
     final dayNames = [
       localizations.sunday,
@@ -275,18 +287,23 @@ class _AddAlarmScreenState extends State<AddAlarmScreen> {
       localizations.friday,
       localizations.saturday,
     ];
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        for (int i = 0; i < dayLabels.length; i++)
-          IconButton(
+        // To use logic/variables inside a collection for,
+        // we map the index to the widget.
+        ...List.generate(dayLabels.length, (i) {
+          final dayValue = daysOrder[i]; // Sunday is now 7, Saturday is 6
+
+          return IconButton(
             tooltip: dayNames[i],
-            onPressed: () => _toggleDay(i + 1),
+            onPressed: () => _toggleDay(dayValue), // Send the correct ID
             style: IconButton.styleFrom(
               backgroundColor:
-                  _selectedDays.contains(i + 1) ? AppColors.primary : null,
+                  _selectedDays.contains(dayValue) ? AppColors.primary : null,
               side:
-                  _selectedDays.contains(i + 1)
+                  _selectedDays.contains(dayValue)
                       ? BorderSide.none
                       : BorderSide(
                         color:
@@ -299,14 +316,15 @@ class _AddAlarmScreenState extends State<AddAlarmScreen> {
               dayLabels[i],
               style: AppTextStyles.caption(context).copyWith(
                 color:
-                    _selectedDays.contains(i + 1)
+                    _selectedDays.contains(dayValue)
                         ? Colors.white
                         : isDark
                         ? AppColors.darkBackgroundText
                         : AppColors.lightBackgroundText,
               ),
             ),
-          ),
+          );
+        }),
       ],
     );
   }
