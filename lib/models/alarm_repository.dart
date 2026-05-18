@@ -155,6 +155,7 @@ class AlarmRepository {
       days: entry.days,
       enabled: entry.enabled,
       isOnce: entry.isOnce,
+      wakeupCheck: entry.wakeupCheck,
       snoozeSettings: entry.snoozeSettings,
       soundSettings: entry.soundSettings,
       dismissSettings: entry.dismissSettings,

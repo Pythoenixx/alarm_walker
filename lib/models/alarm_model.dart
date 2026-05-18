@@ -17,14 +17,14 @@ class AlarmModel {
   final SoundSettings soundSettings;
   final DismissSettings dismissSettings;
 
-  AlarmModel({
+  const AlarmModel({
     this.alarmId,
     required this.title,
     required this.time,
     required this.days,
-    this.enabled = true,
-    this.isOnce = false,
-    this.wakeupCheck = false,
+    required this.enabled,
+    required this.isOnce,
+    required this.wakeupCheck,
     required this.snoozeSettings,
     required this.soundSettings,
     required this.dismissSettings,
@@ -50,20 +50,43 @@ class AlarmModel {
     dismissSettings: DismissSettings(mode: s.defaultAlarmDisarmMode),
   );
 
+  AlarmModel copyWith({
+    int? alarmId,
+    String? title,
+    TimeOfDay? time,
+    List<int>? days,
+    bool? enabled,
+    bool? isOnce,
+    bool? wakeupCheck,
+    SnoozeSettings? snoozeSettings,
+    SoundSettings? soundSettings,
+    DismissSettings? dismissSettings,
+  }) => AlarmModel(
+    alarmId: alarmId ?? this.alarmId,
+    title: title ?? this.title,
+    time: time ?? this.time,
+    days: days ?? this.days,
+    enabled: enabled ?? this.enabled,
+    isOnce: isOnce ?? this.isOnce,
+    wakeupCheck: wakeupCheck ?? this.wakeupCheck,
+    snoozeSettings: snoozeSettings ?? this.snoozeSettings,
+    soundSettings: soundSettings ?? this.soundSettings,
+    dismissSettings: dismissSettings ?? this.dismissSettings,
+  );
+
   @override
-  bool operator ==(Object other) {
-    return other is AlarmModel &&
-        other.alarmId == alarmId &&
-        other.title == title &&
-        other.time == time &&
-        listEquals(other.days, days) &&
-        other.enabled == enabled &&
-        other.isOnce == isOnce &&
-        other.wakeupCheck == wakeupCheck &&
-        other.snoozeSettings == snoozeSettings &&
-        other.soundSettings == soundSettings &&
-        other.dismissSettings == dismissSettings;
-  }
+  bool operator ==(Object other) =>
+      other is AlarmModel &&
+      other.alarmId == alarmId &&
+      other.title == title &&
+      other.time == time &&
+      listEquals(other.days, days) &&
+      other.enabled == enabled &&
+      other.isOnce == isOnce &&
+      other.wakeupCheck == wakeupCheck &&
+      other.snoozeSettings == snoozeSettings &&
+      other.soundSettings == soundSettings &&
+      other.dismissSettings == dismissSettings;
 
   @override
   int get hashCode => Object.hashAll([
@@ -85,12 +108,8 @@ enum AlarmResult { success, failed, snoozed }
 enum AlarmDisarmMode { walk, math, shake, retype, normal }
 
 extension AlarmDisarmModeX on AlarmDisarmMode {
-  String get dbValue => name; // Dart enum name → string
+  String get dbValue => name;
 
-  static AlarmDisarmMode fromDb(String value) {
-    return AlarmDisarmMode.values.firstWhere(
-      (e) => e.name == value,
-      orElse: () => AlarmDisarmMode.normal,
-    );
-  }
+  static AlarmDisarmMode fromDb(String value) => AlarmDisarmMode.values
+      .firstWhere((e) => e.name == value, orElse: () => AlarmDisarmMode.normal);
 }

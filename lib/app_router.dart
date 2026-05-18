@@ -3,11 +3,10 @@ import 'dart:async';
 import 'package:alarm/alarm.dart';
 import 'package:alarm_walker/models/alarm_model.dart';
 import 'package:alarm_walker/models/alarm_repository.dart';
-import 'package:alarm_walker/models/dismiss_settings.dart';
 import 'package:alarm_walker/models/user_profile_repository.dart';
 import 'package:alarm_walker/models/wake_log_repository.dart';
 import 'package:alarm_walker/screens/add_alarm_screen.dart';
-import 'package:alarm_walker/screens/alarm_ringing_screen.dart';
+import 'package:alarm_walker/screens/alarm_gate_screen.dart';
 import 'package:alarm_walker/screens/database_screen.dart';
 import 'package:alarm_walker/screens/home.dart';
 import 'package:alarm_walker/screens/login_screen.dart';
@@ -39,6 +38,7 @@ enum AppRoute {
   retypeAlarm,
   walkAlarm,
   database,
+  alarmGate,
 }
 
 GoRouter createRouterWithStream(
@@ -51,52 +51,22 @@ GoRouter createRouterWithStream(
     refreshListenable: GoRouterRefreshStream(
       FirebaseAuth.instance.authStateChanges(),
     ),
-
     redirect: (context, state) {
       final user = FirebaseAuth.instance.currentUser;
-      final isLoggedIn = user != null;
-      //final isLoggedIn = user != null && user.emailVerified;
-
       final requiresAuth =
           state.matchedLocation == '/manageProfile' ||
           state.matchedLocation == '/wakeAnalytics';
-
-      if (requiresAuth && !isLoggedIn) {
-        return '/login';
-      }
-
+      if (requiresAuth && user == null) return '/login';
       return null;
     },
-    // // klo nk paksa login
-    // redirect: (context, state) {
-    //   final user = FirebaseAuth.instance.currentUser;
-    //   final isAuthenticated = user != null; //&& user.emailVerified;
-
-    //   final isLoggingIn = state.matchedLocation == '/login';
-    //   final isSigningUp = state.matchedLocation == '/signUp';
-    //   final isAuthPage = isLoggingIn || isSigningUp;
-
-    //   // If not authenticated and trying to access protected routes
-    //   if (!isAuthenticated && !isAuthPage) {
-    //     return '/login';
-    //   }
-
-    //   // If authenticated and trying to access auth pages
-    //   if (isAuthenticated && isAuthPage) {
-    //     return '/home';
-    //   }
-
-    //   // No redirect needed
-    //   return null;
-    // },
     routes: [
       GoRoute(
         path: '/',
         name: AppRoute.wrapper.name,
-        redirect: (context, state) => '/home',
+        redirect: (_, __) => '/home',
       ),
 
-      // Auth routes
+      // ── Auth ──────────────────────────────────────────────────────────────
       GoRoute(
         path: '/login',
         name: AppRoute.login.name,
@@ -105,84 +75,99 @@ GoRouter createRouterWithStream(
       GoRoute(
         path: '/signUp',
         name: AppRoute.signUp.name,
-        builder: (context, state) => const SignUpScreen(),
+        builder: (_, __) => const SignUpScreen(),
       ),
 
-      // Protected routes
+      // ── Main ──────────────────────────────────────────────────────────────
       GoRoute(
         path: '/home',
         name: AppRoute.home.name,
-        builder: (context, state) => const Home(),
+        builder: (_, __) => const Home(),
       ),
       GoRoute(
         path: '/addAlarm',
         name: AppRoute.addAlarm.name,
-        builder: (context, state) {
-          final alarmModel = state.extra as AlarmModel?;
-          return AddAlarmScreen(alarmModel: alarmModel);
-        },
+        builder:
+            (context, state) =>
+                AddAlarmScreen(alarmModel: state.extra as AlarmModel?),
       ),
       GoRoute(
         path: '/wakeAnalytics',
         name: AppRoute.wakeAnalytics.name,
-        builder: (context, state) => WakeAnalyticsScreen(wakeRepo: wakeRepo),
+        builder: (_, __) => WakeAnalyticsScreen(wakeRepo: wakeRepo),
       ),
       GoRoute(
         path: '/manageProfile',
         name: AppRoute.manageProfile.name,
-        builder: (context, state) => ProfileScreen(userRepo: userRepo),
+        builder: (_, __) => ProfileScreen(userRepo: userRepo),
       ),
       GoRoute(
         path: '/settings',
         name: AppRoute.settings.name,
-        builder: (context, state) => const SettingsScreen(),
+        builder: (_, __) => const SettingsScreen(),
       ),
       GoRoute(
         path: '/database',
         name: AppRoute.database.name,
-        builder: (context, state) => DatabaseScreen(repository: alarmRepo),
+        builder: (_, __) => DatabaseScreen(repository: alarmRepo),
       ),
+
+      // ── Alarm screens ─────────────────────────────────────────────────────
       GoRoute(
-        path: '/alarmRinging',
-        name: AppRoute.normal.name,
-        builder:
-            (context, state) => AlarmRingingScreen(
-              alarmSettings: state.extra! as AlarmSettings,
-            ),
+        path: '/alarmGate',
+        name: AppRoute.alarmGate.name,
+        builder: (context, state) {
+          final (alarm, model) = state.extra! as (AlarmSettings, AlarmModel);
+          return AlarmGateScreen(alarmSettings: alarm, alarmModel: model);
+        },
       ),
       GoRoute(
         path: '/mathAlarm',
         name: AppRoute.mathAlarm.name,
         builder: (context, state) {
-          final (alarm, dismiss) =
-              state.extra! as (AlarmSettings, DismissSettings);
-
+          final (alarm, model) = state.extra! as (AlarmSettings, AlarmModel);
           return MathAlarmScreen(
             alarmSettings: alarm,
-            dismissSettings: dismiss,
+            dismissSettings: model.dismissSettings,
+            snoozeSettings: model.snoozeSettings,
           );
         },
       ),
       GoRoute(
         path: '/shakeAlarm',
         name: AppRoute.shakeAlarm.name,
-        builder:
-            (context, state) =>
-                ShakeAlarmScreen(alarmSettings: state.extra! as AlarmSettings),
+        builder: (context, state) {
+          final (alarm, model) = state.extra! as (AlarmSettings, AlarmModel);
+          return ShakeAlarmScreen(
+            alarmSettings: alarm,
+            //dismissSettings: model.dismissSettings,
+            //snoozeSettings: model.snoozeSettings,
+          );
+        },
       ),
       GoRoute(
         path: '/retypeAlarm',
         name: AppRoute.retypeAlarm.name,
-        builder:
-            (context, state) =>
-                RetypeAlarmScreen(alarmSettings: state.extra! as AlarmSettings),
+        builder: (context, state) {
+          final (alarm, model) = state.extra! as (AlarmSettings, AlarmModel);
+          return RetypeAlarmScreen(
+            alarmSettings: alarm,
+            //dismissSettings: model.dismissSettings,
+            //snoozeSettings: model.snoozeSettings,
+          );
+        },
       ),
       GoRoute(
         path: '/walkAlarm',
         name: AppRoute.walkAlarm.name,
-        builder:
-            (context, state) =>
-                WalkAlarmScreen(alarmSettings: state.extra! as AlarmSettings),
+        builder: (context, state) {
+          final (alarm, model) = state.extra! as (AlarmSettings, AlarmModel);
+          return WalkAlarmScreen(
+            alarmSettings: alarm,
+            //dismissSettings: model.dismissSettings,
+            //snoozeSettings: model.snoozeSettings,
+          );
+        },
       ),
     ],
   );

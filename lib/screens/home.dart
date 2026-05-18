@@ -79,6 +79,7 @@ class _HomeState extends State<Home> {
 
     final alarmRinging = alarms.alarms.first;
     final alarmCubit = context.read<AlarmCubit>();
+
     final alarmModel = await () async {
       final payload = alarmRinging.payload;
       if (payload == null) return null;
@@ -100,20 +101,23 @@ class _HomeState extends State<Home> {
       );
     }
 
-    final routeName = switch (resolvedModel.dismissSettings.mode) {
-      AlarmDisarmMode.math => AppRoute.mathAlarm.name,
-      AlarmDisarmMode.shake => AppRoute.shakeAlarm.name,
-      AlarmDisarmMode.retype => AppRoute.retypeAlarm.name,
-      AlarmDisarmMode.walk => AppRoute.walkAlarm.name,
-      AlarmDisarmMode.normal => AppRoute.normal.name,
-    };
+    // Start wake session — creates wake_log row and starts stopwatch.
+    // Safe to call on snooze re-fires; it reuses the existing log row.
+    if (resolvedModel.alarmId != null) {
+      await alarmCubit.startWakeSession(
+        alarmId: resolvedModel.alarmId!,
+        disarmMode: resolvedModel.dismissSettings.mode,
+      );
+    }
 
     if (!mounted) return;
 
+    // Always go to AlarmGateScreen — it handles snooze and routes
+    // to the correct challenge screen on dismiss.
     unawaited(
       context.pushNamed(
-        routeName,
-        extra: (alarmRinging, resolvedModel.dismissSettings),
+        AppRoute.alarmGate.name,
+        extra: (alarmRinging, resolvedModel),
       ),
     );
   }

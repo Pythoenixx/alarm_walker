@@ -51,9 +51,7 @@ class AlarmRingingScreen extends StatelessWidget {
                 onTap: () async {
                   final alarmCubit = context.read<AlarmCubit>();
                   final ctx = context;
-                  final alarmId =
-                      int.tryParse(alarmSettings.payload ?? '') ??
-                      alarmSettings.id;
+                  final alarmId = AlarmCubit.resolveAlarmId(alarmSettings);
 
                   await alarmCubit.completeAlarm(
                     alarmId: alarmId,
@@ -72,8 +70,10 @@ class AlarmRingingScreen extends StatelessWidget {
               const Spacer(),
               SnoozeButton(
                 onSnoozePressed: (snoozeMinutes) async {
+                  final alarmId = AlarmCubit.resolveAlarmId(alarmSettings);
                   await context.read<AlarmCubit>().snoozeAlarm(
                     alarmSettings: alarmSettings,
+                    alarmId: alarmId, // ← add this
                     snoozeMinutes: snoozeMinutes,
                   );
                   if (context.mounted) {

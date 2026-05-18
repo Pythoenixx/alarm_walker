@@ -99,6 +99,7 @@ class _AddAlarmScreenState extends State<AddAlarmScreen> {
         soundSettings: _soundSettings,
         dismissSettings: _dismissSettings,
         wakeupCheck: _wakeupCheck,
+        isOnce: false, //to do feature
       );
       if (!oldModel.enabled) {
         await cubit.toggleAlarmEnabled(oldModel, false);
@@ -112,6 +113,7 @@ class _AddAlarmScreenState extends State<AddAlarmScreen> {
         soundSettings: _soundSettings,
         dismissSettings: _dismissSettings,
         wakeupCheck: _wakeupCheck,
+        isOnce: false, //to do feature
       );
     }
     if (mounted) context.pop();
