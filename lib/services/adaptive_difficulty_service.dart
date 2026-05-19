@@ -16,14 +16,44 @@ class AdaptiveDifficultyService {
   static const int minimumLogsRequired = 3;
   static const int latestLogsToAnalyze = 5;
 
+  static Future<AdaptiveDifficultyResult> analyze({
+    required WakeLogRepository wakeRepo,
+    required SettingsCubit settingsCubit,
+    required ProfileCategory category,
+  }) {
+    return _evaluate(
+      wakeRepo: wakeRepo,
+      settingsCubit: settingsCubit,
+      category: category,
+      applyChange: false,
+    );
+  }
+
   static Future<AdaptiveDifficultyResult> evaluateAndApply({
     required WakeLogRepository wakeRepo,
     required SettingsCubit settingsCubit,
     required ProfileCategory category,
+  }) {
+    return _evaluate(
+      wakeRepo: wakeRepo,
+      settingsCubit: settingsCubit,
+      category: category,
+      applyChange: true,
+    );
+  }
+
+  static Future<AdaptiveDifficultyResult> _evaluate({
+    required WakeLogRepository wakeRepo,
+    required SettingsCubit settingsCubit,
+    required ProfileCategory category,
+    required bool applyChange,
   }) async {
     final logs = await wakeRepo.getAllLogs();
     final completedLogs =
-        logs.where((log) => log.disarmDurationMs > 0).take(latestLogsToAnalyze).toList();
+        logs
+            .where((log) => log.disarmDurationMs > 0)
+            .take(latestLogsToAnalyze)
+            .toList();
 
     if (completedLogs.length < minimumLogsRequired) {
       return AdaptiveDifficultyResult.insufficientData(
@@ -61,7 +91,11 @@ class AdaptiveDifficultyService {
       );
     }
 
-    await settingsCubit.setDefaultDismissSettings(next);
+    if (applyChange) {
+      await settingsCubit.setDefaultDismissSettings(next);
+    }
+
+    final actionText = applyChange ? 'updated' : 'recommends';
 
     return AdaptiveDifficultyResult(
       decision: decision,
@@ -70,8 +104,8 @@ class AdaptiveDifficultyService {
       changed: true,
       message:
           decision == AdaptiveDifficultyDecision.madeHarder
-              ? 'Adaptive difficulty increased the default challenge for future alarms.'
-              : 'Adaptive difficulty made the default challenge lighter for future alarms.',
+              ? 'Adaptive difficulty $actionText a firmer default challenge for future alarms.'
+              : 'Adaptive difficulty $actionText a lighter default challenge for future alarms.',
     );
   }
 
