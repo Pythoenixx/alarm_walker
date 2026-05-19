@@ -4,11 +4,14 @@ import 'package:alarm_walker/app_router.dart';
 import 'package:alarm_walker/extensions/context_extensions.dart';
 import 'package:alarm_walker/models/profile_category.dart';
 import 'package:alarm_walker/models/user_profile_model.dart';
+import 'package:alarm_walker/services/profile_cubit.dart';
+import 'package:alarm_walker/services/settings_cubit.dart';
 import 'package:alarm_walker/theme/app_colors.dart';
 import 'package:alarm_walker/theme/app_text_styles.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 class SignUpScreen extends StatefulWidget {
@@ -29,6 +32,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   String? _errorMessage;
+  ProfileCategory _selectedCategory = ProfileCategory.fallback;
 
   @override
   void dispose() {
@@ -43,6 +47,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
     if (!_formKey.currentState!.validate()) {
       return;
     }
+
+    final selectedCategory = _selectedCategory;
+    final profileCubit = context.read<ProfileCubit>();
+    final settingsCubit = context.read<SettingsCubit>();
 
     setState(() {
       _isLoading = true;
@@ -69,7 +77,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         name: _nameController.text.trim(),
         language: 'en',
         theme: 'system',
-        profileCategory: ProfileCategory.fallback,
+        profileCategory: selectedCategory,
       );
 
       await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
@@ -79,6 +87,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
         'theme': profile.theme,
         'profileCategory': profile.profileCategory.name,
       });
+
+      await profileCubit.updateProfile(profile);
+      await settingsCubit.applyProfileCategoryDefaults(selectedCategory);
 
       if (mounted) {
         setState(() => _isLoading = false);
@@ -126,7 +137,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       context.goNamed(AppRoute.login.name);
                     },
                     style: TextButton.styleFrom(
-                      backgroundColor: Colors.blue,
+                      backgroundColor: AppColors.primary,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 24,
@@ -309,6 +320,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           validator: _validateName,
                           isDark: isDark,
                           textInputAction: TextInputAction.next,
+                        ),
+                        const SizedBox(height: 16),
+                        _ProfileCategorySelector(
+                          selectedCategory: _selectedCategory,
+                          onChanged:
+                              (category) =>
+                                  setState(() => _selectedCategory = category),
+                          isDark: isDark,
                         ),
                         const SizedBox(height: 16),
                         _InputField(
@@ -543,6 +562,174 @@ class _SignUpScreenState extends State<SignUpScreen> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfileCategorySelector extends StatelessWidget {
+  final ProfileCategory selectedCategory;
+  final ValueChanged<ProfileCategory> onChanged;
+  final bool isDark;
+
+  const _ProfileCategorySelector({
+    required this.selectedCategory,
+    required this.onChanged,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Profile Category',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color:
+                isDark
+                    ? AppColors.darkBackgroundText
+                    : AppColors.lightBackgroundText,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'Choose a category to apply suitable default alarm difficulty.',
+          style: TextStyle(
+            fontSize: 12,
+            color:
+                isDark
+                    ? AppColors.darkBackgroundText.withValues(alpha: 0.65)
+                    : AppColors.lightBackgroundText.withValues(alpha: 0.65),
+          ),
+        ),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children:
+              ProfileCategory.values.map((category) {
+                final isSelected = selectedCategory == category;
+                return _ProfileCategoryChip(
+                  category: category,
+                  selected: isSelected,
+                  isDark: isDark,
+                  onTap: () => onChanged(category),
+                );
+              }).toList(),
+        ),
+      ],
+    );
+  }
+}
+
+class _ProfileCategoryChip extends StatelessWidget {
+  final ProfileCategory category;
+  final bool selected;
+  final bool isDark;
+  final VoidCallback onTap;
+
+  const _ProfileCategoryChip({
+    required this.category,
+    required this.selected,
+    required this.isDark,
+    required this.onTap,
+  });
+
+  IconData get _icon {
+    return switch (category) {
+      ProfileCategory.child => Icons.child_care_outlined,
+      ProfileCategory.adult => Icons.person_outline,
+      ProfileCategory.senior => Icons.accessibility_new_outlined,
+    };
+  }
+
+  String get _description {
+    return switch (category) {
+      ProfileCategory.child => 'Easy tasks',
+      ProfileCategory.adult => 'Balanced tasks',
+      ProfileCategory.senior => 'Light tasks',
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final foreground =
+        selected
+            ? Colors.white
+            : isDark
+            ? AppColors.darkBackgroundText
+            : AppColors.lightBackgroundText;
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(14),
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        width: 150,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        decoration: BoxDecoration(
+          color:
+              selected
+                  ? AppColors.primary
+                  : isDark
+                  ? AppColors.darkScaffold1.withValues(alpha: 0.5)
+                  : Colors.white.withValues(alpha: 0.8),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color:
+                selected
+                    ? AppColors.primary
+                    : isDark
+                    ? AppColors.darkBorder
+                    : AppColors.lightBlueGrey,
+            width: selected ? 2 : 1,
+          ),
+          boxShadow:
+              selected
+                  ? [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.25),
+                      blurRadius: 12,
+                      offset: const Offset(0, 6),
+                    ),
+                  ]
+                  : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(_icon, color: foreground, size: 22),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    category.label,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: foreground,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
+                  ),
+                  Text(
+                    _description,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: foreground.withValues(alpha: 0.8),
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
