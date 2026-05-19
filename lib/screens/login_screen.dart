@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:alarm_walker/app_router.dart';
 import 'package:alarm_walker/extensions/context_extensions.dart';
+import 'package:alarm_walker/models/profile_category.dart';
 import 'package:alarm_walker/models/user_profile_model.dart';
 import 'package:alarm_walker/models/user_profile_repository.dart';
 import 'package:alarm_walker/theme/app_colors.dart';
@@ -73,7 +74,10 @@ class _LoginScreenState extends State<LoginScreen> {
         userId: user.uid,
         name: data['name'],
         language: data['language'],
-        theme: data['theme'],
+        theme: data['theme'] ?? 'system',
+        profileCategory: ProfileCategory.fromName(
+          data['profileCategory'] as String?,
+        ),
       );
 
       await widget.userRepo.upsertLocalProfile(profile);

@@ -4,6 +4,8 @@ import 'dart:convert';
 
 import 'package:alarm_walker/models/alarm_model.dart';
 import 'package:alarm_walker/models/dismiss_settings.dart';
+import 'package:alarm_walker/models/profile_category.dart';
+import 'package:alarm_walker/models/profile_category_presets.dart';
 import 'package:alarm_walker/models/snooze_settings.dart';
 import 'package:alarm_walker/models/sound_settings.dart';
 import 'package:alarm_walker/services/shared_prefs_with_cache.dart';
@@ -212,6 +214,28 @@ class SettingsCubit extends Cubit<SettingsState> {
       jsonEncode(v.toJson()),
     );
     emit(state.copyWith(defaultSnoozeSettings: v));
+  }
+
+
+  Future<void> applyProfileCategoryDefaults(ProfileCategory category) async {
+    final dismissSettings = ProfileCategoryPresets.dismissSettingsFor(category);
+    final snoozeSettings = ProfileCategoryPresets.snoozeSettingsFor(category);
+
+    await SharedPreferencesWithCache.instance.setString(
+      _K.defaultDismissSettings,
+      jsonEncode(dismissSettings.toJson()),
+    );
+    await SharedPreferencesWithCache.instance.setString(
+      _K.defaultSnoozeSettings,
+      jsonEncode(snoozeSettings.toJson()),
+    );
+
+    emit(
+      state.copyWith(
+        defaultDismissSettings: dismissSettings,
+        defaultSnoozeSettings: snoozeSettings,
+      ),
+    );
   }
 
   Future<void> setWeatherAwareEnabled(bool v) async {

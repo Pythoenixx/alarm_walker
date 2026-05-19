@@ -1,3 +1,4 @@
+import 'package:alarm_walker/models/profile_category.dart';
 import 'package:alarm_walker/models/user_profile_model.dart';
 import 'package:alarm_walker/models/user_profile_repository.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -16,6 +17,7 @@ class ProfileCubit extends Cubit<UserProfile?> {
             name: '',
             language: 'en',
             theme: 'system',
+            profileCategory: ProfileCategory.fallback,
           ),
     );
   }

@@ -8,13 +8,17 @@ class AlarmDatabase {
     final path = '$dir/alarms.db';
     _db = await openDatabase(
       path,
-      version: 15,
+      version: 16,
       onCreate: (db, version) => _createAllTables(db),
       onUpgrade: (db, oldVersion, newVersion) async {
-        await db.execute('DROP TABLE IF EXISTS wake_log');
-        await db.execute('DROP TABLE IF EXISTS alarm');
-        await db.execute('DROP TABLE IF EXISTS user_profile');
-        await _createAllTables(db);
+        if (oldVersion < 16) {
+          await _addColumnIfMissing(
+            db,
+            tableName: 'user_profile',
+            columnName: 'profile_category',
+            definition: "TEXT NOT NULL DEFAULT 'adult'",
+          );
+        }
       },
     );
   }
@@ -25,7 +29,8 @@ class AlarmDatabase {
         user_id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
         language TEXT NOT NULL DEFAULT 'en',
-        theme TEXT NOT NULL DEFAULT 'system'
+        theme TEXT NOT NULL DEFAULT 'system',
+        profile_category TEXT NOT NULL DEFAULT 'adult'
       )
     ''');
     await db.execute('''
@@ -57,6 +62,21 @@ class AlarmDatabase {
         FOREIGN KEY (alarm_id) REFERENCES alarm(alarm_id) ON DELETE CASCADE
       )
     ''');
+  }
+
+
+  static Future<void> _addColumnIfMissing(
+    Database db, {
+    required String tableName,
+    required String columnName,
+    required String definition,
+  }) async {
+    final columns = await db.rawQuery('PRAGMA table_info($tableName)');
+    final exists = columns.any((column) => column['name'] == columnName);
+
+    if (!exists) {
+      await db.execute('ALTER TABLE $tableName ADD COLUMN $columnName $definition');
+    }
   }
 
   static Database get database {

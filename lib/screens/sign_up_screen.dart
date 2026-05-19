@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:alarm_walker/app_router.dart';
 import 'package:alarm_walker/extensions/context_extensions.dart';
+import 'package:alarm_walker/models/profile_category.dart';
 import 'package:alarm_walker/models/user_profile_model.dart';
 import 'package:alarm_walker/theme/app_colors.dart';
 import 'package:alarm_walker/theme/app_text_styles.dart';
@@ -68,6 +69,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         name: _nameController.text.trim(),
         language: 'en',
         theme: 'system',
+        profileCategory: ProfileCategory.fallback,
       );
 
       await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
@@ -75,6 +77,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         'name': profile.name,
         'language': profile.language,
         'theme': profile.theme,
+        'profileCategory': profile.profileCategory.name,
       });
 
       if (mounted) {

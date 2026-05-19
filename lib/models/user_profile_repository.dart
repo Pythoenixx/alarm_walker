@@ -1,3 +1,4 @@
+import 'package:alarm_walker/models/profile_category.dart';
 import 'package:alarm_walker/models/user_profile_db_entry.dart';
 import 'package:alarm_walker/models/user_profile_model.dart';
 import 'package:sqflite/sqflite.dart';
@@ -49,6 +50,7 @@ class UserProfileRepository {
       'name': profile.name,
       'language': profile.language,
       'theme': profile.theme,
+      'profile_category': profile.profileCategory.name,
     }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
@@ -81,7 +83,10 @@ class UserProfileRepository {
       userId: row['user_id'] as String,
       name: row['name'] as String,
       language: row['language'] as String,
-      theme: row['theme'] as String,
+      theme: row['theme'] as String? ?? 'system',
+      profileCategory: ProfileCategory.fromName(
+        row['profile_category'] as String?,
+      ),
     );
   }
 
@@ -96,6 +101,7 @@ class UserProfileRepository {
     name: entry.name,
     language: entry.language,
     theme: entry.theme,
+    profileCategory: entry.profileCategory,
   );
 
   UserProfileDbEntry _toDbEntry(UserProfile model) => UserProfileDbEntry(
@@ -103,5 +109,6 @@ class UserProfileRepository {
     name: model.name,
     language: model.language,
     theme: model.theme,
+    profileCategory: model.profileCategory,
   );
 }
