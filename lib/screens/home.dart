@@ -8,7 +8,6 @@ import 'package:alarm_walker/extensions/context_extensions.dart';
 import 'package:alarm_walker/models/alarm_model.dart';
 import 'package:alarm_walker/services/alarm_cubit.dart';
 import 'package:alarm_walker/services/alarm_permissions.dart';
-import 'package:alarm_walker/services/settings_cubit.dart';
 import 'package:alarm_walker/theme/app_colors.dart';
 import 'package:alarm_walker/theme/app_text_styles.dart';
 import 'package:alarm_walker/widgets/add_button.dart';
@@ -83,33 +82,23 @@ class _HomeState extends State<Home> {
     final payload = alarmRinging.payload;
     final dbAlarmId = payload == null ? null : int.tryParse(payload);
 
-    AlarmModel? alarmModel;
-
-    if (dbAlarmId != null) {
-      alarmModel = await alarmCubit.alarmRepo.getAlarmById(dbAlarmId);
+    if (dbAlarmId == null) {
+      debugPrint(
+        '⚠️ Ringing alarm has invalid payload. Stopping orphan alarm.',
+      );
+      await alarmCubit.stopRuntimeAlarm(alarmRinging.id);
+      return;
     }
+
+    final alarmModel = await alarmCubit.alarmRepo.getAlarmById(dbAlarmId);
 
     if (!mounted) return;
 
     if (alarmModel == null) {
       debugPrint(
-        '⚠️ Alarm ID ${alarmRinging.id} not found in DB. '
-        'Using fallback settings. Wake log may not be recorded.',
+        '⚠️ Alarm ID $dbAlarmId not found in DB. Stopping orphan alarm.',
       );
-
-      // Fallback only for showing alarm screen.
-      // If there is no DB alarm model, ActiveAlarmRef cannot be safely created.
-      final fallbackModel = AlarmModel.fromSettings(
-        context.read<SettingsCubit>().state,
-      );
-
-      unawaited(
-        context.pushNamed(
-          AppRoute.alarmGate.name,
-          extra: (alarmRinging, fallbackModel),
-        ),
-      );
-
+      await alarmCubit.stopRuntimeAlarm(alarmRinging.id);
       return;
     }
 

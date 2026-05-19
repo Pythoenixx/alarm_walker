@@ -496,7 +496,4 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
     }
     await _loadAlarms();
   }
-
-  static int resolveAlarmId(AlarmSettings alarmSettings) =>
-      int.tryParse(alarmSettings.payload ?? '') ?? alarmSettings.id;
 }
