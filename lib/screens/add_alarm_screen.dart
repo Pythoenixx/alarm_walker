@@ -59,9 +59,11 @@ class _AddAlarmScreenState extends State<AddAlarmScreen> {
         DateTime.friday,
         DateTime.saturday,
       };
-      _snoozeSettings = const SnoozeSettings();
-      _soundSettings = const SoundSettings();
-      _dismissSettings = const DismissSettings();
+      final appDefaults = context.read<SettingsCubit>().state;
+
+      _snoozeSettings = appDefaults.defaultSnoozeSettings;
+      _soundSettings = appDefaults.defaultSoundSettings;
+      _dismissSettings = appDefaults.defaultDismissSettings;
       _wakeupCheck = false;
     }
   }
