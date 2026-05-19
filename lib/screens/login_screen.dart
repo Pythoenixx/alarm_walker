@@ -5,6 +5,7 @@ import 'package:alarm_walker/extensions/context_extensions.dart';
 import 'package:alarm_walker/models/profile_category.dart';
 import 'package:alarm_walker/models/user_profile_model.dart';
 import 'package:alarm_walker/models/user_profile_repository.dart';
+import 'package:alarm_walker/services/profile_category_sync_service.dart';
 import 'package:alarm_walker/theme/app_colors.dart';
 import 'package:alarm_walker/theme/app_text_styles.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -69,15 +70,20 @@ class _LoginScreenState extends State<LoginScreen> {
       }
 
       final data = snap.data()!;
+      final localProfile = await widget.userRepo.getLocalProfile();
+      final syncedCategory = await ProfileCategorySyncService.syncOrBackfill(
+        userId: user.uid,
+        localCategory:
+            localProfile?.profileCategory ?? ProfileCategory.fallback,
+        cloudData: data,
+      );
 
       final profile = UserProfile(
         userId: user.uid,
         name: data['name'],
         language: data['language'],
         theme: data['theme'] ?? 'system',
-        profileCategory: ProfileCategory.fromName(
-          data['profileCategory'] as String?,
-        ),
+        profileCategory: syncedCategory,
       );
 
       await widget.userRepo.upsertLocalProfile(profile);

@@ -5,6 +5,7 @@ import 'package:alarm_walker/extensions/context_extensions.dart';
 import 'package:alarm_walker/models/profile_category.dart';
 import 'package:alarm_walker/models/user_profile_model.dart';
 import 'package:alarm_walker/models/user_profile_repository.dart';
+import 'package:alarm_walker/services/profile_category_sync_service.dart';
 import 'package:alarm_walker/services/settings_cubit.dart';
 import 'package:alarm_walker/theme/app_colors.dart';
 import 'package:alarm_walker/theme/app_text_styles.dart';
@@ -37,7 +38,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _loadProfile() async {
     final uid = _user?.uid;
     if (uid == null) return;
-    final profile = await widget.userRepo.getProfile(uid);
+
+    var profile =
+        await widget.userRepo.getProfile(uid) ??
+        UserProfile(
+          userId: uid,
+          name: _user?.displayName ?? 'User',
+          language: 'en',
+          theme: 'system',
+          profileCategory: ProfileCategory.fallback,
+        );
+
+    final syncedCategory = await ProfileCategorySyncService.syncOrBackfill(
+      userId: uid,
+      localCategory: profile.profileCategory,
+    );
+
+    if (syncedCategory != profile.profileCategory) {
+      profile = profile.copyWith(profileCategory: syncedCategory);
+      await widget.userRepo.saveProfile(profile);
+    }
+
     if (!mounted) return;
     setState(() => _profile = profile);
   }
@@ -219,6 +240,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
 
     await widget.userRepo.saveProfile(updated);
+    final syncedToCloud = await ProfileCategorySyncService.saveCategory(
+      userId: updated.userId,
+      category: selectedCategory,
+    );
     await settingsCubit.applyProfileCategoryDefaults(selectedCategory);
 
     if (!mounted) return;
@@ -228,7 +253,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          '${selectedCategory.label} category saved. Recommended defaults applied for new alarms.',
+          syncedToCloud
+              ? '${selectedCategory.label} category saved. Recommended defaults applied for new alarms.'
+              : '${selectedCategory.label} category saved locally. Cloud sync will retry when you update it again.',
         ),
       ),
     );

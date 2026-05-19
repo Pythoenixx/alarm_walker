@@ -3,11 +3,13 @@ import 'package:alarm_walker/extensions/context_extensions.dart';
 import 'package:alarm_walker/models/profile_category.dart';
 import 'package:alarm_walker/models/user_profile_model.dart';
 import 'package:alarm_walker/services/onboarding_service.dart';
+import 'package:alarm_walker/services/profile_category_sync_service.dart';
 import 'package:alarm_walker/services/profile_cubit.dart';
 import 'package:alarm_walker/services/settings_cubit.dart';
 import 'package:alarm_walker/theme/app_colors.dart';
 import 'package:alarm_walker/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
@@ -61,6 +63,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     await profileCubit.updateProfile(
       currentProfile.copyWith(profileCategory: _selectedCategory),
     );
+
+    final signedInUser = FirebaseAuth.instance.currentUser;
+    if (signedInUser != null) {
+      await ProfileCategorySyncService.saveCategory(
+        userId: signedInUser.uid,
+        category: _selectedCategory,
+      );
+    }
+
     await settingsCubit.applyProfileCategoryDefaults(_selectedCategory);
     await OnboardingService.markCompleted();
 
