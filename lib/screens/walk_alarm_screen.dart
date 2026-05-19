@@ -45,6 +45,8 @@ class _WalkAlarmScreenState extends State<WalkAlarmScreen>
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
 
+  bool _isDismissing = false;
+
   @override
   void initState() {
     super.initState();
@@ -203,6 +205,9 @@ class _WalkAlarmScreenState extends State<WalkAlarmScreen>
   }
 
   Future<void> _dismissAlarm() async {
+    if (_isDismissing) return;
+    _isDismissing = true;
+
     await dismissActiveAlarmAndClose(
       context: context,
       alarmSettings: widget.alarmSettings,

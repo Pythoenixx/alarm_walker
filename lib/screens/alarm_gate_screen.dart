@@ -7,9 +7,11 @@ import 'package:alarm_walker/extensions/context_extensions.dart';
 import 'package:alarm_walker/models/alarm_model.dart';
 import 'package:alarm_walker/services/alarm_cubit.dart';
 import 'package:alarm_walker/services/alarm_dismiss_helper.dart';
+import 'package:alarm_walker/services/settings_cubit.dart';
 import 'package:alarm_walker/services/shared_prefs_with_cache.dart';
 import 'package:alarm_walker/theme/app_colors.dart';
 import 'package:alarm_walker/theme/app_text_styles.dart';
+import 'package:alarm_walker/widgets/weather_alarm_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -256,6 +258,15 @@ class _AlarmGateScreenState extends State<AlarmGateScreen>
                     snoozeConfirmAnim: _snoozeConfirmAnim,
                     isDark: isDark,
                   ),
+                ),
+
+                BlocSelector<SettingsCubit, SettingsState, bool>(
+                  selector: (state) => state.weatherAwareEnabled,
+                  builder:
+                      (_, enabled) =>
+                          enabled
+                              ? const WeatherAlarmCard()
+                              : const SizedBox.shrink(),
                 ),
 
                 // ── Snooze button (80%) ────────────────────────────────────
