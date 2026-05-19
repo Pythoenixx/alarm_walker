@@ -1,10 +1,12 @@
 import 'dart:async';
 
+import 'package:alarm/alarm.dart';
 import 'package:alarm/model/alarm_settings.dart';
 import 'package:alarm_walker/app_router.dart';
 import 'package:alarm_walker/extensions/context_extensions.dart';
 import 'package:alarm_walker/models/alarm_model.dart';
 import 'package:alarm_walker/services/alarm_cubit.dart';
+import 'package:alarm_walker/services/alarm_dismiss_helper.dart';
 import 'package:alarm_walker/services/shared_prefs_with_cache.dart';
 import 'package:alarm_walker/theme/app_colors.dart';
 import 'package:alarm_walker/theme/app_text_styles.dart';
@@ -37,6 +39,11 @@ class _AlarmGateScreenState extends State<AlarmGateScreen>
   Timer? _countdownTimer;
   Duration _remaining = Duration.zero;
 
+  ActiveAlarmRef get _alarmRef => ActiveAlarmRef.from(
+    alarmSettings: widget.alarmSettings,
+    alarmModel: widget.alarmModel,
+  );
+
   // ── animations ─────────────────────────────────────────────────────────────
   late final AnimationController _pulseCtrl;
   late final Animation<double> _pulseAnim;
@@ -49,6 +56,8 @@ class _AlarmGateScreenState extends State<AlarmGateScreen>
   static const double _dragPerStep = 8.0; // px per 1-minute step
   static const int _minSnooze = 1;
   static const int _maxSnooze = 60;
+
+  bool _isProcessingDismiss = false;
 
   AlarmModel get _m => widget.alarmModel;
   bool get _canSnooze =>
@@ -101,7 +110,7 @@ class _AlarmGateScreenState extends State<AlarmGateScreen>
     unawaited(HapticFeedback.mediumImpact());
     await context.read<AlarmCubit>().snoozeAlarm(
       alarmSettings: widget.alarmSettings,
-      alarmId: _m.alarmId!,
+      alarmRef: _alarmRef,
       snoozeMinutes: _snoozeDuration,
     );
     _snoozeConfirmCtrl.forward(from: 0);
@@ -140,25 +149,37 @@ class _AlarmGateScreenState extends State<AlarmGateScreen>
   Future<void> _cancelSnooze() async {
     unawaited(HapticFeedback.mediumImpact());
     _countdownTimer?.cancel();
-    await context.read<AlarmCubit>().cancelSnooze(widget.alarmSettings.id);
+    await context.read<AlarmCubit>().cancelSnooze(alarmRef: _alarmRef);
     _pulseCtrl.repeat(reverse: true);
     setState(() {
       _snoozed = false;
       _remaining = Duration.zero;
-      _snoozeCount--; // undo the count since it was cancelled
+      _snoozeCount = (_snoozeCount - 1).clamp(
+        0,
+        999,
+      ); // undo the count since it was cancelled
     });
   }
 
   // ── dismiss logic ──────────────────────────────────────────────────────────
 
   Future<void> _dismiss() async {
+    if (_isProcessingDismiss) return;
+
+    _isProcessingDismiss = true;
+
     unawaited(HapticFeedback.heavyImpact());
     _countdownTimer?.cancel();
 
     final mode = _m.dismissSettings.mode;
+
     if (mode == AlarmDisarmMode.normal) {
-      await context.read<AlarmCubit>().stopAlarm(widget.alarmSettings.id);
-      if (mounted) context.pop();
+      await dismissActiveAlarmAndClose(
+        context: context,
+        alarmSettings: widget.alarmSettings,
+        alarmModel: widget.alarmModel,
+      );
+
       return;
     }
 
@@ -167,15 +188,15 @@ class _AlarmGateScreenState extends State<AlarmGateScreen>
       AlarmDisarmMode.shake => AppRoute.shakeAlarm.name,
       AlarmDisarmMode.retype => AppRoute.retypeAlarm.name,
       AlarmDisarmMode.walk => AppRoute.walkAlarm.name,
-      AlarmDisarmMode.normal => null, // handled above
+      AlarmDisarmMode.normal => null,
     };
 
-    if (routeName != null && mounted) {
-      context.pushReplacementNamed(
-        routeName,
-        extra: (widget.alarmSettings, widget.alarmModel),
-      );
-    }
+    if (!mounted || routeName == null) return;
+
+    context.pushReplacementNamed(
+      routeName,
+      extra: (widget.alarmSettings, widget.alarmModel),
+    );
   }
 
   // ── drag handlers ──────────────────────────────────────────────────────────

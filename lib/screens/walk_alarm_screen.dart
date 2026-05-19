@@ -3,20 +3,23 @@ import 'dart:async';
 import 'package:alarm/alarm.dart';
 import 'package:alarm_walker/extensions/context_extensions.dart';
 import 'package:alarm_walker/models/alarm_model.dart';
-import 'package:alarm_walker/services/alarm_cubit.dart';
+import 'package:alarm_walker/services/alarm_dismiss_helper.dart';
 import 'package:alarm_walker/theme/app_colors.dart';
 import 'package:alarm_walker/theme/app_text_styles.dart';
 import 'package:alarm_walker/widgets/stop_alarm.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
 import 'package:pedometer/pedometer.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 
 class WalkAlarmScreen extends StatefulWidget {
   final AlarmSettings alarmSettings;
-  const WalkAlarmScreen({super.key, required this.alarmSettings});
+  final AlarmModel alarmModel;
+  const WalkAlarmScreen({
+    super.key,
+    required this.alarmSettings,
+    required this.alarmModel,
+  });
 
   @override
   State<WalkAlarmScreen> createState() => _WalkAlarmScreenState();
@@ -200,18 +203,11 @@ class _WalkAlarmScreenState extends State<WalkAlarmScreen>
   }
 
   Future<void> _dismissAlarm() async {
-    final alarmCubit = context.read<AlarmCubit>();
-    final ctx = context;
-    final alarmId = AlarmCubit.resolveAlarmId(widget.alarmSettings);
-    await alarmCubit.completeAlarm(
-      alarmId: alarmId,
-      result: AlarmResult.success,
-      disarmMode: AlarmDisarmMode.walk,
+    await dismissActiveAlarmAndClose(
+      context: context,
+      alarmSettings: widget.alarmSettings,
+      alarmModel: widget.alarmModel,
     );
-    await alarmCubit.stopAlarm(widget.alarmSettings.id);
-    if (ctx.mounted) {
-      ctx.pop();
-    }
   }
 
   Future<void> _openSettings() async {

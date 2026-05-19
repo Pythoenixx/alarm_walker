@@ -7,20 +7,50 @@ import 'package:alarm_walker/models/dismiss_settings.dart';
 import 'package:alarm_walker/models/snooze_settings.dart';
 import 'package:alarm_walker/models/sound_settings.dart';
 import 'package:alarm_walker/models/user_profile_repository.dart';
-import 'package:alarm_walker/models/wake_log_model.dart';
 import 'package:alarm_walker/models/wake_log_repository.dart';
 import 'package:alarm_walker/services/shared_prefs_with_cache.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+class ActiveAlarmRef {
+  final int dbAlarmId;
+  final int runtimeAlarmId;
+
+  const ActiveAlarmRef({required this.dbAlarmId, required this.runtimeAlarmId});
+
+  factory ActiveAlarmRef.from({
+    required AlarmSettings alarmSettings,
+    required AlarmModel alarmModel,
+  }) {
+    final dbIdFromModel = alarmModel.alarmId;
+    final dbIdFromPayload = int.tryParse(alarmSettings.payload ?? '');
+
+    if (dbIdFromModel == null) {
+      throw StateError('AlarmModel.alarmId is null.');
+    }
+
+    if (dbIdFromPayload != null && dbIdFromPayload != dbIdFromModel) {
+      throw StateError(
+        'Alarm ID mismatch. Payload DB ID: $dbIdFromPayload, Model DB ID: $dbIdFromModel',
+      );
+    }
+
+    return ActiveAlarmRef(
+      dbAlarmId: dbIdFromModel,
+      runtimeAlarmId: alarmSettings.id,
+    );
+  }
+}
+
 class AlarmCubit extends Cubit<List<AlarmModel>> {
   final UserProfileRepository userRepo;
   final AlarmRepository alarmRepo;
   final WakeLogRepository wakeLogRepo;
-
   late final Stopwatch _ringStopwatch;
-  int _snoozeCount = 0;
+
+  static String _logIdKey(int alarmId) => 'wake_log_id_$alarmId';
+  static String _snoozeCountKey(int alarmId) => 'snooze_count_$alarmId';
 
   AlarmCubit({
     required this.alarmRepo,
@@ -57,27 +87,7 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
       }
     }
 
-    final updatedModels =
-        models.map((model) {
-          // return AlarmModel(
-          //   timeOfDay: model.timeOfDay,
-          //   days: model.days,
-          //   enabled: model.enabled,
-          //   body: model.body,
-          //   alarmSettings: alarmSettingsSet[model.timeOfDay] ?? [],
-          // );
-          return AlarmModel(
-            alarmId: model.alarmId,
-            title: model.title,
-            time: model.time,
-            days: model.days,
-            snoozeSettings: model.snoozeSettings,
-            soundSettings: model.soundSettings,
-            dismissSettings: model.dismissSettings,
-          );
-        }).toList();
-
-    emit(updatedModels);
+    emit(models);
   }
 
   Future<AlarmSettings?> _setAlarm(
@@ -87,31 +97,29 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
     required AlarmModel alarmModel,
   }) async {
     try {
-      final vibrate =
-          (SharedPreferencesWithCache.instance.get<int>('vibrationEnabled') ??
-              1) ==
-          1;
-      final fadeIn =
-          (SharedPreferencesWithCache.instance.get<int>('fadeInAlarm') ?? 0) ==
-          1;
-      final volume =
-          SharedPreferencesWithCache.instance.get<double>('alarmVolume') ?? 1.0;
-      final audioPath =
-          SharedPreferencesWithCache.instance.get<String>('alarmAudioPath') ??
-          'assets/alarm_ringtone.mp3';
+      final sound = alarmModel.soundSettings;
+
       final volumeSettings =
-          fadeIn
-              ? VolumeSettings.fade(
-                fadeDuration: const Duration(seconds: 60),
-                volume: volume,
-                volumeEnforced: true,
-              )
-              : VolumeSettings.fixed(volume: volume, volumeEnforced: true);
+          sound.overrideVolume
+              ? (sound.gradualVolumeIncrease
+                  ? VolumeSettings.fade(
+                    fadeDuration: Duration(
+                      seconds: sound.gradualIncreaseDurationSeconds,
+                    ),
+                    volume: sound.volume,
+                    volumeEnforced: !sound.allowMidAlarmVolumeChange,
+                  )
+                  : VolumeSettings.fixed(
+                    volume: sound.volume,
+                    volumeEnforced: !sound.allowMidAlarmVolumeChange,
+                  ))
+              : const VolumeSettings.fixed();
+
       final alarmSetting = AlarmSettings(
         id: id,
         dateTime: scheduledDate,
-        assetAudioPath: audioPath,
-        vibrate: vibrate,
+        assetAudioPath: sound.soundPath ?? 'assets/alarm_ringtone.mp3',
+        vibrate: sound.vibrate,
         volumeSettings: volumeSettings,
         androidStopAlarmOnTermination: false,
         notificationSettings: NotificationSettings(
@@ -122,12 +130,11 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
         ),
         payload: alarmModel.alarmId.toString(),
       );
+
       final alarmSet = await Alarm.set(alarmSettings: alarmSetting);
-      if (alarmSet) {
-        return alarmSetting;
-      }
+      if (alarmSet) return alarmSetting;
     } catch (e) {
-      debugPrint("Error setting alarm: $e");
+      debugPrint('Error setting alarm: $e');
     }
     return null;
   }
@@ -149,7 +156,7 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
         timeOfDay.hour,
         timeOfDay.minute,
       ).add(Duration(days: i));
-
+      // if next day isnt toggled in the alarm then continue
       if (!days.contains(dateTime.weekday)) continue;
       if (i == 0 &&
           (now.hour > timeOfDay.hour ||
@@ -178,34 +185,24 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
     }
   }
 
-  Future<void> snoozeAlarm({
-    required AlarmSettings alarmSettings,
-    int snoozeMinutes = 5,
-  }) async {
-    await Alarm.set(
-      alarmSettings: alarmSettings.copyWith(
-        dateTime: DateTime.now().add(Duration(minutes: snoozeMinutes)),
-      ),
-    );
-  }
-
   Future<void> setPeriodicAlarms({
     int? alarmId,
     required TimeOfDay timeOfDay,
     List<int> days = const [
+      DateTime.sunday,
       DateTime.monday,
       DateTime.tuesday,
       DateTime.wednesday,
       DateTime.thursday,
       DateTime.friday,
       DateTime.saturday,
-      DateTime.sunday,
     ],
     String title = '',
     required SnoozeSettings snoozeSettings,
     required SoundSettings soundSettings,
     required DismissSettings dismissSettings,
     required bool wakeupCheck,
+    required bool isOnce,
   }) async {
     final firebaseUid = FirebaseAuth.instance.currentUser?.uid;
     final uid = firebaseUid ?? 'local';
@@ -230,19 +227,12 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
       soundSettings: soundSettings,
       dismissSettings: dismissSettings,
       wakeupCheck: wakeupCheck,
+      isOnce: isOnce,
     );
 
     final modelId = await alarmRepo.saveOrUpdate(updatedAlarm, uid);
 
-    final modelWithId = AlarmModel(
-      alarmId: modelId,
-      title: updatedAlarm.title,
-      time: updatedAlarm.time,
-      days: updatedAlarm.days,
-      snoozeSettings: updatedAlarm.snoozeSettings,
-      soundSettings: updatedAlarm.soundSettings,
-      dismissSettings: updatedAlarm.dismissSettings,
-    );
+    final modelWithId = updatedAlarm.copyWith(alarmId: modelId);
 
     if (enabled) {
       final existing = await Alarm.getAlarms();
@@ -267,34 +257,136 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
     }
   }
 
-  Future<void> completeAlarm({
-    required int alarmId,
-    required AlarmResult result,
+  /// Called from _ringingAlarmsChanged, before pushing AlarmGateScreen.
+  Future<int> startWakeSession({
+    required ActiveAlarmRef alarmRef,
     required AlarmDisarmMode disarmMode,
   }) async {
-    final durationMs = _ringStopwatch.elapsedMilliseconds;
-    final model = await alarmRepo.getAlarmById(alarmId);
-    final modelTime = model?.time;
-    final int durationInMilliseconds =
-        (modelTime != null)
-            ? DateTime.now().difference(toDateTime(modelTime)).inMilliseconds
-            : durationMs;
-    await wakeLogRepo.insertWakeLog(
-      WakeLog(
-        alarmId: alarmId,
-        wakeTime: DateTime.now(),
-        snoozeCount: _snoozeCount,
-        success: result == AlarmResult.success,
-        disarmMode: disarmMode,
-        disarmDurationMs: durationInMilliseconds,
-      ),
+    final dbAlarmId = alarmRef.dbAlarmId;
+
+    _ringStopwatch
+      ..reset()
+      ..start();
+
+    final existingLogId = SharedPreferencesWithCache.instance.get<int>(
+      _logIdKey(dbAlarmId),
     );
 
-    _ringStopwatch.reset();
-    _snoozeCount = 0;
+    if (existingLogId != null) return existingLogId;
+
+    final logId = await wakeLogRepo.startLog(
+      alarmId: dbAlarmId,
+      disarmMode: disarmMode,
+    );
+
+    await SharedPreferencesWithCache.instance.setInt(
+      _logIdKey(dbAlarmId),
+      logId,
+    );
+
+    await SharedPreferencesWithCache.instance.setInt(
+      _snoozeCountKey(dbAlarmId),
+      0,
+    );
+
+    return logId;
   }
 
-  Future<void> stopAlarm(int id) async {
+  Future<void> snoozeAlarm({
+    required AlarmSettings alarmSettings,
+    required ActiveAlarmRef alarmRef,
+    int snoozeMinutes = 5,
+  }) async {
+    final dbAlarmId = alarmRef.dbAlarmId;
+
+    final logId = SharedPreferencesWithCache.instance.get<int>(
+      _logIdKey(dbAlarmId),
+    );
+
+    if (logId != null) {
+      await wakeLogRepo.incrementSnooze(logId);
+    }
+
+    final current =
+        SharedPreferencesWithCache.instance.get<int>(
+          _snoozeCountKey(dbAlarmId),
+        ) ??
+        0;
+
+    await SharedPreferencesWithCache.instance.setInt(
+      _snoozeCountKey(dbAlarmId),
+      current + 1,
+    );
+
+    await Alarm.set(
+      alarmSettings: alarmSettings.copyWith(
+        dateTime: DateTime.now().add(Duration(minutes: snoozeMinutes)),
+      ),
+    );
+  }
+
+  Future<void> cancelSnooze({required ActiveAlarmRef alarmRef}) async {
+    final dbAlarmId = alarmRef.dbAlarmId;
+    final runtimeAlarmId = alarmRef.runtimeAlarmId;
+
+    await Alarm.stop(runtimeAlarmId);
+
+    final current =
+        SharedPreferencesWithCache.instance.get<int>(
+          _snoozeCountKey(dbAlarmId),
+        ) ??
+        0;
+
+    if (current <= 0) return;
+
+    await SharedPreferencesWithCache.instance.setInt(
+      _snoozeCountKey(dbAlarmId),
+      current - 1,
+    );
+
+    final logId = SharedPreferencesWithCache.instance.get<int>(
+      _logIdKey(dbAlarmId),
+    );
+
+    if (logId != null) {
+      await wakeLogRepo.decrementSnooze(logId);
+    }
+  }
+
+  Future<void> finishRingingAlarm({
+    required ActiveAlarmRef alarmRef,
+    required AlarmResult result,
+  }) async {
+    final dbAlarmId = alarmRef.dbAlarmId;
+    final runtimeAlarmId = alarmRef.runtimeAlarmId;
+
+    await Alarm.stop(runtimeAlarmId);
+
+    final durationMs = _ringStopwatch.elapsedMilliseconds;
+
+    _ringStopwatch
+      ..stop()
+      ..reset();
+
+    final logId = SharedPreferencesWithCache.instance.get<int>(
+      _logIdKey(dbAlarmId),
+    );
+
+    if (logId != null) {
+      await wakeLogRepo.completeLog(
+        logId: logId,
+        success: result == AlarmResult.success,
+        disarmDurationMs: durationMs,
+      );
+    }
+
+    await SharedPreferencesWithCache.instance.remove(_logIdKey(dbAlarmId));
+    await SharedPreferencesWithCache.instance.remove(
+      _snoozeCountKey(dbAlarmId),
+    );
+  }
+
+  Future<void> stopRuntimeAlarm(int id) async {
     await Alarm.stop(id);
     // await Alarm.stopAll(); //debug
   }
@@ -314,7 +406,7 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
     for (final alarm in runtimeAlarms) {
       final alarmTime = TimeOfDay.fromDateTime(alarm.dateTime);
       if (alarmTime == alarmModel.time) {
-        await stopAlarm(alarm.id);
+        await stopRuntimeAlarm(alarm.id);
       }
     }
 
@@ -341,7 +433,7 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
         // maybe better dpt store and match guna id lebih better drpd check sama ada time sama tak dgn alarm model?
         final alarmTime = TimeOfDay.fromDateTime(alarm.dateTime);
         if (alarmTime == alarmModel.time) {
-          await stopAlarm(alarm.id);
+          await stopRuntimeAlarm(alarm.id);
         }
       }
     } else {
@@ -375,7 +467,7 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
       final alarmTime = TimeOfDay.fromDateTime(alarm.dateTime);
 
       if (alarmTime == alarmModel.time) {
-        await stopAlarm(alarm.id);
+        await stopRuntimeAlarm(alarm.id);
       } else {
         remaining.putIfAbsent(alarmTime, () => []).add(alarm);
       }
@@ -397,34 +489,6 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
     emit(updated);
   }
 
-  Future<void> updateVibrationForAll(bool vibrate) async {
-    final alarms = await Alarm.getAlarms();
-    for (final alarm in alarms) {
-      await Alarm.set(alarmSettings: alarm.copyWith(vibrate: vibrate));
-    }
-    await _loadAlarms();
-  }
-
-  Future<void> updateVolumeSettingsForAll({
-    required bool fadeIn,
-    required double volume,
-  }) async {
-    final alarms = await Alarm.getAlarms();
-    final volumeSettings =
-        fadeIn
-            ? VolumeSettings.fade(
-              fadeDuration: const Duration(seconds: 5),
-              volume: volume,
-            )
-            : VolumeSettings.fixed(volume: volume);
-    for (final alarm in alarms) {
-      await Alarm.set(
-        alarmSettings: alarm.copyWith(volumeSettings: volumeSettings),
-      );
-    }
-    await _loadAlarms();
-  }
-
   Future<void> updateAudioPathForAll(String audioPath) async {
     final alarms = await Alarm.getAlarms();
     for (final alarm in alarms) {
@@ -432,4 +496,7 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
     }
     await _loadAlarms();
   }
+
+  static int resolveAlarmId(AlarmSettings alarmSettings) =>
+      int.tryParse(alarmSettings.payload ?? '') ?? alarmSettings.id;
 }

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:alarm_walker/models/alarm_db_entry.dart';
 import 'package:alarm_walker/models/alarm_model.dart';
 import 'package:flutter/material.dart';
@@ -76,10 +78,9 @@ class AlarmRepository {
     List<int> days,
     bool enabled,
   ) async {
-    // Update alarm
     await db.update(
       'alarm',
-      {'enabled': enabled ? 1 : 0},
+      {'days': jsonEncode(days), 'enabled': enabled ? 1 : 0},
       where: 'alarm_id = ?',
       whereArgs: [alarmId],
     );

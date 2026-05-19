@@ -4,17 +4,21 @@ import 'dart:math';
 import 'package:alarm/alarm.dart';
 import 'package:alarm_walker/extensions/context_extensions.dart';
 import 'package:alarm_walker/models/alarm_model.dart';
-import 'package:alarm_walker/services/alarm_cubit.dart';
+import 'package:alarm_walker/services/alarm_dismiss_helper.dart';
 import 'package:alarm_walker/theme/app_colors.dart';
 import 'package:alarm_walker/theme/app_text_styles.dart';
 import 'package:alarm_walker/widgets/stop_alarm.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
 
 class RetypeAlarmScreen extends StatefulWidget {
   final AlarmSettings alarmSettings;
-  const RetypeAlarmScreen({super.key, required this.alarmSettings});
+  final AlarmModel alarmModel;
+
+  const RetypeAlarmScreen({
+    super.key,
+    required this.alarmSettings,
+    required this.alarmModel,
+  });
 
   @override
   State<RetypeAlarmScreen> createState() => _RetypeAlarmScreenState();
@@ -66,9 +70,6 @@ class _RetypeAlarmScreenState extends State<RetypeAlarmScreen> {
     final input = _controller.text.trim();
 
     if (input == _targetSentence) {
-      final alarmCubit = context.read<AlarmCubit>();
-      final ctx = context;
-      final alarmId = AlarmCubit.resolveAlarmId(widget.alarmSettings);
       setState(() {
         _isCorrect = true;
         _error = null;
@@ -76,15 +77,14 @@ class _RetypeAlarmScreenState extends State<RetypeAlarmScreen> {
 
       // Small delay to show success state
       await Future.delayed(const Duration(milliseconds: 300));
-      await alarmCubit.completeAlarm(
-        alarmId: alarmId,
-        result: AlarmResult.success,
-        disarmMode: AlarmDisarmMode.retype,
+
+      if (!mounted) return;
+
+      await dismissActiveAlarmAndClose(
+        context: context,
+        alarmSettings: widget.alarmSettings,
+        alarmModel: widget.alarmModel,
       );
-      await alarmCubit.stopAlarm(widget.alarmSettings.id);
-      if (ctx.mounted) {
-        ctx.pop();
-      }
     } else {
       setState(() {
         _error = 'Incorrect! Please type the sentence exactly as shown.';

@@ -118,6 +118,7 @@ GoRouter createRouterWithStream(
         name: AppRoute.alarmGate.name,
         builder: (context, state) {
           final (alarm, model) = state.extra! as (AlarmSettings, AlarmModel);
+
           return AlarmGateScreen(alarmSettings: alarm, alarmModel: model);
         },
       ),
@@ -126,11 +127,8 @@ GoRouter createRouterWithStream(
         name: AppRoute.mathAlarm.name,
         builder: (context, state) {
           final (alarm, model) = state.extra! as (AlarmSettings, AlarmModel);
-          return MathAlarmScreen(
-            alarmSettings: alarm,
-            dismissSettings: model.dismissSettings,
-            snoozeSettings: model.snoozeSettings,
-          );
+
+          return MathAlarmScreen(alarmSettings: alarm, alarmModel: model);
         },
       ),
       GoRoute(
@@ -138,11 +136,8 @@ GoRouter createRouterWithStream(
         name: AppRoute.shakeAlarm.name,
         builder: (context, state) {
           final (alarm, model) = state.extra! as (AlarmSettings, AlarmModel);
-          return ShakeAlarmScreen(
-            alarmSettings: alarm,
-            //dismissSettings: model.dismissSettings,
-            //snoozeSettings: model.snoozeSettings,
-          );
+
+          return ShakeAlarmScreen(alarmSettings: alarm, alarmModel: model);
         },
       ),
       GoRoute(
@@ -150,11 +145,8 @@ GoRouter createRouterWithStream(
         name: AppRoute.retypeAlarm.name,
         builder: (context, state) {
           final (alarm, model) = state.extra! as (AlarmSettings, AlarmModel);
-          return RetypeAlarmScreen(
-            alarmSettings: alarm,
-            //dismissSettings: model.dismissSettings,
-            //snoozeSettings: model.snoozeSettings,
-          );
+
+          return RetypeAlarmScreen(alarmSettings: alarm, alarmModel: model);
         },
       ),
       GoRoute(
@@ -162,11 +154,8 @@ GoRouter createRouterWithStream(
         name: AppRoute.walkAlarm.name,
         builder: (context, state) {
           final (alarm, model) = state.extra! as (AlarmSettings, AlarmModel);
-          return WalkAlarmScreen(
-            alarmSettings: alarm,
-            //dismissSettings: model.dismissSettings,
-            //snoozeSettings: model.snoozeSettings,
-          );
+
+          return WalkAlarmScreen(alarmSettings: alarm, alarmModel: model);
         },
       ),
     ],

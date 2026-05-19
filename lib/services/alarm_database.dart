@@ -8,7 +8,7 @@ class AlarmDatabase {
     final path = '$dir/alarms.db';
     _db = await openDatabase(
       path,
-      version: 14,
+      version: 15,
       onCreate: (db, version) => _createAllTables(db),
       onUpgrade: (db, oldVersion, newVersion) async {
         await db.execute('DROP TABLE IF EXISTS wake_log');

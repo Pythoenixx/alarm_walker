@@ -5,14 +5,12 @@ import 'package:alarm/model/alarm_settings.dart';
 import 'package:alarm_walker/extensions/context_extensions.dart';
 import 'package:alarm_walker/models/alarm_model.dart';
 import 'package:alarm_walker/models/dismiss_settings.dart';
-import 'package:alarm_walker/services/alarm_cubit.dart';
+import 'package:alarm_walker/services/alarm_dismiss_helper.dart';
 import 'package:alarm_walker/theme/app_colors.dart';
 import 'package:alarm_walker/theme/app_text_styles.dart';
 import 'package:alarm_walker/widgets/stop_alarm.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Data
@@ -43,15 +41,13 @@ class _Problem {
 
   static _Problem generate({required int difficulty}) {
     final rnd = Random();
-    // Difficulty gates which operations appear and the number range.
-    // 1 = easy  (+ / −, small numbers)
-    // 2 = medium(+ / − / ×, medium numbers)
-    // 3 = hard  (all ops, large numbers)
+
     final ops = switch (difficulty) {
       1 => [_Operation.add, _Operation.subtract],
       2 => [_Operation.add, _Operation.subtract, _Operation.multiply],
       _ => _Operation.values,
     };
+
     final op = ops[rnd.nextInt(ops.length)];
 
     return switch (op) {
@@ -62,6 +58,7 @@ class _Problem {
                 : difficulty == 2
                 ? 50
                 : 100;
+
         return _Problem(
           a: rnd.nextInt(max) + 1,
           b: rnd.nextInt(max) + 1,
@@ -75,13 +72,15 @@ class _Problem {
                 : difficulty == 2
                 ? 50
                 : 100;
+
         final a = rnd.nextInt(max) + 5;
-        // Hard mode allows negative results
         final b = difficulty == 3 ? rnd.nextInt(max) + 1 : rnd.nextInt(a) + 1;
+
         return _Problem(a: a, b: b, op: op);
       }(),
       _Operation.multiply => () {
         final max = difficulty == 2 ? 12 : 20;
+
         return _Problem(
           a: rnd.nextInt(max) + 1,
           b: rnd.nextInt(max) + 1,
@@ -92,6 +91,7 @@ class _Problem {
         final maxQuotient = difficulty == 3 ? 20 : 12;
         final b = rnd.nextInt(9) + 2;
         final res = rnd.nextInt(maxQuotient) + 1;
+
         return _Problem(a: res * b, b: b, op: op);
       }(),
     };
@@ -104,12 +104,12 @@ class _Problem {
 
 class MathAlarmScreen extends StatefulWidget {
   final AlarmSettings alarmSettings;
-  final DismissSettings dismissSettings;
+  final AlarmModel alarmModel;
 
   const MathAlarmScreen({
     super.key,
     required this.alarmSettings,
-    required this.dismissSettings,
+    required this.alarmModel,
   });
 
   @override
@@ -121,7 +121,6 @@ class _MathAlarmScreenState extends State<MathAlarmScreen>
   // ── problem state ──────────────────────────────────────────────────────────
   late _Problem _current;
   int _solved = 0;
-  int _skipped = 0;
   String _input = '';
   bool _negative = false;
   String? _error;
@@ -133,25 +132,29 @@ class _MathAlarmScreenState extends State<MathAlarmScreen>
   // ── animations ─────────────────────────────────────────────────────────────
   late final AnimationController _shakeCtrl;
   late final Animation<double> _shakeAnim;
+
   late final AnimationController _successCtrl;
   late final Animation<double> _successAnim;
+
   late final AnimationController _problemCtrl;
   late final Animation<Offset> _problemSlide;
   late final Animation<double> _problemFade;
 
-  DismissSettings get _ds => widget.dismissSettings;
+  DismissSettings get _ds => widget.alarmModel.dismissSettings;
+
   int get _total => _ds.mathProblemCount;
+
   bool get _timerEnabled => _ds.taskTimerSeconds != null;
 
   @override
   void initState() {
     super.initState();
 
-    // Shake animation for wrong answer
     _shakeCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 400),
     );
+
     _shakeAnim = TweenSequence([
       TweenSequenceItem(tween: Tween(begin: 0.0, end: -12.0), weight: 1),
       TweenSequenceItem(tween: Tween(begin: -12.0, end: 12.0), weight: 2),
@@ -160,25 +163,26 @@ class _MathAlarmScreenState extends State<MathAlarmScreen>
       TweenSequenceItem(tween: Tween(begin: 8.0, end: 0.0), weight: 1),
     ]).animate(CurvedAnimation(parent: _shakeCtrl, curve: Curves.easeInOut));
 
-    // Success flash
     _successCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
     );
+
     _successAnim = CurvedAnimation(parent: _successCtrl, curve: Curves.easeOut);
 
-    // Problem slide-in — start completed so first problem is fully visible
     _problemCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 350),
-      value: 1.0, // <-- start at end so first problem is immediately visible
+      value: 1.0,
     );
+
     _problemSlide = Tween<Offset>(
       begin: const Offset(0.3, 0),
       end: Offset.zero,
     ).animate(
       CurvedAnimation(parent: _problemCtrl, curve: Curves.easeOutCubic),
     );
+
     _problemFade = CurvedAnimation(parent: _problemCtrl, curve: Curves.easeOut);
 
     _nextProblem(animate: false);
@@ -193,10 +197,13 @@ class _MathAlarmScreenState extends State<MathAlarmScreen>
     super.dispose();
   }
 
-  // ── logic ──────────────────────────────────────────────────────────────────
+  // ───────────────────────────────────────────────────────────────────────────
+  // Logic
+  // ───────────────────────────────────────────────────────────────────────────
 
   void _nextProblem({bool animate = true}) {
     _taskTimer?.cancel();
+
     _current = _Problem.generate(difficulty: _ds.mathDifficulty);
     _input = '';
     _negative = false;
@@ -204,10 +211,13 @@ class _MathAlarmScreenState extends State<MathAlarmScreen>
 
     if (_timerEnabled) {
       _taskSecondsLeft = _ds.taskTimerSeconds!;
+
       _taskTimer = Timer.periodic(const Duration(seconds: 1), (_) {
         if (!mounted) return;
+
         setState(() {
           _taskSecondsLeft--;
+
           if (_taskSecondsLeft <= 0) {
             _taskTimer?.cancel();
             _onTimerExpired();
@@ -217,79 +227,96 @@ class _MathAlarmScreenState extends State<MathAlarmScreen>
     }
 
     if (animate) {
-      _problemCtrl.forward(from: 0); // slide in from left
+      _problemCtrl.forward(from: 0);
     }
-    // animate: false means initState call — controller already at 1.0, nothing to do
   }
 
   void _onTimerExpired() {
     unawaited(HapticFeedback.heavyImpact());
-    setState(() => _error = 'Time\'s up!'); // TODO: localize
+
+    setState(() {
+      _error = 'Time\'s up!'; // TODO: localize
+    });
+
     Future.delayed(const Duration(milliseconds: 600), () {
       if (!mounted) return;
-      setState(() {
-        _skipped++;
-        _nextProblem();
-      });
+      setState(_nextProblem);
     });
   }
 
   Future<void> _trySubmit() async {
     final raw = _input.isEmpty ? null : int.tryParse(_input);
     if (raw == null) return;
+
     final answer = _negative ? -raw : raw;
 
     if (answer == _current.answer) {
       unawaited(HapticFeedback.mediumImpact());
+
       _taskTimer?.cancel();
+
       await _successCtrl.forward(from: 0);
       await _successCtrl.reverse();
 
+      if (!mounted) return;
+
       setState(() {
         _solved++;
-        if (_solved >= _total) {
-          _dismiss();
-          return;
-        }
+      });
+
+      if (_solved >= _total) {
+        await _dismiss();
+        return;
+      }
+
+      if (!mounted) return;
+
+      setState(() {
         _nextProblem();
       });
     } else {
       unawaited(HapticFeedback.vibrate());
+
       await _shakeCtrl.forward(from: 0);
-      setState(() => _error = context.localization.wrongAnswer);
+
+      if (!mounted) return;
+
+      setState(() {
+        _error = context.localization.wrongAnswer;
+      });
     }
   }
 
   Future<void> _skipProblem() async {
     if (!_ds.mathAllowSkip) return;
+
     unawaited(HapticFeedback.selectionClick());
+
     _taskTimer?.cancel();
+
     setState(() {
-      _skipped++;
       _nextProblem();
     });
   }
 
   Future<void> _dismiss() async {
-    final cubit = context.read<AlarmCubit>();
-    final ctx = context;
-    final alarmId =
-        int.tryParse(widget.alarmSettings.payload ?? '') ??
-        widget.alarmSettings.id;
-    await cubit.completeAlarm(
-      alarmId: alarmId,
-      result: AlarmResult.success,
-      disarmMode: AlarmDisarmMode.math,
+    _taskTimer?.cancel();
+
+    await dismissActiveAlarmAndClose(
+      context: context,
+      alarmSettings: widget.alarmSettings,
+      alarmModel: widget.alarmModel,
     );
-    await cubit.stopAlarm(widget.alarmSettings.id);
-    if (ctx.mounted) ctx.pop();
   }
 
-  // ── input ──────────────────────────────────────────────────────────────────
+  // ───────────────────────────────────────────────────────────────────────────
+  // Input
+  // ───────────────────────────────────────────────────────────────────────────
 
   void _onKey(String value) {
     setState(() {
       _error = null;
+
       if (value == 'DEL') {
         if (_input.isNotEmpty) {
           _input = _input.substring(0, _input.length - 1);
@@ -304,11 +331,13 @@ class _MathAlarmScreenState extends State<MathAlarmScreen>
     });
   }
 
-  // ── build ──────────────────────────────────────────────────────────────────
+  // ───────────────────────────────────────────────────────────────────────────
+  // Build
+  // ───────────────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = context.isDarkMode;
+    final isDark = context.isDarkMode;
     final progressFraction = _total > 0 ? _solved / _total : 0.0;
 
     return PopScope(
@@ -328,7 +357,6 @@ class _MathAlarmScreenState extends State<MathAlarmScreen>
           child: SafeArea(
             child: Column(
               children: [
-                // ── Header ─────────────────────────────────────────────────
                 _Header(
                   title: widget.alarmSettings.notificationSettings.body,
                   solved: _solved,
@@ -339,25 +367,26 @@ class _MathAlarmScreenState extends State<MathAlarmScreen>
 
                 const Spacer(),
 
-                // ── Problem card ───────────────────────────────────────────
                 SlideTransition(
                   position: _problemSlide,
                   child: FadeTransition(
                     opacity: _problemFade,
                     child: AnimatedBuilder(
                       animation: _shakeAnim,
-                      builder:
-                          (_, child) => Transform.translate(
-                            offset: Offset(_shakeAnim.value, 0),
-                            child: child,
-                          ),
+                      builder: (_, child) {
+                        return Transform.translate(
+                          offset: Offset(_shakeAnim.value, 0),
+                          child: child,
+                        );
+                      },
                       child: AnimatedBuilder(
                         animation: _successAnim,
-                        builder:
-                            (_, child) => Transform.scale(
-                              scale: 1.0 + _successAnim.value * 0.04,
-                              child: child,
-                            ),
+                        builder: (_, child) {
+                          return Transform.scale(
+                            scale: 1.0 + _successAnim.value * 0.04,
+                            child: child,
+                          );
+                        },
                         child: _ProblemCard(
                           problem: _current,
                           input: _input,
@@ -375,7 +404,6 @@ class _MathAlarmScreenState extends State<MathAlarmScreen>
 
                 const Spacer(),
 
-                // ── Numpad ─────────────────────────────────────────────────
                 _NumberPad(
                   onKeyTap: _onKey,
                   onSubmit: _trySubmit,
@@ -384,7 +412,6 @@ class _MathAlarmScreenState extends State<MathAlarmScreen>
 
                 const SizedBox(height: 12),
 
-                // ── Skip + Stop ────────────────────────────────────────────
                 _BottomActions(
                   canSkip: _ds.mathAllowSkip,
                   onSkip: _skipProblem,
@@ -438,18 +465,19 @@ class _Header extends StatelessWidget {
                     tween: Tween(begin: 0, end: progressFraction),
                     duration: const Duration(milliseconds: 400),
                     curve: Curves.easeOutCubic,
-                    builder:
-                        (_, value, __) => LinearProgressIndicator(
-                          value: value,
-                          minHeight: 6,
-                          backgroundColor:
-                              isDark
-                                  ? AppColors.darkBorder
-                                  : AppColors.lightBlueGrey,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            AppColors.primary,
-                          ),
+                    builder: (_, value, __) {
+                      return LinearProgressIndicator(
+                        value: value,
+                        minHeight: 6,
+                        backgroundColor:
+                            isDark
+                                ? AppColors.darkBorder
+                                : AppColors.lightBlueGrey,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          AppColors.primary,
                         ),
+                      );
+                    },
                   ),
                 ),
               ),
@@ -527,28 +555,17 @@ class _ProblemCard extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Timer bar
           if (timerEnabled) ...[
             ClipRRect(
               borderRadius: BorderRadius.circular(3),
-              child: TweenAnimationBuilder<double>(
-                tween: Tween(
-                  begin: timerSeconds / totalTimer,
-                  end: timerSeconds / totalTimer,
+              child: LinearProgressIndicator(
+                value: timerSeconds / totalTimer,
+                minHeight: 4,
+                backgroundColor:
+                    isDark ? AppColors.darkBorder : AppColors.lightBlueGrey,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  timerSeconds <= 5 ? Colors.red : AppColors.primary,
                 ),
-                duration: const Duration(milliseconds: 200),
-                builder:
-                    (_, v, __) => LinearProgressIndicator(
-                      value: timerSeconds / totalTimer,
-                      minHeight: 4,
-                      backgroundColor:
-                          isDark
-                              ? AppColors.darkBorder
-                              : AppColors.lightBlueGrey,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        timerSeconds <= 5 ? Colors.red : AppColors.primary,
-                      ),
-                    ),
               ),
             ),
             const SizedBox(height: 8),
@@ -562,18 +579,14 @@ class _ProblemCard extends StatelessWidget {
             ),
             const SizedBox(height: 20),
           ],
-
-          // Equation
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Text(
                 '${problem.a} ${problem.symbol} ${problem.b} =',
                 style: AppTextStyles.large(context).copyWith(fontSize: 32),
               ),
               const SizedBox(width: 12),
-              // Answer box
               AnimatedContainer(
                 duration: const Duration(milliseconds: 150),
                 padding: const EdgeInsets.symmetric(
@@ -605,8 +618,6 @@ class _ProblemCard extends StatelessWidget {
               ),
             ],
           ),
-
-          // Error label
           AnimatedSize(
             duration: const Duration(milliseconds: 200),
             curve: Curves.easeInOut,
@@ -646,10 +657,10 @@ class _NumberPad extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget key(String label, {Color? bg, Color? fg, int flex = 1}) {
+    Widget key(String label, {Color? bg, Color? fg}) {
       final isAction = bg != null;
+
       return Expanded(
-        flex: flex,
         child: Padding(
           padding: const EdgeInsets.all(5),
           child: Material(
@@ -740,20 +751,28 @@ class _BottomActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (!canSkip) {
+      return Center(
+        child: GestureDetector(onTap: onStop, child: const StopButton()),
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Row(
-        mainAxisAlignment:
-            canSkip ? MainAxisAlignment.spaceBetween : MainAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          if (canSkip)
-            TextButton.icon(
-              onPressed: onSkip,
-              icon: const Icon(Icons.skip_next_outlined, size: 18),
-              label: const Text('Skip'), // TODO: localize
-              style: TextButton.styleFrom(foregroundColor: Colors.orange),
-            ),
+          TextButton.icon(
+            onPressed: onSkip,
+            icon: const Icon(Icons.skip_next_outlined, size: 18),
+            label: const Text('Skip'), // TODO: localize
+            style: TextButton.styleFrom(foregroundColor: Colors.orange),
+          ),
+
           GestureDetector(onTap: onStop, child: const StopButton()),
+
+          // Keeps the Stop button visually centered when skip exists on the left.
+          const SizedBox(width: 80),
         ],
       ),
     );

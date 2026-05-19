@@ -4,19 +4,23 @@ import 'dart:math';
 import 'package:alarm/alarm.dart';
 import 'package:alarm_walker/extensions/context_extensions.dart';
 import 'package:alarm_walker/models/alarm_model.dart';
-import 'package:alarm_walker/services/alarm_cubit.dart';
+import 'package:alarm_walker/services/alarm_dismiss_helper.dart';
 import 'package:alarm_walker/theme/app_colors.dart';
 import 'package:alarm_walker/theme/app_text_styles.dart';
 import 'package:alarm_walker/widgets/gradient_linear_progress_indicator.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
 import 'package:lottie/lottie.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 
 class ShakeAlarmScreen extends StatefulWidget {
   final AlarmSettings alarmSettings;
-  const ShakeAlarmScreen({super.key, required this.alarmSettings});
+  final AlarmModel alarmModel;
+
+  const ShakeAlarmScreen({
+    super.key,
+    required this.alarmSettings,
+    required this.alarmModel,
+  });
 
   @override
   State<ShakeAlarmScreen> createState() => _ShakeAlarmScreenState();
@@ -29,6 +33,8 @@ class _ShakeAlarmScreenState extends State<ShakeAlarmScreen> {
   static const int _requiredShakes = 10;
   static const double _threshold = 2;
 
+  bool _isDismissing = false;
+
   @override
   void initState() {
     super.initState();
@@ -36,33 +42,39 @@ class _ShakeAlarmScreenState extends State<ShakeAlarmScreen> {
   }
 
   Future<void> _onData(AccelerometerEvent event) async {
+    if (_isDismissing) return;
+
     final double gX = event.x / 9.81;
     final double gY = event.y / 9.81;
     final double gZ = event.z / 9.81;
+
     final double gForce = sqrt(gX * gX + gY * gY + gZ * gZ);
-    if (gForce > _threshold) {
-      _debounce?.cancel();
-      _debounce = Timer(const Duration(milliseconds: 100), () async {
-        setState(() => _shakeCount++);
-        if (_shakeCount >= _requiredShakes) {
-          await _subscription.cancel();
-          if (mounted) {
-            final alarmCubit = context.read<AlarmCubit>();
-            final ctx = context;
-            final alarmId = AlarmCubit.resolveAlarmId(widget.alarmSettings);
-            await alarmCubit.completeAlarm(
-              alarmId: alarmId,
-              result: AlarmResult.success,
-              disarmMode: AlarmDisarmMode.shake,
-            );
-            await alarmCubit.stopAlarm(widget.alarmSettings.id);
-            if (ctx.mounted) {
-              ctx.pop();
-            }
-          }
-        }
+
+    if (gForce <= _threshold) return;
+
+    _debounce?.cancel();
+
+    _debounce = Timer(const Duration(milliseconds: 100), () async {
+      if (!mounted || _isDismissing) return;
+
+      setState(() {
+        _shakeCount++;
       });
-    }
+
+      if (_shakeCount < _requiredShakes) return;
+
+      _isDismissing = true;
+
+      await _subscription.cancel();
+
+      if (!mounted) return;
+
+      await dismissActiveAlarmAndClose(
+        context: context,
+        alarmSettings: widget.alarmSettings,
+        alarmModel: widget.alarmModel,
+      );
+    });
   }
 
   @override

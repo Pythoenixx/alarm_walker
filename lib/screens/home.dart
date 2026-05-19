@@ -80,44 +80,55 @@ class _HomeState extends State<Home> {
     final alarmRinging = alarms.alarms.first;
     final alarmCubit = context.read<AlarmCubit>();
 
-    final alarmModel = await () async {
-      final payload = alarmRinging.payload;
-      if (payload == null) return null;
-      final id = int.tryParse(payload);
-      if (id == null) return null;
-      return alarmCubit.alarmRepo.getAlarmById(id);
-    }();
+    final payload = alarmRinging.payload;
+    final dbAlarmId = payload == null ? null : int.tryParse(payload);
+
+    AlarmModel? alarmModel;
+
+    if (dbAlarmId != null) {
+      alarmModel = await alarmCubit.alarmRepo.getAlarmById(dbAlarmId);
+    }
 
     if (!mounted) return;
-
-    final resolvedModel =
-        alarmModel ??
-        AlarmModel.fromSettings(context.read<SettingsCubit>().state);
 
     if (alarmModel == null) {
       debugPrint(
         '⚠️ Alarm ID ${alarmRinging.id} not found in DB. '
-        'Falling back to settings defaults.',
+        'Using fallback settings. Wake log may not be recorded.',
       );
+
+      // Fallback only for showing alarm screen.
+      // If there is no DB alarm model, ActiveAlarmRef cannot be safely created.
+      final fallbackModel = AlarmModel.fromSettings(
+        context.read<SettingsCubit>().state,
+      );
+
+      unawaited(
+        context.pushNamed(
+          AppRoute.alarmGate.name,
+          extra: (alarmRinging, fallbackModel),
+        ),
+      );
+
+      return;
     }
 
-    // Start wake session — creates wake_log row and starts stopwatch.
-    // Safe to call on snooze re-fires; it reuses the existing log row.
-    if (resolvedModel.alarmId != null) {
-      await alarmCubit.startWakeSession(
-        alarmId: resolvedModel.alarmId!,
-        disarmMode: resolvedModel.dismissSettings.mode,
-      );
-    }
+    final alarmRef = ActiveAlarmRef.from(
+      alarmSettings: alarmRinging,
+      alarmModel: alarmModel,
+    );
+
+    await alarmCubit.startWakeSession(
+      alarmRef: alarmRef,
+      disarmMode: alarmModel.dismissSettings.mode,
+    );
 
     if (!mounted) return;
 
-    // Always go to AlarmGateScreen — it handles snooze and routes
-    // to the correct challenge screen on dismiss.
     unawaited(
       context.pushNamed(
         AppRoute.alarmGate.name,
-        extra: (alarmRinging, resolvedModel),
+        extra: (alarmRinging, alarmModel),
       ),
     );
   }
