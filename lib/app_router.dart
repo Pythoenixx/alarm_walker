@@ -10,6 +10,7 @@ import 'package:alarm_walker/screens/alarm_gate_screen.dart';
 import 'package:alarm_walker/screens/database_screen.dart';
 import 'package:alarm_walker/screens/home.dart';
 import 'package:alarm_walker/screens/login_screen.dart';
+import 'package:alarm_walker/screens/onboarding_screen.dart';
 import 'package:alarm_walker/screens/math_alarm_screen.dart';
 import 'package:alarm_walker/screens/profile_screen.dart';
 import 'package:alarm_walker/screens/retype_alarm_screen.dart';
@@ -18,12 +19,14 @@ import 'package:alarm_walker/screens/shake_alarm_screen.dart';
 import 'package:alarm_walker/screens/sign_up_screen.dart';
 import 'package:alarm_walker/screens/wake_analytics_screen.dart';
 import 'package:alarm_walker/screens/walk_alarm_screen.dart';
+import 'package:alarm_walker/services/onboarding_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 enum AppRoute {
   wrapper,
+  onboarding,
   signUp,
   login,
   authenticate,
@@ -63,7 +66,14 @@ GoRouter createRouterWithStream(
       GoRoute(
         path: '/',
         name: AppRoute.wrapper.name,
-        redirect: (_, __) => '/home',
+        redirect:
+            (_, __) =>
+                OnboardingService.isCompleted ? '/home' : '/onboarding',
+      ),
+      GoRoute(
+        path: '/onboarding',
+        name: AppRoute.onboarding.name,
+        builder: (_, __) => const OnboardingScreen(),
       ),
 
       // ── Auth ──────────────────────────────────────────────────────────────
