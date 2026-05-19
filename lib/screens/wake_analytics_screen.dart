@@ -1,5 +1,7 @@
-import 'package:alarm/alarm.dart';
+import 'dart:async';
+
 import 'package:alarm_walker/extensions/context_extensions.dart';
+import 'package:alarm_walker/models/alarm_model.dart';
 import 'package:alarm_walker/models/dismiss_settings.dart';
 import 'package:alarm_walker/models/profile_category.dart';
 import 'package:alarm_walker/models/wake_log_model.dart';
@@ -48,8 +50,6 @@ class _WakeAnalyticsScreenState extends State<WakeAnalyticsScreen> {
             )
             : null;
 
-    await Alarm.getAlarms(); // debug
-
     return _AnalyticsData(
       logs: logs,
       summary: summary,
@@ -60,10 +60,12 @@ class _WakeAnalyticsScreenState extends State<WakeAnalyticsScreen> {
     );
   }
 
-  void _refresh() {
+  Future<void> _refresh() async {
+    final next = _load();
     setState(() {
-      _future = _load();
+      _future = next;
     });
+    await next;
   }
 
   @override
@@ -83,107 +85,91 @@ class _WakeAnalyticsScreenState extends State<WakeAnalyticsScreen> {
           ),
         ),
         child: SafeArea(
-          child: Column(
-            children: [
-              // Custom AppBar
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
+          child: FutureBuilder<_AnalyticsData>(
+            future: _future,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return Column(
                   children: [
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Wake Analytics',
-                      style: AppTextStyles.large(
-                        context,
-                      ).copyWith(fontSize: 24, fontWeight: FontWeight.bold),
-                    ),
-                    const Spacer(),
-                    IconButton(
-                      icon: const Icon(Icons.refresh),
-                      onPressed: _refresh,
-                      tooltip: 'Refresh',
+                    _AnalyticsAppBar(onRefresh: () => unawaited(_refresh())),
+                    const Expanded(child: Center(child: CircularProgressIndicator())),
+                  ],
+                );
+              }
+
+              if (snapshot.hasError) {
+                return Column(
+                  children: [
+                    _AnalyticsAppBar(onRefresh: () => unawaited(_refresh())),
+                    Expanded(
+                      child: _AnalyticsErrorState(
+                        isDark: isDark,
+                        onRetry: () => unawaited(_refresh()),
+                      ),
                     ),
                   ],
+                );
+              }
+
+              final data = snapshot.data;
+              if (data == null) {
+                return Column(
+                  children: [
+                    _AnalyticsAppBar(onRefresh: () => unawaited(_refresh())),
+                    const Expanded(child: Center(child: CircularProgressIndicator())),
+                  ],
+                );
+              }
+
+              return RefreshIndicator(
+                onRefresh: _refresh,
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                  children: [
+                    _AnalyticsAppBar(onRefresh: () => unawaited(_refresh())),
+                    const SizedBox(height: 8),
+                    _OverviewHero(data: data, isDark: isDark),
+                    const SizedBox(height: 16),
+                    _SectionHeader(
+                      icon: Icons.insights_outlined,
+                      title: 'Performance Summary',
+                      subtitle: 'Quick view of your latest wake-up behavior.',
+                      isDark: isDark,
+                    ),
+                    const SizedBox(height: 12),
+                    _SummaryCards(
+                      summary: data.summary,
+                      logs: data.logs,
+                      isDark: isDark,
+                    ),
+                    const SizedBox(height: 20),
+                    _SectionHeader(
+                      icon: Icons.auto_awesome_outlined,
+                      title: 'Adaptive Difficulty',
+                      subtitle: 'Recommendation for future alarm defaults.',
+                      isDark: isDark,
+                    ),
+                    const SizedBox(height: 12),
+                    _AdaptiveDifficultyCard(
+                      result: data.adaptiveResult,
+                      profileCategory: data.profileCategory,
+                      enabled: data.adaptiveDifficultyEnabled,
+                      defaultDismissSettings: data.defaultDismissSettings,
+                      isDark: isDark,
+                    ),
+                    const SizedBox(height: 20),
+                    _SectionHeader(
+                      icon: Icons.history_rounded,
+                      title: 'Wake History',
+                      subtitle: 'Recent alarm attempts and disarm results.',
+                      isDark: isDark,
+                    ),
+                    const SizedBox(height: 12),
+                    _WakeHistoryList(logs: data.logs, isDark: isDark),
+                  ],
                 ),
-              ),
-              Expanded(
-                child: FutureBuilder<_AnalyticsData>(
-                  future: _future,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-
-                    if (snapshot.hasError) {
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(
-                              Icons.error_outline,
-                              size: 48,
-                              color: Colors.red,
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'Failed to load analytics',
-                              style: TextStyle(
-                                color:
-                                    isDark
-                                        ? AppColors.darkBackgroundText
-                                        : AppColors.lightBackgroundText,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            ElevatedButton(
-                              onPressed: _refresh,
-                              child: const Text('Retry'),
-                            ),
-                          ],
-                        ),
-                      );
-                    }
-
-                    if (!snapshot.hasData) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-
-                    final data = snapshot.data!;
-                    return SingleChildScrollView(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          _SummaryCards(summary: data.summary, isDark: isDark),
-                          const SizedBox(height: 16),
-                          _AdaptiveDifficultyCard(
-                            result: data.adaptiveResult,
-                            profileCategory: data.profileCategory,
-                            enabled: data.adaptiveDifficultyEnabled,
-                            defaultDismissSettings: data.defaultDismissSettings,
-                            isDark: isDark,
-                          ),
-                          const SizedBox(height: 24),
-                          Text(
-                            'Wake History',
-                            style: AppTextStyles.large(context).copyWith(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          _WakeLogTable(logs: data.logs, isDark: isDark),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
+              );
+            },
           ),
         ),
       ),
@@ -191,19 +177,325 @@ class _WakeAnalyticsScreenState extends State<WakeAnalyticsScreen> {
   }
 }
 
-class _SummaryCards extends StatelessWidget {
-  final Map<String, Object?> summary;
+class _AnalyticsAppBar extends StatelessWidget {
+  final VoidCallback onRefresh;
+
+  const _AnalyticsAppBar({required this.onRefresh});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = context.isDarkMode;
+    final foreground =
+        isDark ? AppColors.darkBackgroundText : AppColors.lightBackgroundText;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(0, 8, 0, 8),
+      child: Row(
+        children: [
+          _RoundIconButton(
+            icon: Icons.arrow_back_rounded,
+            tooltip: 'Back',
+            onTap: () => Navigator.pop(context),
+            isDark: isDark,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Wake Analytics',
+                  style: AppTextStyles.large(context).copyWith(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: foreground,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Understand your wake-up performance',
+                  style: AppTextStyles.caption(context).copyWith(
+                    color: foreground.withValues(alpha: 0.65),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          _RoundIconButton(
+            icon: Icons.refresh_rounded,
+            tooltip: 'Refresh',
+            onTap: onRefresh,
+            isDark: isDark,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RoundIconButton extends StatelessWidget {
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onTap;
   final bool isDark;
 
-  const _SummaryCards({required this.summary, required this.isDark});
+  const _RoundIconButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color:
+            isDark
+                ? AppColors.darkScaffold1.withValues(alpha: 0.65)
+                : Colors.white.withValues(alpha: 0.78),
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            width: 44,
+            height: 44,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isDark ? AppColors.darkBorder : AppColors.lightBlueGrey,
+              ),
+            ),
+            child: Icon(icon, color: AppColors.primary),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _OverviewHero extends StatelessWidget {
+  final _AnalyticsData data;
+  final bool isDark;
+
+  const _OverviewHero({required this.data, required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    final total = data.summary['total'] as int? ?? 0;
+    final success = data.summary['successes'] as int? ?? 0;
+    final successRate = total > 0 ? (success / total * 100).round() : 0;
+    final latest = data.logs.isNotEmpty ? data.logs.first.wakeTime : null;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.primary,
+            AppColors.primary.withValues(alpha: 0.72),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: isDark ? 0.12 : 0.22),
+            blurRadius: 22,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 54,
+                height: 54,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: const Icon(
+                  Icons.bedtime_rounded,
+                  color: Colors.white,
+                  size: 30,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      total == 0
+                          ? 'No wake records yet'
+                          : '$successRate% successful wake-ups',
+                      style: AppTextStyles.large(context).copyWith(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      total == 0
+                          ? 'Complete an alarm to start building analytics.'
+                          : 'Based on $total recorded alarm attempt${total == 1 ? '' : 's'}.',
+                      style: AppTextStyles.body(context).copyWith(
+                        color: Colors.white.withValues(alpha: 0.82),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              _HeroChip(
+                icon: Icons.person_outline_rounded,
+                label: data.profileCategory.label,
+              ),
+              _HeroChip(
+                icon: Icons.auto_graph_rounded,
+                label:
+                    data.adaptiveDifficultyEnabled
+                        ? 'Adaptive ON'
+                        : 'Adaptive OFF',
+              ),
+              _HeroChip(
+                icon: Icons.calendar_month_rounded,
+                label:
+                    latest == null
+                        ? 'No latest wake'
+                        : 'Latest ${DateFormat('MMM d, h:mm a').format(latest)}',
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HeroChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+
+  const _HeroChip({required this.icon, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 15, color: Colors.white),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: AppTextStyles.caption(context).copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final bool isDark;
+
+  const _SectionHeader({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final textColor =
+        isDark ? AppColors.darkBackgroundText : AppColors.lightBackgroundText;
+
+    return Row(
+      children: [
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: AppColors.primary.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Icon(icon, color: AppColors.primary, size: 22),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: AppTextStyles.large(context).copyWith(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: textColor,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                style: AppTextStyles.caption(context).copyWith(
+                  color: textColor.withValues(alpha: 0.62),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SummaryCards extends StatelessWidget {
+  final Map<String, Object?> summary;
+  final List<WakeLog> logs;
+  final bool isDark;
+
+  const _SummaryCards({
+    required this.summary,
+    required this.logs,
+    required this.isDark,
+  });
 
   @override
   Widget build(BuildContext context) {
     final total = summary['total'] as int? ?? 0;
     final success = summary['successes'] as int? ?? 0;
     final avg = (summary['avg_duration'] as num?)?.toInt() ?? 0;
-    final successRate =
-        total > 0 ? (success / total * 100).toStringAsFixed(0) : '0';
+    final successRate = total > 0 ? (success / total * 100).round() : 0;
+    final totalSnoozes = logs.fold<int>(0, (sum, log) => sum + log.snoozeCount);
 
     return Column(
       children: [
@@ -211,9 +503,10 @@ class _SummaryCards extends StatelessWidget {
           children: [
             Expanded(
               child: _StatCard(
-                icon: Icons.alarm,
-                label: 'Total Alarms',
+                icon: Icons.alarm_rounded,
+                label: 'Total Records',
                 value: total.toString(),
+                caption: 'Wake attempts',
                 isDark: isDark,
                 color: Colors.blue,
               ),
@@ -221,9 +514,10 @@ class _SummaryCards extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: _StatCard(
-                icon: Icons.check_circle,
+                icon: Icons.verified_rounded,
                 label: 'Success Rate',
                 value: '$successRate%',
+                caption: '$success successful',
                 isDark: isDark,
                 color: Colors.green,
               ),
@@ -235,9 +529,10 @@ class _SummaryCards extends StatelessWidget {
           children: [
             Expanded(
               child: _StatCard(
-                icon: Icons.timer,
-                label: 'Avg Disarm Time',
+                icon: Icons.timer_rounded,
+                label: 'Avg Disarm',
                 value: '${avg}s',
+                caption: 'Challenge time',
                 isDark: isDark,
                 color: Colors.orange,
               ),
@@ -245,9 +540,10 @@ class _SummaryCards extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: _StatCard(
-                icon: Icons.done_all,
-                label: 'Successful',
-                value: '$success / $total',
+                icon: Icons.snooze_rounded,
+                label: 'Snoozes',
+                value: totalSnoozes.toString(),
+                caption: 'Total used',
                 isDark: isDark,
                 color: Colors.purple,
               ),
@@ -286,34 +582,21 @@ class _AdaptiveDifficultyCard extends StatelessWidget {
             : 'Adaptive difficulty is turned off in Settings.';
     final metrics = result?.metrics;
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color:
-            isDark
-                ? AppColors.darkScaffold1.withValues(alpha: 0.55)
-                : AppColors.lightContainer1,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color:
-              enabled
-                  ? color.withValues(alpha: 0.45)
-                  : isDark
-                  ? AppColors.darkBorder
-                  : AppColors.lightBlueGrey,
-        ),
-      ),
+    return _SurfaceCard(
+      isDark: isDark,
+      padding: const EdgeInsets.all(18),
+      borderColor: enabled ? color.withValues(alpha: 0.45) : null,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               Container(
-                width: 42,
-                height: 42,
+                width: 48,
+                height: 48,
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(16),
                 ),
                 child: Icon(icon, color: color),
               ),
@@ -470,6 +753,47 @@ class _AdaptiveDifficultyCard extends StatelessWidget {
   }
 }
 
+class _SurfaceCard extends StatelessWidget {
+  final Widget child;
+  final bool isDark;
+  final EdgeInsetsGeometry padding;
+  final Color? borderColor;
+
+  const _SurfaceCard({
+    required this.child,
+    required this.isDark,
+    this.padding = const EdgeInsets.all(16),
+    this.borderColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: padding,
+      decoration: BoxDecoration(
+        color:
+            isDark
+                ? AppColors.darkScaffold1.withValues(alpha: 0.55)
+                : Colors.white.withValues(alpha: 0.72),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color:
+              borderColor ??
+              (isDark ? AppColors.darkBorder : AppColors.lightBlueGrey),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.18 : 0.06),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: child,
+    );
+  }
+}
+
 class _InfoChip extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -554,6 +878,7 @@ class _StatCard extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
+  final String caption;
   final bool isDark;
   final Color color;
 
@@ -561,50 +886,57 @@ class _StatCard extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.value,
+    required this.caption,
     required this.isDark,
     required this.color,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color:
-            isDark
-                ? AppColors.darkScaffold1.withValues(alpha: 0.5)
-                : AppColors.lightContainer1,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDark ? AppColors.darkBorder : AppColors.lightBlueGrey,
-        ),
-      ),
+    final textColor =
+        isDark ? AppColors.darkBackgroundText : AppColors.lightBackgroundText;
+
+    return _SurfaceCard(
+      isDark: isDark,
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 32, color: color),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color:
-                  isDark
-                      ? AppColors.darkBackgroundText
-                      : AppColors.lightBackgroundText,
-            ),
+          Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                child: Icon(icon, size: 21, color: color),
+              ),
+              const Spacer(),
+              Text(
+                value,
+                style: AppTextStyles.large(context).copyWith(
+                  fontSize: 23,
+                  fontWeight: FontWeight.bold,
+                  color: textColor,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 12),
           Text(
             label,
-            style: TextStyle(
-              fontSize: 12,
-              color:
-                  isDark
-                      ? AppColors.darkBackgroundText.withValues(alpha: 0.7)
-                      : AppColors.lightBackgroundText.withValues(alpha: 0.7),
+            style: AppTextStyles.body(context).copyWith(
+              fontWeight: FontWeight.w700,
+              color: textColor,
             ),
-            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 3),
+          Text(
+            caption,
+            style: AppTextStyles.caption(context).copyWith(
+              color: textColor.withValues(alpha: 0.6),
+            ),
           ),
         ],
       ),
@@ -612,50 +944,54 @@ class _StatCard extends StatelessWidget {
   }
 }
 
-class _WakeLogTable extends StatelessWidget {
+class _WakeHistoryList extends StatelessWidget {
   final List<WakeLog> logs;
   final bool isDark;
 
-  const _WakeLogTable({required this.logs, required this.isDark});
+  const _WakeHistoryList({required this.logs, required this.isDark});
 
-  String _formatDateTime(DateTime dt) {
-    return DateFormat('MMM dd, HH:mm').format(dt);
-  }
+  String _formatDate(DateTime dt) => DateFormat('EEE, MMM d').format(dt);
+
+  String _formatTime(DateTime dt) => DateFormat('h:mm a').format(dt);
 
   @override
   Widget build(BuildContext context) {
     if (logs.isEmpty) {
-      return Container(
-        padding: const EdgeInsets.all(32),
-        decoration: BoxDecoration(
-          color:
-              isDark
-                  ? AppColors.darkScaffold1.withValues(alpha: 0.5)
-                  : AppColors.lightContainer1,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isDark ? AppColors.darkBorder : AppColors.lightBlueGrey,
-          ),
-        ),
+      return _SurfaceCard(
+        isDark: isDark,
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
         child: Column(
           children: [
-            Icon(
-              Icons.history,
-              size: 48,
-              color:
-                  isDark
-                      ? AppColors.darkBackgroundText.withValues(alpha: 0.3)
-                      : AppColors.lightBackgroundText.withValues(alpha: 0.3),
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(22),
+              ),
+              child: const Icon(
+                Icons.history_rounded,
+                size: 34,
+                color: AppColors.primary,
+              ),
             ),
             const SizedBox(height: 16),
             Text(
               'No wake logs yet',
-              style: TextStyle(
-                fontSize: 16,
+              style: AppTextStyles.large(context).copyWith(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Dismiss an alarm to start recording wake-up performance.',
+              textAlign: TextAlign.center,
+              style: AppTextStyles.body(context).copyWith(
                 color:
                     isDark
-                        ? AppColors.darkBackgroundText.withValues(alpha: 0.6)
-                        : AppColors.lightBackgroundText.withValues(alpha: 0.6),
+                        ? AppColors.darkBackgroundText.withValues(alpha: 0.65)
+                        : AppColors.lightBackgroundText.withValues(alpha: 0.65),
               ),
             ),
           ],
@@ -663,204 +999,244 @@ class _WakeLogTable extends StatelessWidget {
       );
     }
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        border: Border.all(
-          color: isDark ? AppColors.darkBorder : AppColors.lightBlueGrey,
-        ),
-        borderRadius: BorderRadius.circular(12),
+    return Column(
+      children:
+          logs.take(30).map((log) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _WakeLogCard(
+                log: log,
+                date: _formatDate(log.wakeTime),
+                time: _formatTime(log.wakeTime),
+                isDark: isDark,
+              ),
+            );
+          }).toList(),
+    );
+  }
+}
+
+class _WakeLogCard extends StatelessWidget {
+  final WakeLog log;
+  final String date;
+  final String time;
+  final bool isDark;
+
+  const _WakeLogCard({
+    required this.log,
+    required this.date,
+    required this.time,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final successColor = log.success ? Colors.green : Colors.red;
+    final successLabel = log.success ? 'Success' : 'Failed';
+    final textColor =
+        isDark ? AppColors.darkBackgroundText : AppColors.lightBackgroundText;
+
+    return _SurfaceCard(
+      isDark: isDark,
+      padding: const EdgeInsets.all(14),
+      borderColor: successColor.withValues(alpha: 0.28),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: successColor.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(17),
+            ),
+            child: Icon(
+              log.success ? Icons.check_circle_rounded : Icons.cancel_rounded,
+              color: successColor,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '$date • $time',
+                        style: AppTextStyles.body(context).copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: textColor,
+                        ),
+                      ),
+                    ),
+                    _StatusPill(label: successLabel, color: successColor),
+                  ],
+                ),
+                const SizedBox(height: 9),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _CompactMetric(
+                      icon: _modeIcon(log.disarmMode),
+                      label: _modeLabel(log.disarmMode),
+                      isDark: isDark,
+                    ),
+                    _CompactMetric(
+                      icon: Icons.snooze_rounded,
+                      label: '${log.snoozeCount} snooze${log.snoozeCount == 1 ? '' : 's'}',
+                      isDark: isDark,
+                    ),
+                    _CompactMetric(
+                      icon: Icons.timer_rounded,
+                      label: '${log.disarmDurationMs ~/ 1000}s disarm',
+                      isDark: isDark,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: DataTable(
-            headingRowHeight: 56,
-            dataRowMinHeight: 48,
-            dataRowMaxHeight: 60,
-            headingRowColor: WidgetStateProperty.all(
-              isDark
-                  ? AppColors.darkScaffold1.withValues(alpha: 0.8)
-                  : AppColors.lightContainer1,
+    );
+  }
+
+  static IconData _modeIcon(AlarmDisarmMode mode) {
+    return switch (mode) {
+      AlarmDisarmMode.math => Icons.calculate_rounded,
+      AlarmDisarmMode.retype => Icons.keyboard_rounded,
+      AlarmDisarmMode.shake => Icons.vibration_rounded,
+      AlarmDisarmMode.walk => Icons.directions_walk_rounded,
+      AlarmDisarmMode.normal => Icons.touch_app_rounded,
+    };
+  }
+
+  static String _modeLabel(AlarmDisarmMode mode) {
+    return switch (mode) {
+      AlarmDisarmMode.math => 'Math',
+      AlarmDisarmMode.retype => 'Typing',
+      AlarmDisarmMode.shake => 'Shake',
+      AlarmDisarmMode.walk => 'Walk',
+      AlarmDisarmMode.normal => 'Normal',
+    };
+  }
+}
+
+class _StatusPill extends StatelessWidget {
+  final String label;
+  final Color color;
+
+  const _StatusPill({required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.11),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.35)),
+      ),
+      child: Text(
+        label,
+        style: AppTextStyles.caption(context).copyWith(
+          color: color,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+}
+
+class _CompactMetric extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool isDark;
+
+  const _CompactMetric({
+    required this.icon,
+    required this.label,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final textColor =
+        isDark ? AppColors.darkBackgroundText : AppColors.lightBackgroundText;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+      decoration: BoxDecoration(
+        color:
+            isDark
+                ? AppColors.darkScaffold2.withValues(alpha: 0.42)
+                : AppColors.lightScaffold2.withValues(alpha: 0.48),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: AppColors.primary),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: AppTextStyles.caption(context).copyWith(
+              color: textColor.withValues(alpha: 0.78),
+              fontWeight: FontWeight.w700,
             ),
-            dataRowColor: WidgetStateProperty.resolveWith((states) {
-              if (states.contains(WidgetState.selected)) {
-                return isDark
-                    ? Colors.blue.withValues(alpha: 0.2)
-                    : Colors.blue.withValues(alpha: 0.1);
-              }
-              return isDark
-                  ? AppColors.darkScaffold1.withValues(alpha: 0.3)
-                  : Colors.white.withValues(alpha: 0.5);
-            }),
-            border: TableBorder.symmetric(
-              inside: BorderSide(
-                color: isDark ? AppColors.darkBorder : AppColors.lightBlueGrey,
-                width: 0.5,
-              ),
-            ),
-            columns: [
-              DataColumn(
-                label: Text(
-                  'DATE & TIME',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                    color:
-                        isDark
-                            ? AppColors.darkBackgroundText
-                            : AppColors.lightBackgroundText,
-                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AnalyticsErrorState extends StatelessWidget {
+  final bool isDark;
+  final VoidCallback onRetry;
+
+  const _AnalyticsErrorState({required this.isDark, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    final textColor =
+        isDark ? AppColors.darkBackgroundText : AppColors.lightBackgroundText;
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: _SurfaceCard(
+          isDark: isDark,
+          padding: const EdgeInsets.all(26),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.error_outline_rounded, size: 48, color: Colors.red),
+              const SizedBox(height: 16),
+              Text(
+                'Failed to load analytics',
+                style: AppTextStyles.large(context).copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: textColor,
                 ),
               ),
-              DataColumn(
-                label: Text(
-                  'STATUS',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                    color:
-                        isDark
-                            ? AppColors.darkBackgroundText
-                            : AppColors.lightBackgroundText,
-                  ),
+              const SizedBox(height: 8),
+              Text(
+                'Please try refreshing the page.',
+                textAlign: TextAlign.center,
+                style: AppTextStyles.body(context).copyWith(
+                  color: textColor.withValues(alpha: 0.68),
                 ),
               ),
-              DataColumn(
-                label: Text(
-                  'SNOOZES',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                    color:
-                        isDark
-                            ? AppColors.darkBackgroundText
-                            : AppColors.lightBackgroundText,
-                  ),
-                ),
-              ),
-              DataColumn(
-                label: Text(
-                  'DISARM TIME',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                    color:
-                        isDark
-                            ? AppColors.darkBackgroundText
-                            : AppColors.lightBackgroundText,
-                  ),
-                ),
+              const SizedBox(height: 18),
+              ElevatedButton.icon(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh_rounded),
+                label: const Text('Retry'),
               ),
             ],
-            rows:
-                logs.map((log) {
-                  return DataRow(
-                    cells: [
-                      DataCell(
-                        Text(
-                          _formatDateTime(log.wakeTime),
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontFamily: 'monospace',
-                            color:
-                                isDark
-                                    ? AppColors.darkBackgroundText
-                                    : AppColors.lightBackgroundText,
-                          ),
-                        ),
-                      ),
-                      DataCell(
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color:
-                                log.success
-                                    ? Colors.green.withValues(alpha: 0.2)
-                                    : Colors.red.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(4),
-                            border: Border.all(
-                              color:
-                                  log.success
-                                      ? Colors.green.withValues(alpha: 0.5)
-                                      : Colors.red.withValues(alpha: 0.5),
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                log.success ? Icons.check_circle : Icons.cancel,
-                                size: 16,
-                                color: log.success ? Colors.green : Colors.red,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                log.success ? 'Success' : 'Failed',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color:
-                                      log.success ? Colors.green : Colors.red,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      DataCell(
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color:
-                                isDark
-                                    ? AppColors.darkScaffold2.withValues(
-                                      alpha: 0.5,
-                                    )
-                                    : AppColors.lightScaffold2.withValues(
-                                      alpha: 0.3,
-                                    ),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            log.snoozeCount.toString(),
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color:
-                                  isDark
-                                      ? AppColors.darkBackgroundText
-                                      : AppColors.lightBackgroundText,
-                            ),
-                          ),
-                        ),
-                      ),
-                      DataCell(
-                        Text(
-                          '${log.disarmDurationMs ~/ 1000}s',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontFamily: 'monospace',
-                            color:
-                                isDark
-                                    ? AppColors.darkBackgroundText.withValues(
-                                      alpha: 0.8,
-                                    )
-                                    : AppColors.lightBackgroundText.withValues(
-                                      alpha: 0.8,
-                                    ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  );
-                }).toList(),
           ),
         ),
       ),
