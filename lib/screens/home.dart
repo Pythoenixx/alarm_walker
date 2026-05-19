@@ -8,11 +8,13 @@ import 'package:alarm_walker/extensions/context_extensions.dart';
 import 'package:alarm_walker/models/alarm_model.dart';
 import 'package:alarm_walker/services/alarm_cubit.dart';
 import 'package:alarm_walker/services/alarm_permissions.dart';
+import 'package:alarm_walker/services/settings_cubit.dart';
 import 'package:alarm_walker/theme/app_colors.dart';
 import 'package:alarm_walker/theme/app_text_styles.dart';
 import 'package:alarm_walker/widgets/add_button.dart';
 import 'package:alarm_walker/widgets/alarm_tile.dart';
 import 'package:alarm_walker/widgets/clock.dart';
+import 'package:alarm_walker/widgets/weather_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -287,22 +289,107 @@ class _HomeState extends State<Home> {
                           buildWhen: (previous, current) => previous != current,
                           builder: (context, alarms) {
                             if (alarms.isEmpty) {
-                              return Center(
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Lottie.asset(
-                                      "assets/lottie/monkey_head_nod.json",
-                                      width: 150,
-                                      fit: BoxFit.scaleDown,
-                                    ),
-                                    const SizedBox(height: 20),
-                                    Text(
-                                      context.localization.noAlarms,
-                                      style: AppTextStyles.heading(context),
-                                    ),
-                                  ],
+                              return ListView(
+                                controller: scrollController,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                  vertical: 24,
                                 ),
+                                children: [
+                                  Row(
+                                    children: [
+                                      const SizedBox(width: 15),
+                                      Text(
+                                        context.localization.alarms,
+                                        style: AppTextStyles.heading(context),
+                                      ),
+                                      const Spacer(),
+                                      IconButton(
+                                        icon: const Icon(Icons.analytics),
+                                        tooltip:
+                                            context.localization.wakeAnalytics,
+                                        onPressed:
+                                            () => context.pushNamed(
+                                              AppRoute.wakeAnalytics.name,
+                                            ),
+                                        style: IconButton.styleFrom(
+                                          foregroundColor:
+                                              isDark
+                                                  ? AppColors.darkBackgroundText
+                                                  : AppColors
+                                                      .lightBackgroundText,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      IconButton(
+                                        icon: const Icon(
+                                          Icons.supervised_user_circle,
+                                        ),
+                                        tooltip:
+                                            context.localization.manageProfile,
+                                        onPressed:
+                                            () => context.pushNamed(
+                                              AppRoute.manageProfile.name,
+                                            ),
+                                        style: IconButton.styleFrom(
+                                          foregroundColor:
+                                              isDark
+                                                  ? AppColors.darkBackgroundText
+                                                  : AppColors
+                                                      .lightBackgroundText,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      IconButton(
+                                        icon: const Icon(Icons.settings),
+                                        tooltip: context.localization.settings,
+                                        onPressed:
+                                            () => context.pushNamed(
+                                              AppRoute.settings.name,
+                                            ),
+                                        style: IconButton.styleFrom(
+                                          foregroundColor:
+                                              isDark
+                                                  ? AppColors.darkBackgroundText
+                                                  : AppColors
+                                                      .lightBackgroundText,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                    ],
+                                  ),
+                                  BlocSelector<
+                                    SettingsCubit,
+                                    SettingsState,
+                                    bool
+                                  >(
+                                    selector:
+                                        (state) => state.weatherAwareEnabled,
+                                    builder:
+                                        (_, enabled) =>
+                                            enabled
+                                                ? const WeatherCard()
+                                                : const SizedBox.shrink(),
+                                  ),
+                                  SizedBox(height: size.height * 0.08),
+                                  Center(
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Lottie.asset(
+                                          "assets/lottie/monkey_head_nod.json",
+                                          width: 150,
+                                          fit: BoxFit.scaleDown,
+                                        ),
+                                        const SizedBox(height: 20),
+                                        Text(
+                                          context.localization.noAlarms,
+                                          style: AppTextStyles.heading(context),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               );
                             } else {
                               final sortedAlarms = [...alarms]..sort(
@@ -378,6 +465,19 @@ class _HomeState extends State<Home> {
                                       ),
                                       const SizedBox(width: 8),
                                     ],
+                                  ),
+                                  BlocSelector<
+                                    SettingsCubit,
+                                    SettingsState,
+                                    bool
+                                  >(
+                                    selector:
+                                        (state) => state.weatherAwareEnabled,
+                                    builder:
+                                        (_, enabled) =>
+                                            enabled
+                                                ? const WeatherCard()
+                                                : const SizedBox.shrink(),
                                   ),
                                   ...[
                                     for (

@@ -180,6 +180,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ),
 
+                // ── Weather-aware wake-up ────────────────────────────────
+                _SectionHeader(
+                  label: 'Weather-aware wake-up',
+                  isDark: isDark,
+                ), // TODO: localize
+                SettingsTile(
+                  onTap:
+                      () => cubit.setWeatherAwareEnabled(
+                        !state.weatherAwareEnabled,
+                      ),
+                  child: _SwitchRow(
+                    label: 'Show weather messages', // TODO: localize
+                    value: state.weatherAwareEnabled,
+                    onChanged: cubit.setWeatherAwareEnabled,
+                    isDark: isDark,
+                  ),
+                ),
+
                 // ── Alarm defaults ───────────────────────────────────────
                 _SectionHeader(
                   label: 'New alarm defaults',

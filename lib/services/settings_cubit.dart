@@ -25,6 +25,7 @@ abstract final class _K {
   static const defaultSoundSettings = 'defaultSoundSettings';
   static const defaultDismissSettings = 'defaultDismissSettings';
   static const defaultSnoozeSettings = 'defaultSnoozeSettings';
+  static const weatherAwareEnabled = 'weatherAwareEnabled';
 }
 
 // ── State ─────────────────────────────────────────────────────────────────────
@@ -44,6 +45,7 @@ class SettingsState {
   final SoundSettings defaultSoundSettings;
   final DismissSettings defaultDismissSettings;
   final SnoozeSettings defaultSnoozeSettings;
+  final bool weatherAwareEnabled;
 
   const SettingsState({
     required this.themeMode,
@@ -57,6 +59,7 @@ class SettingsState {
     required this.defaultSoundSettings,
     required this.defaultDismissSettings,
     required this.defaultSnoozeSettings,
+    required this.weatherAwareEnabled,
   });
 
   SettingsState copyWith({
@@ -71,6 +74,7 @@ class SettingsState {
     SoundSettings? defaultSoundSettings,
     DismissSettings? defaultDismissSettings,
     SnoozeSettings? defaultSnoozeSettings,
+    bool? weatherAwareEnabled,
   }) => SettingsState(
     themeMode: themeMode ?? this.themeMode,
     use24HourFormat: use24HourFormat ?? this.use24HourFormat,
@@ -85,6 +89,7 @@ class SettingsState {
     defaultDismissSettings:
         defaultDismissSettings ?? this.defaultDismissSettings,
     defaultSnoozeSettings: defaultSnoozeSettings ?? this.defaultSnoozeSettings,
+    weatherAwareEnabled: weatherAwareEnabled ?? this.weatherAwareEnabled,
   );
 
   /// Build a ready-to-use AlarmModel seeded with these defaults.
@@ -124,6 +129,7 @@ class SettingsCubit extends Cubit<SettingsState> {
         jsonDecode(p.get<String>(_K.defaultSnoozeSettings) ?? '{}')
             as Map<String, dynamic>,
       ),
+      weatherAwareEnabled: (p.get<int>(_K.weatherAwareEnabled) ?? 1) == 1,
     );
   }
 
@@ -206,5 +212,13 @@ class SettingsCubit extends Cubit<SettingsState> {
       jsonEncode(v.toJson()),
     );
     emit(state.copyWith(defaultSnoozeSettings: v));
+  }
+
+  Future<void> setWeatherAwareEnabled(bool v) async {
+    await SharedPreferencesWithCache.instance.setInt(
+      _K.weatherAwareEnabled,
+      v ? 1 : 0,
+    );
+    emit(state.copyWith(weatherAwareEnabled: v));
   }
 }
