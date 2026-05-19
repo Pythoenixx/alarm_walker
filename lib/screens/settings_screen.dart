@@ -225,6 +225,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ),
 
+                // ── Adaptive difficulty ──────────────────────────────
+                _SectionHeader(
+                  label: 'Adaptive difficulty',
+                  isDark: isDark,
+                ), // TODO: localize
+                SettingsTile(
+                  onTap:
+                      () => cubit.setAdaptiveDifficultyEnabled(
+                        !state.adaptiveDifficultyEnabled,
+                      ),
+                  child: _SwitchRow(
+                    label: 'Adjust future alarm defaults', // TODO: localize
+                    value: state.adaptiveDifficultyEnabled,
+                    onChanged: cubit.setAdaptiveDifficultyEnabled,
+                    isDark: isDark,
+                  ),
+                ),
+
                 // ── Alarm defaults ───────────────────────────────────────
                 _SectionHeader(
                   label: 'New alarm defaults',

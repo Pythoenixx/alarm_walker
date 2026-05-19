@@ -28,6 +28,7 @@ abstract final class _K {
   static const defaultDismissSettings = 'defaultDismissSettings';
   static const defaultSnoozeSettings = 'defaultSnoozeSettings';
   static const weatherAwareEnabled = 'weatherAwareEnabled';
+  static const adaptiveDifficultyEnabled = 'adaptiveDifficultyEnabled';
 }
 
 // ── State ─────────────────────────────────────────────────────────────────────
@@ -48,6 +49,7 @@ class SettingsState {
   final DismissSettings defaultDismissSettings;
   final SnoozeSettings defaultSnoozeSettings;
   final bool weatherAwareEnabled;
+  final bool adaptiveDifficultyEnabled;
 
   const SettingsState({
     required this.themeMode,
@@ -62,6 +64,7 @@ class SettingsState {
     required this.defaultDismissSettings,
     required this.defaultSnoozeSettings,
     required this.weatherAwareEnabled,
+    required this.adaptiveDifficultyEnabled,
   });
 
   SettingsState copyWith({
@@ -77,6 +80,7 @@ class SettingsState {
     DismissSettings? defaultDismissSettings,
     SnoozeSettings? defaultSnoozeSettings,
     bool? weatherAwareEnabled,
+    bool? adaptiveDifficultyEnabled,
   }) => SettingsState(
     themeMode: themeMode ?? this.themeMode,
     use24HourFormat: use24HourFormat ?? this.use24HourFormat,
@@ -92,6 +96,8 @@ class SettingsState {
         defaultDismissSettings ?? this.defaultDismissSettings,
     defaultSnoozeSettings: defaultSnoozeSettings ?? this.defaultSnoozeSettings,
     weatherAwareEnabled: weatherAwareEnabled ?? this.weatherAwareEnabled,
+    adaptiveDifficultyEnabled:
+        adaptiveDifficultyEnabled ?? this.adaptiveDifficultyEnabled,
   );
 
   /// Build a ready-to-use AlarmModel seeded with these defaults.
@@ -132,6 +138,8 @@ class SettingsCubit extends Cubit<SettingsState> {
             as Map<String, dynamic>,
       ),
       weatherAwareEnabled: (p.get<int>(_K.weatherAwareEnabled) ?? 1) == 1,
+      adaptiveDifficultyEnabled:
+          (p.get<int>(_K.adaptiveDifficultyEnabled) ?? 1) == 1,
     );
   }
 
@@ -236,6 +244,14 @@ class SettingsCubit extends Cubit<SettingsState> {
         defaultSnoozeSettings: snoozeSettings,
       ),
     );
+  }
+
+  Future<void> setAdaptiveDifficultyEnabled(bool v) async {
+    await SharedPreferencesWithCache.instance.setInt(
+      _K.adaptiveDifficultyEnabled,
+      v ? 1 : 0,
+    );
+    emit(state.copyWith(adaptiveDifficultyEnabled: v));
   }
 
   Future<void> setWeatherAwareEnabled(bool v) async {
