@@ -112,6 +112,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Future<void> _replayOnboarding() async {
+    final shouldOpen = await showDialog<bool>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Replay onboarding'), // TODO: localize
+            content: const Text(
+              'This will show the introduction screens again. Your alarms, settings, and wake-up logs will not be deleted.',
+            ), // TODO: localize
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancel'), // TODO: localize
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Replay'), // TODO: localize
+              ),
+            ],
+          ),
+    );
+
+    if (!mounted || shouldOpen != true) return;
+
+    context.pushNamed(AppRoute.onboarding.name);
+  }
+
   // ── build ──────────────────────────────────────────────────────────────────
 
   @override
@@ -271,6 +298,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     icon: Icons.info_outline,
                     label: 'About Alarm Walker', // TODO: localize
                     subtitle: _version,
+                    isDark: isDark,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SettingsTile(
+                  onTap: _replayOnboarding,
+                  child: _NavRow(
+                    icon: Icons.play_circle_outline,
+                    label: 'Replay onboarding', // TODO: localize
+                    subtitle: 'View the introduction and category guide again',
                     isDark: isDark,
                   ),
                 ),
