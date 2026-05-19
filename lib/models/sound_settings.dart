@@ -1,4 +1,7 @@
 class SoundSettings {
+  static const defaultSoundPath = 'assets/sounds/alarm_1.mp3';
+  static const defaultSoundName = 'Alarm 1';
+
   final String? soundPath;
   final String? soundName;
   final bool overrideVolume;
@@ -10,8 +13,8 @@ class SoundSettings {
   final bool flashlight;
 
   const SoundSettings({
-    this.soundPath,
-    this.soundName,
+    this.soundPath = defaultSoundPath,
+    this.soundName = defaultSoundName,
     this.overrideVolume = false,
     this.volume = 0.8,
     this.allowMidAlarmVolumeChange = true,
@@ -59,8 +62,14 @@ class SoundSettings {
   };
 
   factory SoundSettings.fromJson(Map<String, dynamic> json) => SoundSettings(
-    soundPath: json['soundPath'] as String?,
-    soundName: json['soundName'] as String?,
+    soundPath:
+        json.containsKey('soundPath')
+            ? json['soundPath'] as String?
+            : defaultSoundPath,
+    soundName:
+        json.containsKey('soundName')
+            ? json['soundName'] as String?
+            : defaultSoundName,
     overrideVolume: json['overrideVolume'] as bool? ?? false,
     volume: (json['volume'] as num?)?.toDouble() ?? 0.8,
     allowMidAlarmVolumeChange:

@@ -109,7 +109,7 @@ class SettingsCubit extends Cubit<SettingsState> {
       use24HourFormat: (p.get<int>(_K.use24HourFormat) ?? 0) == 1,
       defaultVolume: p.get<double>(_K.defaultVolume) ?? 0.8,
       defaultAudioPath:
-          p.get<String>(_K.defaultAudioPath) ?? 'assets/alarm_ringtone.mp3',
+          p.get<String>(_K.defaultAudioPath) ?? SoundSettings.defaultSoundPath,
       defaultFadeIn: (p.get<int>(_K.defaultFadeIn) ?? 0) == 1,
       defaultVibration: (p.get<int>(_K.defaultVibration) ?? 1) == 1,
       defaultFlashlight: (p.get<int>(_K.defaultFlashlight) ?? 0) == 1,

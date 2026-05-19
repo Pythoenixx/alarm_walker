@@ -1,11 +1,13 @@
+import 'dart:io';
+
 import 'package:alarm_walker/extensions/context_extensions.dart';
 import 'package:alarm_walker/models/sound_settings.dart';
 import 'package:alarm_walker/theme/app_colors.dart';
 import 'package:alarm_walker/theme/app_text_styles.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-
-// TODO: add `file_picker` package for device audio selection
-// TODO: add `just_audio` (or similar) package for sound preview
+import 'package:path/path.dart' as path;
+import 'package:path_provider/path_provider.dart';
 
 class SoundSettingsScreen extends StatefulWidget {
   final SoundSettings initial;
@@ -19,13 +21,23 @@ class _SoundSettingsScreenState extends State<SoundSettingsScreen> {
   late SoundSettings _settings;
 
   // Preset sounds bundled with the app.
-  // Key = display name, value = asset path (null = system default).
+  // Keep only assets that actually exist in the project.
+  // Custom audio from the user's device is handled by _pickFromDevice().
   static const _presets = <String, String?>{
-    'Default': null,
-    'Gentle Rise': 'assets/sounds/gentle_rise.mp3',
-    'Digital': 'assets/sounds/digital.mp3',
-    'Chime': 'assets/sounds/chime.mp3',
-    'Radar': 'assets/sounds/radar.mp3',
+    'Alarm 1': 'assets/sounds/alarm_1.mp3',
+    'Samsung Alarm': 'assets/sounds/alarm_samsung.mp3',
+    'Smooth Alarm': 'assets/sounds/smooth_alarm.mp3',
+    'Rooster Alarm': 'assets/sounds/rooster_alarm.mp3',
+    'Birds': 'assets/sounds/birds.mp3',
+    'System Default': null,
+  };
+
+  static const _allowedAudioExtensions = <String>{
+    'mp3',
+    'wav',
+    'm4a',
+    'aac',
+    'ogg',
   };
 
   @override
@@ -36,25 +48,101 @@ class _SoundSettingsScreenState extends State<SoundSettingsScreen> {
 
   void _save() => Navigator.of(context).pop(_settings);
 
-  Future<void> _pickFromDevice() async {
-    // TODO: use file_picker to pick an audio file from device
-    // Example:
-    //   final result = await FilePicker.platform.pickFiles(type: FileType.audio);
-    //   if (result != null) {
-    //     final path = result.files.single.path!;
-    //     final name = result.files.single.name;
-    //     setState(() => _settings = _settings.copyWith(soundPath: path, soundName: name));
-    //   }
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('File picker not yet integrated')),
-    );
+  bool _isSupportedAudioFile(String fileName) {
+    final extension = fileName.split('.').last.toLowerCase();
+    return _allowedAudioExtensions.contains(extension);
   }
 
-  Future<void> _previewSound() async {
-    // TODO: play _settings.soundPath (or default) for ~3 seconds
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Preview not yet integrated')));
+  Future<String> _copyCustomSoundToAppStorage({
+    required PlatformFile file,
+    required String sourcePath,
+  }) async {
+    final sourceFile = File(sourcePath);
+
+    if (!await sourceFile.exists()) {
+      throw const FileSystemException('Selected audio file does not exist.');
+    }
+
+    final appDir = await getApplicationDocumentsDirectory();
+    final customSoundDir = Directory(path.join(appDir.path, 'custom_sounds'));
+
+    if (!await customSoundDir.exists()) {
+      await customSoundDir.create(recursive: true);
+    }
+
+    final safeName = file.name.replaceAll(RegExp(r'[^A-Za-z0-9._-]'), '_');
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final destinationPath = path.join(
+      customSoundDir.path,
+      '$timestamp-$safeName',
+    );
+
+    final copiedFile = await sourceFile.copy(destinationPath);
+    return copiedFile.path;
+  }
+
+  Future<void> _pickFromDevice() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.audio,
+      allowMultiple: false,
+    );
+
+    if (!mounted || result == null) return;
+
+    final file = result.files.single;
+    final sourcePath = file.path;
+
+    if (sourcePath == null || sourcePath.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Unable to read the selected audio file path.'),
+        ),
+      );
+      return;
+    }
+
+    if (!_isSupportedAudioFile(file.name)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select an MP3, WAV, M4A, AAC, or OGG file.'),
+        ),
+      );
+      return;
+    }
+
+    try {
+      final savedPath = await _copyCustomSoundToAppStorage(
+        file: file,
+        sourcePath: sourcePath,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _settings = _settings.copyWith(
+          soundPath: savedPath,
+          soundName: file.name,
+        );
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Selected ${file.name}')),
+      );
+    } catch (_) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Unable to save the selected audio file.'),
+        ),
+      );
+    }
+  }
+
+  void _clearCustomSound() {
+    setState(() {
+      _settings = _settings.copyWith(clearSound: true);
+    });
   }
 
   Widget _buildSection(String title, List<Widget> children, bool isDark) {
@@ -91,6 +179,8 @@ class _SoundSettingsScreenState extends State<SoundSettingsScreen> {
   Widget build(BuildContext context) {
     final bool isDark = context.isDarkMode;
     final s = _settings;
+    final isCustomSound =
+        s.soundPath != null && !_presets.values.contains(s.soundPath);
 
     return Scaffold(
       backgroundColor:
@@ -131,19 +221,24 @@ class _SoundSettingsScreenState extends State<SoundSettingsScreen> {
           children: [
             // ── Sound picker ───────────────────────────────────────────────
             _buildSection('Sound', [
-              // TODO: localize
-              // Current selection + preview
               ListTile(
                 leading: const Icon(Icons.music_note),
                 title: Text(s.soundName ?? 'Default'),
-                trailing: IconButton(
-                  icon: const Icon(Icons.play_arrow),
-                  onPressed: _previewSound,
-                  tooltip: 'Preview',
+                subtitle: Text(
+                  isCustomSound
+                      ? 'Saved custom audio from device'
+                      : 'Bundled alarm sound',
                 ),
+                trailing:
+                    isCustomSound
+                        ? IconButton(
+                          icon: const Icon(Icons.close),
+                          tooltip: 'Remove custom sound',
+                          onPressed: _clearCustomSound,
+                        )
+                        : null,
               ),
               const Divider(height: 1, indent: 16),
-              // Presets
               ..._presets.entries.map(
                 (e) => RadioListTile<String?>(
                   title: Text(e.key),
@@ -165,13 +260,13 @@ class _SoundSettingsScreenState extends State<SoundSettingsScreen> {
               ListTile(
                 leading: const Icon(Icons.folder_open),
                 title: const Text('From device…'), // TODO: localize
+                subtitle: const Text('Choose MP3, WAV, M4A, AAC, or OGG'),
                 onTap: _pickFromDevice,
               ),
             ], isDark),
 
             // ── Volume ─────────────────────────────────────────────────────
             _buildSection('Volume', [
-              // TODO: localize
               SwitchListTile(
                 secondary: const Icon(Icons.volume_up_outlined),
                 title: const Text('Override phone volume'), // TODO: localize
@@ -201,6 +296,7 @@ class _SoundSettingsScreenState extends State<SoundSettingsScreen> {
                                   max: 1,
                                   divisions: 10,
                                   activeColor: AppColors.primary,
+                                  label: '${(s.volume * 100).round()}%',
                                   onChanged:
                                       (v) => setState(
                                         () => _settings = s.copyWith(volume: v),
@@ -239,7 +335,6 @@ class _SoundSettingsScreenState extends State<SoundSettingsScreen> {
 
             // ── Fade in ────────────────────────────────────────────────────
             _buildSection('Fade in', [
-              // TODO: localize
               SwitchListTile(
                 secondary: const Icon(Icons.trending_up_outlined),
                 title: const Text(
@@ -294,7 +389,6 @@ class _SoundSettingsScreenState extends State<SoundSettingsScreen> {
 
             // ── Haptics ────────────────────────────────────────────────────
             _buildSection('Haptics', [
-              // TODO: localize
               SwitchListTile(
                 secondary: const Icon(Icons.vibration),
                 title: const Text('Vibrate'), // TODO: localize
@@ -307,7 +401,6 @@ class _SoundSettingsScreenState extends State<SoundSettingsScreen> {
 
             // ── Flashlight ─────────────────────────────────────────────────
             _buildSection('Flashlight', [
-              // TODO: localize
               SwitchListTile(
                 secondary: const Icon(Icons.flashlight_on_outlined),
                 title: const Text('Flash torch on alarm'), // TODO: localize
