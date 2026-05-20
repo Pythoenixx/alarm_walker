@@ -478,6 +478,24 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
+
+String _formatDurationMs(int milliseconds) {
+  if (milliseconds <= 0) return '0s';
+
+  final seconds = milliseconds / 1000;
+
+  if (seconds < 60) {
+    final decimals = seconds < 10 && seconds != seconds.roundToDouble() ? 1 : 0;
+    return '${seconds.toStringAsFixed(decimals)}s';
+  }
+
+  final minutes = seconds ~/ 60;
+  final remainingSeconds = (seconds % 60).round();
+
+  if (remainingSeconds == 0) return '${minutes}m';
+  return '${minutes}m ${remainingSeconds}s';
+}
+
 class _SummaryCards extends StatelessWidget {
   final Map<String, Object?> summary;
   final List<WakeLog> logs;
@@ -493,7 +511,7 @@ class _SummaryCards extends StatelessWidget {
   Widget build(BuildContext context) {
     final total = summary['total'] as int? ?? 0;
     final success = summary['successes'] as int? ?? 0;
-    final avg = (summary['avg_duration'] as num?)?.toInt() ?? 0;
+    final avgMs = (summary['avg_duration'] as num?)?.round() ?? 0;
     final successRate = total > 0 ? (success / total * 100).round() : 0;
     final totalSnoozes = logs.fold<int>(0, (sum, log) => sum + log.snoozeCount);
 
@@ -531,7 +549,7 @@ class _SummaryCards extends StatelessWidget {
               child: _StatCard(
                 icon: Icons.timer_rounded,
                 label: 'Avg Disarm',
-                value: '${avg}s',
+                value: _formatDurationMs(avgMs),
                 caption: 'Challenge time',
                 isDark: isDark,
                 color: Colors.orange,
@@ -1090,7 +1108,7 @@ class _WakeLogCard extends StatelessWidget {
                     ),
                     _CompactMetric(
                       icon: Icons.timer_rounded,
-                      label: '${log.disarmDurationMs ~/ 1000}s disarm',
+                      label: '${_formatDurationMs(log.disarmDurationMs)} disarm',
                       isDark: isDark,
                     ),
                   ],
