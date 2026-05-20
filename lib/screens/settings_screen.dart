@@ -1,6 +1,7 @@
 import 'package:alarm_walker/app_router.dart';
 import 'package:alarm_walker/extensions/context_extensions.dart';
 import 'package:alarm_walker/models/alarm_model.dart';
+import 'package:alarm_walker/models/app_language.dart';
 import 'package:alarm_walker/models/dismiss_settings.dart';
 import 'package:alarm_walker/models/snooze_settings.dart';
 import 'package:alarm_walker/models/sound_settings.dart';
@@ -80,6 +81,56 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
     if (result != null) await cubit.setDefaultSnoozeSettings(result);
+  }
+
+
+  Future<void> _openLanguagePicker(
+    SettingsCubit cubit,
+    SettingsState state,
+  ) async {
+    final result = await showDialog<AppLanguage>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Language'), // TODO: localize
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children:
+                  AppLanguage.values
+                      .map(
+                        (language) => RadioListTile<AppLanguage>(
+                          value: language,
+                          groupValue: state.appLanguage,
+                          onChanged: (value) => Navigator.of(context).pop(value),
+                          title: Text(language.label),
+                          subtitle: Text(language.description),
+                        ),
+                      )
+                      .toList(),
+            ),
+          ),
+    );
+
+    if (result != null) await cubit.setLanguage(result);
+  }
+
+  Future<void> _openBedtimePicker(
+    SettingsCubit cubit,
+    SettingsState state,
+  ) async {
+    final result = await showTimePicker(
+      context: context,
+      initialTime: state.bedtimeAlertTime,
+      builder:
+          (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              alwaysUse24HourFormat: state.use24HourFormat,
+            ),
+            child: child ?? const SizedBox.shrink(),
+          ),
+    );
+
+    if (result != null) await cubit.setBedtimeAlertTime(result);
   }
 
   // ── permissions ────────────────────────────────────────────────────────────
@@ -198,6 +249,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 const SizedBox(height: 8),
                 SettingsTile(
+                  onTap: () => _openLanguagePicker(cubit, state),
+                  child: _NavRow(
+                    icon: Icons.translate_outlined,
+                    label: 'Language', // TODO: localize
+                    subtitle: state.appLanguage.label,
+                    isDark: isDark,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SettingsTile(
                   onTap: () => cubit.setUse24HourFormat(!state.use24HourFormat),
                   child: _SwitchRow(
                     label: context.localization.format24h,
@@ -239,6 +300,75 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     label: 'Adjust future alarm defaults', // TODO: localize
                     value: state.adaptiveDifficultyEnabled,
                     onChanged: cubit.setAdaptiveDifficultyEnabled,
+                    isDark: isDark,
+                  ),
+                ),
+
+                // ── Reminder options ─────────────────────────────────────
+                _SectionHeader(
+                  label: 'Reminder options',
+                  isDark: isDark,
+                ), // TODO: localize
+                SettingsTile(
+                  onTap:
+                      () => cubit.setBedtimeAlertEnabled(
+                        !state.bedtimeAlertEnabled,
+                      ),
+                  child: _SwitchRow(
+                    label: 'Bedtime alert', // TODO: localize
+                    value: state.bedtimeAlertEnabled,
+                    onChanged: cubit.setBedtimeAlertEnabled,
+                    isDark: isDark,
+                  ),
+                ),
+                if (state.bedtimeAlertEnabled) ...[
+                  const SizedBox(height: 8),
+                  SettingsTile(
+                    onTap: () => _openBedtimePicker(cubit, state),
+                    child: _NavRow(
+                      icon: Icons.bedtime_outlined,
+                      label: 'Bedtime reminder time', // TODO: localize
+                      subtitle: _formatTime(state.bedtimeAlertTime, state),
+                      isDark: isDark,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 8),
+                SettingsTile(
+                  onTap:
+                      () => cubit.setWeekendReminderEnabled(
+                        !state.weekendReminderEnabled,
+                      ),
+                  child: _SwitchRow(
+                    label: 'Weekend reminder', // TODO: localize
+                    value: state.weekendReminderEnabled,
+                    onChanged: cubit.setWeekendReminderEnabled,
+                    isDark: isDark,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SettingsTile(
+                  onTap:
+                      () => cubit.setVacationModeEnabled(
+                        !state.vacationModeEnabled,
+                      ),
+                  child: _SwitchRow(
+                    label: 'Vacation mode', // TODO: localize
+                    value: state.vacationModeEnabled,
+                    onChanged: cubit.setVacationModeEnabled,
+                    isDark: isDark,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SettingsTile(
+                  onTap:
+                      () => cubit.setStickyAlarmTimeEnabled(
+                        !state.stickyAlarmTimeEnabled,
+                      ),
+                  child: _SwitchRow(
+                    label: 'Sticky alarm time', // TODO: localize
+                    value: state.stickyAlarmTimeEnabled,
+                    onChanged: cubit.setStickyAlarmTimeEnabled,
                     isDark: isDark,
                   ),
                 ),
@@ -346,6 +476,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           },
         ),
       ),
+    );
+  }
+
+  String _formatTime(TimeOfDay time, SettingsState state) {
+    return MaterialLocalizations.of(context).formatTimeOfDay(
+      time,
+      alwaysUse24HourFormat: state.use24HourFormat,
     );
   }
 

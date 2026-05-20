@@ -6,6 +6,7 @@ import 'package:alarm_walker/extensions/context_extensions.dart';
 import 'package:alarm_walker/firebase_options.dart';
 import 'package:alarm_walker/l10n/generated/app_localizations.dart';
 import 'package:alarm_walker/models/alarm_repository.dart';
+import 'package:alarm_walker/models/app_language.dart';
 import 'package:alarm_walker/models/user_profile_repository.dart';
 import 'package:alarm_walker/models/wake_log_repository.dart';
 import 'package:alarm_walker/services/alarm_cubit.dart';
@@ -34,6 +35,15 @@ void main() async {
   } else {
     runApp(const MyApp());
   }
+}
+
+Locale? _resolveLocale(
+  AppLanguage language,
+  BuildContext context,
+  bool previewEnabled,
+) {
+  if (language != AppLanguage.system) return language.locale;
+  return previewEnabled ? DevicePreview.locale(context) : null;
 }
 
 class MyApp extends StatelessWidget {
@@ -86,7 +96,7 @@ class MyApp extends StatelessWidget {
             routerConfig: _router,
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            locale: previewEnabled ? DevicePreview.locale(context) : null,
+            locale: _resolveLocale(state.appLanguage, context, previewEnabled),
             builder: previewEnabled ? DevicePreview.appBuilder : null,
           );
         },
