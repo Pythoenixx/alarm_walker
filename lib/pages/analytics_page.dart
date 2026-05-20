@@ -1,6 +1,7 @@
 import 'package:alarm_walker/models/profile_category.dart';
 import 'package:alarm_walker/services/admin_report_service.dart';
 import 'package:alarm_walker/theme/app_colors.dart';
+import 'package:alarm_walker/widgets/admin_category_donut_chart.dart';
 import 'package:flutter/material.dart';
 
 class AnalyticsPage extends StatefulWidget {
@@ -102,6 +103,10 @@ class _ReportSummary extends StatelessWidget {
           _ReportChip(label: 'Adult', value: metrics.adultUsers.toString()),
           _ReportChip(label: 'Senior', value: metrics.seniorUsers.toString()),
           _ReportChip(label: 'Top Category', value: metrics.topCategoryLabel),
+          _ReportChip(
+            label: 'Email Coverage',
+            value: '${metrics.emailCoveragePercent.toStringAsFixed(0)}%',
+          ),
         ],
       ),
     );
@@ -118,45 +123,74 @@ class _CategoryReport extends StatelessWidget {
     return _ReportPanel(
       title: 'Profile Category Report',
       subtitle: 'Used to verify profile-category support and default difficulty grouping.',
-      child: Column(
-        children:
-            ProfileCategory.values.map((category) {
-              final count = metrics.countFor(category);
-              final percent = metrics.percentFor(category);
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 16,
-                      backgroundColor: _categoryColor(category).withValues(alpha: 0.12),
-                      child: Icon(_categoryIcon(category), size: 16, color: _categoryColor(category)),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(category.label, style: const TextStyle(fontWeight: FontWeight.w700)),
-                          const SizedBox(height: 6),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(99),
-                            child: LinearProgressIndicator(
-                              minHeight: 7,
-                              value: percent / 100,
-                              backgroundColor: _categoryColor(category).withValues(alpha: 0.12),
-                              valueColor: AlwaysStoppedAnimation<Color>(_categoryColor(category)),
-                            ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isCompact = constraints.maxWidth < 620;
+          final chart = AdminCategoryDonutChart(
+            counts: metrics.categoryCounts,
+            total: metrics.totalUsers,
+            size: isCompact ? 160 : 190,
+            strokeWidth: 20,
+          );
+          final legend = Column(
+            children:
+                ProfileCategory.values.map((category) {
+                  final count = metrics.countFor(category);
+                  final percent = metrics.percentFor(category);
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 16,
+                          backgroundColor: _categoryColor(category).withValues(alpha: 0.12),
+                          child: Icon(_categoryIcon(category), size: 16, color: _categoryColor(category)),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(category.label, style: const TextStyle(fontWeight: FontWeight.w700)),
+                              const SizedBox(height: 6),
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(99),
+                                child: LinearProgressIndicator(
+                                  minHeight: 7,
+                                  value: percent / 100,
+                                  backgroundColor: _categoryColor(category).withValues(alpha: 0.12),
+                                  valueColor: AlwaysStoppedAnimation<Color>(_categoryColor(category)),
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
+                        ),
+                        const SizedBox(width: 12),
+                        Text('$count (${percent.toStringAsFixed(0)}%)'),
+                      ],
                     ),
-                    const SizedBox(width: 12),
-                    Text('$count (${percent.toStringAsFixed(0)}%)'),
-                  ],
-                ),
-              );
-            }).toList(),
+                  );
+                }).toList(),
+          );
+
+          if (isCompact) {
+            return Column(
+              children: [
+                chart,
+                const SizedBox(height: 20),
+                legend,
+              ],
+            );
+          }
+
+          return Row(
+            children: [
+              chart,
+              const SizedBox(width: 28),
+              Expanded(child: legend),
+            ],
+          );
+        },
       ),
     );
   }

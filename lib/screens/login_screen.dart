@@ -81,6 +81,14 @@ class _LoginScreenState extends State<LoginScreen> {
         cloudData: data,
       );
 
+      unawaited(
+        ProfileCategorySyncService.syncAccountEmail(
+          userId: user.uid,
+          email: user.email,
+          cloudData: data,
+        ),
+      );
+
       final profile = UserProfile(
         userId: user.uid,
         name: data['name'],

@@ -1,6 +1,7 @@
 import 'package:alarm_walker/models/profile_category.dart';
 import 'package:alarm_walker/services/admin_report_service.dart';
 import 'package:alarm_walker/theme/app_colors.dart';
+import 'package:alarm_walker/widgets/admin_category_donut_chart.dart';
 import 'package:flutter/material.dart';
 
 class DashboardPage extends StatefulWidget {
@@ -99,10 +100,10 @@ class _OverviewGrid extends StatelessWidget {
           color: AppColors.primary,
         ),
         _MetricCard(
-          icon: Icons.person_outline,
-          title: 'Adult Users',
-          value: metrics.adultUsers.toString(),
-          note: 'Default fallback category',
+          icon: Icons.alternate_email_outlined,
+          title: 'Email Coverage',
+          value: '${metrics.emailCoveragePercent.toStringAsFixed(0)}%',
+          note: '${metrics.usersWithEmail}/${metrics.totalUsers} users have email',
           color: Colors.blue,
         ),
         _MetricCard(
@@ -134,21 +135,49 @@ class _CategoryDistributionCard extends StatelessWidget {
     return _PanelCard(
       title: 'Profile Category Distribution',
       subtitle: 'Shows how users are grouped for difficulty presets.',
-      child: Column(
-        children:
-            ProfileCategory.values.map((category) {
-              final count = metrics.countFor(category);
-              final percent = metrics.percentFor(category);
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 14),
-                child: _CategoryProgressRow(
-                  label: category.label,
-                  count: count,
-                  percent: percent,
-                  color: _categoryColor(category),
-                ),
-              );
-            }).toList(),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isCompact = constraints.maxWidth < 520;
+          final chart = AdminCategoryDonutChart(
+            counts: metrics.categoryCounts,
+            total: metrics.totalUsers,
+            size: isCompact ? 150 : 170,
+          );
+          final legend = Column(
+            children:
+                ProfileCategory.values.map((category) {
+                  final count = metrics.countFor(category);
+                  final percent = metrics.percentFor(category);
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 14),
+                    child: _CategoryProgressRow(
+                      label: category.label,
+                      count: count,
+                      percent: percent,
+                      color: _categoryColor(category),
+                    ),
+                  );
+                }).toList(),
+          );
+
+          if (isCompact) {
+            return Column(
+              children: [
+                chart,
+                const SizedBox(height: 18),
+                legend,
+              ],
+            );
+          }
+
+          return Row(
+            children: [
+              chart,
+              const SizedBox(width: 24),
+              Expanded(child: legend),
+            ],
+          );
+        },
       ),
     );
   }
@@ -184,6 +213,14 @@ class _SystemHealthCard extends StatelessWidget {
             title: 'Issue reporting',
             message: issueText,
             color: Colors.orange,
+          ),
+          const SizedBox(height: 12),
+          _HealthItem(
+            icon: Icons.alternate_email_outlined,
+            title: 'Email display data',
+            message:
+                '${metrics.usersWithEmail} of ${metrics.totalUsers} user record(s) include email for admin display.',
+            color: Colors.blue,
           ),
           const SizedBox(height: 12),
           _HealthItem(
@@ -224,7 +261,7 @@ class _RecentUsersCard extends StatelessWidget {
                           child: const Icon(Icons.person_outline, color: AppColors.primary),
                         ),
                         title: Text(user.name),
-                        subtitle: Text(user.userId),
+                        subtitle: Text(user.hasEmail ? user.displayEmail : user.userId),
                         trailing: Chip(label: Text(user.profileCategory.label)),
                       );
                     }).toList(),

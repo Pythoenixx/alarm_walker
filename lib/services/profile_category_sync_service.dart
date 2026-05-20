@@ -43,6 +43,32 @@ class ProfileCategorySyncService {
     }
   }
 
+
+  /// Stores the Firebase Authentication email in the Firestore user document
+  /// when it is missing. This keeps the admin user-management screen useful
+  /// because client apps cannot directly list Firebase Auth users.
+  static Future<bool> syncAccountEmail({
+    required String userId,
+    required String? email,
+    Map<String, dynamic>? cloudData,
+  }) async {
+    final trimmedEmail = email?.trim();
+    if (trimmedEmail == null || trimmedEmail.isEmpty) return false;
+
+    try {
+      final doc = _users.doc(userId);
+      final data = cloudData ?? (await doc.get()).data();
+      final currentEmail = data?['email']?.toString().trim() ?? '';
+
+      if (currentEmail.isNotEmpty) return true;
+
+      await doc.set({'email': trimmedEmail}, SetOptions(merge: true));
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   /// Saves the selected profile category to Firestore without touching other
   /// user fields. Returns false when cloud sync fails, but local profile data
   /// can still continue working offline.

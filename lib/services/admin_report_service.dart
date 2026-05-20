@@ -8,6 +8,9 @@ class AdminUserSummary {
   final String email;
   final ProfileCategory profileCategory;
 
+  bool get hasEmail => email.trim().isNotEmpty;
+  String get displayEmail => hasEmail ? email : 'Email unavailable';
+
   const AdminUserSummary({
     required this.docId,
     required this.userId,
@@ -20,6 +23,7 @@ class AdminUserSummary {
 class AdminReportMetrics {
   final int totalUsers;
   final int issueLogs;
+  final int usersWithEmail;
   final bool issueLogsAvailable;
   final String? issueLogsError;
   final Map<ProfileCategory, int> categoryCounts;
@@ -29,6 +33,7 @@ class AdminReportMetrics {
   const AdminReportMetrics({
     required this.totalUsers,
     required this.issueLogs,
+    required this.usersWithEmail,
     required this.issueLogsAvailable,
     required this.categoryCounts,
     required this.recentUsers,
@@ -58,6 +63,13 @@ class AdminReportMetrics {
 
   String get topCategoryLabel => topCategory.label;
 
+  int get usersMissingEmail => totalUsers - usersWithEmail;
+
+  double get emailCoveragePercent {
+    if (totalUsers == 0) return 0;
+    return (usersWithEmail / totalUsers) * 100;
+  }
+
   double percentFor(ProfileCategory category) {
     if (totalUsers == 0) return 0;
     return (countFor(category) / totalUsers) * 100;
@@ -79,7 +91,7 @@ class AdminReportService {
             docId: doc.id,
             userId: _readText(data, 'userId', fallback: doc.id),
             name: _readText(data, 'name', fallback: 'Unnamed User'),
-            email: _readText(data, 'email', fallback: 'N/A'),
+            email: _readText(data, 'email', fallback: ''),
             profileCategory: ProfileCategory.fromName(
               _readText(data, 'profileCategory', fallback: 'adult'),
             ),
@@ -113,6 +125,7 @@ class AdminReportService {
     return AdminReportMetrics(
       totalUsers: users.length,
       issueLogs: issueLogs,
+      usersWithEmail: users.where((user) => user.hasEmail).length,
       issueLogsAvailable: issueLogsAvailable,
       issueLogsError: issueLogsError,
       categoryCounts: categoryCounts,

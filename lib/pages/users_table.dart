@@ -69,7 +69,7 @@ class _UsersTableState extends State<UsersTable> {
                   allDocs.where((doc) {
                     final data = doc.data();
                     final name = _readText(data, 'name').toLowerCase();
-                    final email = _readText(data, 'email').toLowerCase();
+                    final email = _readText(data, 'email', fallback: '').toLowerCase();
                     final userId = _readText(data, 'userId', fallback: doc.id).toLowerCase();
                     return name.contains(_searchQuery) ||
                         email.contains(_searchQuery) ||
@@ -111,7 +111,8 @@ class _UsersTableState extends State<UsersTable> {
                                   filteredDocs.map((doc) {
                                     final data = doc.data();
                                     final name = _readText(data, 'name', fallback: 'Unnamed User');
-                                    final email = _readText(data, 'email', fallback: 'N/A');
+                                    final email = _readText(data, 'email', fallback: '');
+                                    final emailLabel = _emailLabel(email);
                                     final userId = _readText(data, 'userId', fallback: doc.id);
                                     final language = _readText(data, 'language', fallback: 'en');
                                     final theme = _readText(data, 'theme', fallback: 'system');
@@ -122,7 +123,7 @@ class _UsersTableState extends State<UsersTable> {
                                     return DataRow(
                                       cells: [
                                         DataCell(Text(name)),
-                                        DataCell(Text(email)),
+                                        DataCell(Text(emailLabel)),
                                         DataCell(SelectableText(userId)),
                                         DataCell(Chip(label: Text(category.label))),
                                         DataCell(Text(language.toUpperCase())),
@@ -185,7 +186,7 @@ class _UsersTableState extends State<UsersTable> {
                   _DetailRow(label: 'Document ID', value: docId),
                   _DetailRow(label: 'User ID', value: _readText(data, 'userId', fallback: docId)),
                   _DetailRow(label: 'Name', value: _readText(data, 'name', fallback: 'Unnamed User')),
-                  _DetailRow(label: 'Email', value: _readText(data, 'email', fallback: 'N/A')),
+                  _DetailRow(label: 'Email', value: _emailLabel(_readText(data, 'email', fallback: ''))),
                   _DetailRow(label: 'Profile Category', value: category.label),
                   _DetailRow(label: 'Language', value: _readText(data, 'language', fallback: 'en').toUpperCase()),
                   _DetailRow(label: 'Theme', value: _readText(data, 'theme', fallback: 'system')),
@@ -231,6 +232,11 @@ class _UsersTableState extends State<UsersTable> {
             ],
           ),
     );
+  }
+
+  static String _emailLabel(String email) {
+    final trimmed = email.trim();
+    return trimmed.isEmpty ? 'Email unavailable' : trimmed;
   }
 
   static String _readText(
