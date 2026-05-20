@@ -204,9 +204,9 @@ class _DismissModeConfigScreenState extends State<DismissModeConfigScreen> {
       _sliderRow(
         label: 'Shakes required',
         value: _s.shakeCount.toDouble(),
-        min: 10,
+        min: 1,
         max: 100,
-        divisions: 18,
+        divisions: 99,
         display: (v) => '${v.round()}×',
         onChanged:
             (v) => setState(() => _s = _s.copyWith(shakeCount: v.round())),
