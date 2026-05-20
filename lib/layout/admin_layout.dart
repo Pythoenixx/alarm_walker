@@ -28,8 +28,8 @@ class _AdminLayoutState extends State<AdminLayout> {
             },
           ),
           Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
+            child: ColoredBox(
+              color: Theme.of(context).scaffoldBackgroundColor,
               child: pages[selectedIndex],
             ),
           ),
