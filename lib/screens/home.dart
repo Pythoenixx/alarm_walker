@@ -9,6 +9,7 @@ import 'package:alarm_walker/models/alarm_model.dart';
 import 'package:alarm_walker/services/alarm_cubit.dart';
 import 'package:alarm_walker/services/alarm_permissions.dart';
 import 'package:alarm_walker/services/settings_cubit.dart';
+import 'package:alarm_walker/services/reminder_notification_service.dart';
 import 'package:alarm_walker/theme/app_colors.dart';
 import 'package:alarm_walker/theme/app_text_styles.dart';
 import 'package:alarm_walker/widgets/add_button.dart';
@@ -67,6 +68,9 @@ class _HomeState extends State<Home> {
           .then((_) => AlarmPermissions.checkAutoStartPermission()),
     );
     _ringSubscription = Alarm.ringing.listen(_ringingAlarmsChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(_syncReminderNotifications());
+    });
   }
 
   @override
@@ -121,6 +125,71 @@ class _HomeState extends State<Home> {
         AppRoute.alarmGate.name,
         extra: (alarmRinging, alarmModel),
       ),
+    );
+  }
+
+  Future<void> _syncReminderNotifications() async {
+    if (!mounted) return;
+    final settings = context.read<SettingsCubit>().state;
+    final alarms = context.read<AlarmCubit>().state;
+    await ReminderNotificationService.sync(settings: settings, alarms: alarms);
+  }
+
+  Widget _vacationBanner(bool isDark) {
+    return BlocSelector<SettingsCubit, SettingsState, bool>(
+      selector: (state) => state.vacationModeEnabled,
+      builder: (context, vacationModeEnabled) {
+        if (!vacationModeEnabled) return const SizedBox.shrink();
+
+        return Container(
+          margin: const EdgeInsets.only(top: 12, bottom: 4),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.orange.withOpacity(isDark ? 0.16 : 0.12),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: Colors.orange.withOpacity(0.35)),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.beach_access_outlined, color: Colors.orange),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Vacation mode is on',
+                      style: AppTextStyles.body(context).copyWith(
+                        color: Colors.orange.shade700,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Your scheduled alarms are paused until you turn this off.',
+                      style: AppTextStyles.caption(context).copyWith(
+                        color: isDark
+                            ? AppColors.darkBackgroundText
+                            : AppColors.lightBackgroundText,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              TextButton(
+                onPressed: () async {
+                  final settingsCubit = context.read<SettingsCubit>();
+                  await settingsCubit.setVacationModeEnabled(false);
+                  if (!mounted) return;
+                  await context.read<AlarmCubit>().reloadForCurrentOwner();
+                  await _syncReminderNotifications();
+                },
+                child: const Text('Turn off'),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -285,7 +354,11 @@ class _HomeState extends State<Home> {
                                     ],
                           ),
                         ),
-                        child: BlocBuilder<AlarmCubit, List<AlarmModel>>(
+                        child: BlocConsumer<AlarmCubit, List<AlarmModel>>(
+                          listenWhen: (previous, current) => previous != current,
+                          listener: (context, alarms) {
+                            unawaited(_syncReminderNotifications());
+                          },
                           buildWhen: (previous, current) => previous != current,
                           builder: (context, alarms) {
                             if (alarms.isEmpty) {
@@ -371,6 +444,7 @@ class _HomeState extends State<Home> {
                                                 ? const WeatherCard()
                                                 : const SizedBox.shrink(),
                                   ),
+                                  _vacationBanner(isDark),
                                   SizedBox(height: size.height * 0.08),
                                   Center(
                                     child: Column(
@@ -479,6 +553,7 @@ class _HomeState extends State<Home> {
                                                 ? const WeatherCard()
                                                 : const SizedBox.shrink(),
                                   ),
+                                  _vacationBanner(isDark),
                                   ...[
                                     for (
                                       int index = 0;

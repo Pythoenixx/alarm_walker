@@ -8,7 +8,9 @@ import 'package:alarm_walker/models/sound_settings.dart';
 import 'package:alarm_walker/screens/dismiss_settings_screen.dart';
 import 'package:alarm_walker/screens/snooze_settings_screen.dart';
 import 'package:alarm_walker/screens/sound_settings_screen.dart';
+import 'package:alarm_walker/services/alarm_cubit.dart';
 import 'package:alarm_walker/services/settings_cubit.dart';
+import 'package:alarm_walker/services/reminder_notification_service.dart';
 import 'package:alarm_walker/theme/app_colors.dart';
 import 'package:alarm_walker/theme/app_text_styles.dart';
 import 'package:alarm_walker/widgets/gradient_switch.dart';
@@ -130,7 +132,40 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
     );
 
-    if (result != null) await cubit.setBedtimeAlertTime(result);
+    if (result != null) {
+      await cubit.setBedtimeAlertTime(result);
+      await _syncReminderNotifications();
+    }
+  }
+
+  Future<void> _syncReminderNotifications() async {
+    final settings = context.read<SettingsCubit>().state;
+    final alarms = context.read<AlarmCubit>().state;
+    await ReminderNotificationService.sync(settings: settings, alarms: alarms);
+  }
+
+  Future<void> _setBedtimeAlertEnabled(SettingsCubit cubit, bool value) async {
+    await cubit.setBedtimeAlertEnabled(value);
+    await _syncReminderNotifications();
+  }
+
+  Future<void> _setWeekendReminderEnabled(SettingsCubit cubit, bool value) async {
+    await cubit.setWeekendReminderEnabled(value);
+    await _syncReminderNotifications();
+  }
+
+  Future<void> _setVacationModeEnabled(SettingsCubit cubit, bool value) async {
+    await cubit.setVacationModeEnabled(value);
+    await context.read<AlarmCubit>().reloadForCurrentOwner();
+    await _syncReminderNotifications();
+  }
+
+  Future<void> _setStickyAlarmNotificationEnabled(
+    SettingsCubit cubit,
+    bool value,
+  ) async {
+    await cubit.setStickyAlarmTimeEnabled(value);
+    await _syncReminderNotifications();
   }
 
   // ── permissions ────────────────────────────────────────────────────────────
@@ -311,13 +346,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ), // TODO: localize
                 SettingsTile(
                   onTap:
-                      () => cubit.setBedtimeAlertEnabled(
+                      () => _setBedtimeAlertEnabled(
+                        cubit,
                         !state.bedtimeAlertEnabled,
                       ),
                   child: _SwitchRow(
                     label: 'Bedtime alert', // TODO: localize
+                    subtitle: 'Remind me to prepare for sleep and check alarms.',
                     value: state.bedtimeAlertEnabled,
-                    onChanged: cubit.setBedtimeAlertEnabled,
+                    onChanged: (value) => _setBedtimeAlertEnabled(cubit, value),
                     isDark: isDark,
                   ),
                 ),
@@ -336,39 +373,51 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const SizedBox(height: 8),
                 SettingsTile(
                   onTap:
-                      () => cubit.setWeekendReminderEnabled(
+                      () => _setWeekendReminderEnabled(
+                        cubit,
                         !state.weekendReminderEnabled,
                       ),
                   child: _SwitchRow(
                     label: 'Weekend reminder', // TODO: localize
+                    subtitle: 'Warn me on weekends if no weekday alarm is set.',
                     value: state.weekendReminderEnabled,
-                    onChanged: cubit.setWeekendReminderEnabled,
+                    onChanged:
+                        (value) => _setWeekendReminderEnabled(cubit, value),
                     isDark: isDark,
                   ),
                 ),
                 const SizedBox(height: 8),
                 SettingsTile(
                   onTap:
-                      () => cubit.setVacationModeEnabled(
+                      () => _setVacationModeEnabled(
+                        cubit,
                         !state.vacationModeEnabled,
                       ),
                   child: _SwitchRow(
                     label: 'Vacation mode', // TODO: localize
+                    subtitle:
+                        state.vacationModeEnabled
+                            ? 'ON: scheduled alarms are paused until disabled.'
+                            : 'Pause scheduled alarms without deleting them.',
                     value: state.vacationModeEnabled,
-                    onChanged: cubit.setVacationModeEnabled,
+                    onChanged: (value) => _setVacationModeEnabled(cubit, value),
                     isDark: isDark,
                   ),
                 ),
                 const SizedBox(height: 8),
                 SettingsTile(
                   onTap:
-                      () => cubit.setStickyAlarmTimeEnabled(
+                      () => _setStickyAlarmNotificationEnabled(
+                        cubit,
                         !state.stickyAlarmTimeEnabled,
                       ),
                   child: _SwitchRow(
-                    label: 'Sticky alarm time', // TODO: localize
+                    label: 'Sticky alarm notification', // TODO: localize
+                    subtitle: 'Show a persistent notification for the next alarm.',
                     value: state.stickyAlarmTimeEnabled,
-                    onChanged: cubit.setStickyAlarmTimeEnabled,
+                    onChanged:
+                        (value) =>
+                            _setStickyAlarmNotificationEnabled(cubit, value),
                     isDark: isDark,
                   ),
                 ),
@@ -592,12 +641,14 @@ class _NavRow extends StatelessWidget {
 
 class _SwitchRow extends StatelessWidget {
   final String label;
+  final String? subtitle;
   final bool value;
   final ValueChanged<bool> onChanged;
   final bool isDark;
 
   const _SwitchRow({
     required this.label,
+    this.subtitle,
     required this.value,
     required this.onChanged,
     required this.isDark,
@@ -605,18 +656,31 @@ class _SwitchRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final muted =
+        isDark ? AppColors.darkBackgroundText : AppColors.lightBackgroundText;
+
     return Row(
       children: [
-        Text(
-          label,
-          style: AppTextStyles.body(context).copyWith(
-            color:
-                isDark
-                    ? AppColors.darkBackgroundText
-                    : AppColors.lightBackgroundText,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                label,
+                style: AppTextStyles.body(context).copyWith(color: muted),
+              ),
+              if (subtitle != null) ...[
+                const SizedBox(height: 2),
+                Text(
+                  subtitle!,
+                  style: AppTextStyles.caption(context).copyWith(color: muted),
+                ),
+              ],
+            ],
           ),
         ),
-        const Spacer(),
+        const SizedBox(width: 12),
         GradientSwitch(value: value, onChanged: onChanged),
       ],
     );

@@ -51,6 +51,14 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
 
   static String _logIdKey(int alarmId) => 'wake_log_id_$alarmId';
   static String _snoozeCountKey(int alarmId) => 'snooze_count_$alarmId';
+  static const String _vacationModeEnabledKey = 'vacationModeEnabled';
+
+  bool get _vacationModeEnabled =>
+      (SharedPreferencesWithCache.instance.get<int>(
+            _vacationModeEnabledKey,
+          ) ??
+          0) ==
+      1;
 
   String get currentOwnerId => FirebaseAuth.instance.currentUser?.uid ?? 'local';
 
@@ -74,6 +82,17 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
     final models = await alarmRepo.getAlarms(userId: ownerId);
     final modelIds = models.map((model) => model.alarmId).whereType<int>().toSet();
     final existingAlarms = presetAlarms ?? await Alarm.getAlarms();
+
+    if (_vacationModeEnabled) {
+      for (final alarm in existingAlarms) {
+        final dbAlarmId = int.tryParse(alarm.payload ?? '');
+        if (dbAlarmId != null && modelIds.contains(dbAlarmId)) {
+          await stopRuntimeAlarm(alarm.id);
+        }
+      }
+      emit(models);
+      return;
+    }
 
     final Map<TimeOfDay, List<AlarmSettings>> alarmSettingsSet = {};
 
@@ -253,7 +272,7 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
 
     final modelWithId = updatedAlarm.copyWith(alarmId: modelId);
 
-    if (enabled) {
+    if (enabled && !_vacationModeEnabled) {
       final existing = await Alarm.getAlarms();
       final Map<TimeOfDay, List<AlarmSettings>> current = {};
 
@@ -465,7 +484,7 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
           await stopRuntimeAlarm(alarm.id);
         }
       }
-    } else {
+    } else if (!_vacationModeEnabled) {
       await _ensureUpcomingWeek(
         alarmModel,
         alarmModel.time,
@@ -508,7 +527,7 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
     }
 
     // 3. Re-schedule if still enabled
-    if (enabled) {
+    if (enabled && !_vacationModeEnabled) {
       await _ensureUpcomingWeek(
         alarmModel,
         alarmModel.time,

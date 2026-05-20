@@ -13,6 +13,7 @@ import 'package:alarm_walker/services/alarm_cubit.dart';
 import 'package:alarm_walker/services/alarm_database.dart';
 import 'package:alarm_walker/services/custom_sounds_cubit.dart';
 import 'package:alarm_walker/services/profile_cubit.dart';
+import 'package:alarm_walker/services/reminder_notification_service.dart';
 import 'package:alarm_walker/services/settings_cubit.dart';
 import 'package:alarm_walker/services/shared_prefs_with_cache.dart';
 import 'package:alarm_walker/theme/app_theme.dart';
@@ -29,6 +30,7 @@ void main() async {
   await SharedPreferencesWithCache.initialize();
   await AlarmDatabase.initialize();
   await Alarm.init();
+  await ReminderNotificationService.initialize();
 
   if (appFlavor == "development") {
     runApp(DevicePreview(builder: (context) => const MyApp()));
