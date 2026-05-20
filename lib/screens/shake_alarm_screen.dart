@@ -30,10 +30,38 @@ class _ShakeAlarmScreenState extends State<ShakeAlarmScreen> {
   late final StreamSubscription<AccelerometerEvent> _subscription;
   Timer? _debounce;
   int _shakeCount = 0;
-  static const int _requiredShakes = 10;
-  static const double _threshold = 2;
 
   bool _isDismissing = false;
+
+  int get _requiredShakes {
+    final value = widget.alarmModel.dismissSettings.shakeCount;
+    if (value < 1) return 1;
+    if (value > 999) return 999;
+    return value;
+  }
+
+  int get _shakeIntensity {
+    final value = widget.alarmModel.dismissSettings.shakeIntensity;
+    if (value < 1) return 1;
+    if (value > 3) return 3;
+    return value;
+  }
+
+  double get _threshold {
+    return switch (_shakeIntensity) {
+      1 => 1.8,
+      2 => 2.2,
+      _ => 2.6,
+    };
+  }
+
+  String get _intensityLabel {
+    return switch (_shakeIntensity) {
+      1 => 'Gentle sensitivity',
+      2 => 'Balanced sensitivity',
+      _ => 'Strong shake needed',
+    };
+  }
 
   @override
   void initState() {
@@ -125,11 +153,25 @@ class _ShakeAlarmScreenState extends State<ShakeAlarmScreen> {
                   ),
                   style: AppTextStyles.large(context),
                 ),
+                const SizedBox(height: 8),
+                Text(
+                  _intensityLabel,
+                  style: AppTextStyles.caption(context).copyWith(
+                    color:
+                        isDark
+                            ? AppColors.darkBackgroundText.withValues(
+                              alpha: 0.7,
+                            )
+                            : AppColors.lightBackgroundText.withValues(
+                              alpha: 0.7,
+                            ),
+                  ),
+                ),
                 const SizedBox(height: 20),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 40),
                   child: GradientLinearProgressIndicator(
-                    value: _shakeCount / _requiredShakes,
+                    value: (_shakeCount / _requiredShakes).clamp(0.0, 1.0),
                   ),
                 ),
                 const Spacer(),

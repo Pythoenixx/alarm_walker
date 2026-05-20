@@ -47,10 +47,17 @@ class _WalkAlarmScreenState extends State<WalkAlarmScreen>
 
   bool _isDismissing = false;
 
+  int get _configuredWalkSteps {
+    final steps = widget.alarmModel.dismissSettings.walkSteps;
+    if (steps < 1) return 1;
+    if (steps > 9999) return 9999;
+    return steps;
+  }
+
   @override
   void initState() {
     super.initState();
-    _requiredSteps = 30; // Require 50 steps to dismiss
+    _requiredSteps = _configuredWalkSteps;
 
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 300),
@@ -519,7 +526,7 @@ class _WalkAlarmScreenState extends State<WalkAlarmScreen>
                     Text(
                       progress >= 1.0
                           ? '✓ Goal reached! Tap below to dismiss'
-                          : 'Walk around to dismiss the alarm',
+                          : 'Walk naturally until you reach $_requiredSteps steps',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
