@@ -52,6 +52,8 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
   static String _logIdKey(int alarmId) => 'wake_log_id_$alarmId';
   static String _snoozeCountKey(int alarmId) => 'snooze_count_$alarmId';
 
+  String get currentOwnerId => FirebaseAuth.instance.currentUser?.uid ?? 'local';
+
   AlarmCubit({
     required this.alarmRepo,
     required this.wakeLogRepo,
@@ -61,13 +63,31 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
     unawaited(_loadAlarms());
   }
 
+  Future<void> reloadForCurrentOwner() => _loadAlarms();
+
+  Future<AlarmModel?> getAlarmForCurrentOwner(int alarmId) {
+    return alarmRepo.getAlarmById(alarmId, userId: currentOwnerId);
+  }
+
   Future<void> _loadAlarms({List<AlarmSettings>? presetAlarms}) async {
-    final models = await alarmRepo.getAlarms();
+    final ownerId = currentOwnerId;
+    final models = await alarmRepo.getAlarms(userId: ownerId);
+    final modelIds = models.map((model) => model.alarmId).whereType<int>().toSet();
     final existingAlarms = presetAlarms ?? await Alarm.getAlarms();
 
     final Map<TimeOfDay, List<AlarmSettings>> alarmSettingsSet = {};
 
     for (final alarm in existingAlarms) {
+      final dbAlarmId = int.tryParse(alarm.payload ?? '');
+
+      // Runtime alarms belong to the Android alarm package. If another local
+      // user/account owns the DB row, stop it so it does not ring for the
+      // current user.
+      if (dbAlarmId == null || !modelIds.contains(dbAlarmId)) {
+        await stopRuntimeAlarm(alarm.id);
+        continue;
+      }
+
       final alarmTime = TimeOfDay.fromDateTime(alarm.dateTime);
       alarmSettingsSet.putIfAbsent(alarmTime, () => []).add(alarm);
     }
@@ -204,15 +224,14 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
     required bool wakeupCheck,
     required bool isOnce,
   }) async {
-    final firebaseUid = FirebaseAuth.instance.currentUser?.uid;
-    final uid = firebaseUid ?? 'local';
-    // firebaseUid != null && await userRepo.exists(firebaseUid)
-    //     ? firebaseUid
-    //     : 'local';
+    final uid = currentOwnerId;
 
-    // Handle potential null ID safely
+    // Handle potential null ID safely. Existing alarms are scoped to the
+    // current local/Firebase user so another account cannot edit them.
     final existingAlarm =
-        (alarmId != null) ? await alarmRepo.getAlarmById(alarmId) : null;
+        (alarmId != null)
+            ? await alarmRepo.getAlarmById(alarmId, userId: uid)
+            : null;
 
     final updatedDays = days.toSet().toList();
     final enabled = existingAlarm?.enabled ?? true;
@@ -391,6 +410,16 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
     // await Alarm.stopAll(); //debug
   }
 
+  bool _runtimeAlarmBelongsToModel(
+    AlarmSettings alarm,
+    AlarmModel alarmModel,
+  ) {
+    final dbAlarmId = alarmModel.alarmId;
+    if (dbAlarmId == null) return false;
+
+    return int.tryParse(alarm.payload ?? '') == dbAlarmId;
+  }
+
   DateTime toDateTime(TimeOfDay t) {
     final now = DateTime.now();
     return DateTime(now.year, now.month, now.day, t.hour, t.minute);
@@ -404,14 +433,13 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
     final runtimeAlarms = await Alarm.getAlarms();
 
     for (final alarm in runtimeAlarms) {
-      final alarmTime = TimeOfDay.fromDateTime(alarm.dateTime);
-      if (alarmTime == alarmModel.time) {
+      if (_runtimeAlarmBelongsToModel(alarm, alarmModel)) {
         await stopRuntimeAlarm(alarm.id);
       }
     }
 
     // 2. Delete from DB
-    await alarmRepo.deleteAlarm(alarmId);
+    await alarmRepo.deleteAlarm(alarmId, userId: currentOwnerId);
 
     // 3. Update state
     emit(state.where((e) => e.alarmId != alarmId).toList());
@@ -422,17 +450,18 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
     if (alarmId == null) return;
 
     // 1. Update DB
-    await alarmRepo.updateAlarmEnabled(alarmId, enabled);
+    await alarmRepo.updateAlarmEnabled(
+      alarmId,
+      enabled,
+      userId: currentOwnerId,
+    );
 
     // 2. Runtime alarms
     if (!enabled) {
       final runtimeAlarms = await Alarm.getAlarms();
 
       for (final alarm in runtimeAlarms) {
-        // improve this later alarm_cubit.dart line 332 atau sume yg guna TimeOfDay.fromDateTime(alarm.dateTime)
-        // maybe better dpt store and match guna id lebih better drpd check sama ada time sama tak dgn alarm model?
-        final alarmTime = TimeOfDay.fromDateTime(alarm.dateTime);
-        if (alarmTime == alarmModel.time) {
+        if (_runtimeAlarmBelongsToModel(alarm, alarmModel)) {
           await stopRuntimeAlarm(alarm.id);
         }
       }
@@ -447,7 +476,7 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
     }
 
     // 3. Reload state
-    emit(await alarmRepo.getAlarms());
+    emit(await alarmRepo.getAlarms(userId: currentOwnerId));
   }
 
   Future<void> updateAlarmDays(AlarmModel alarmModel, List<int> days) async {
@@ -457,7 +486,12 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
     if (alarmId == null) return;
 
     // 1. Persist changes
-    await alarmRepo.updateAlarmDays(alarmId, days, enabled);
+    await alarmRepo.updateAlarmDays(
+      alarmId,
+      days,
+      enabled,
+      userId: currentOwnerId,
+    );
 
     // 2. Cancel existing runtime alarms for this alarm
     final runtimeAlarms = await Alarm.getAlarms();
@@ -466,7 +500,7 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
     for (final alarm in runtimeAlarms) {
       final alarmTime = TimeOfDay.fromDateTime(alarm.dateTime);
 
-      if (alarmTime == alarmModel.time) {
+      if (_runtimeAlarmBelongsToModel(alarm, alarmModel)) {
         await stopRuntimeAlarm(alarm.id);
       } else {
         remaining.putIfAbsent(alarmTime, () => []).add(alarm);
@@ -485,13 +519,20 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
     }
 
     // 4. Reload state
-    final updated = await alarmRepo.getAlarms();
+    final updated = await alarmRepo.getAlarms(userId: currentOwnerId);
     emit(updated);
   }
 
   Future<void> updateAudioPathForAll(String audioPath) async {
+    final ownerAlarms = await alarmRepo.getAlarms(userId: currentOwnerId);
+    final ownerAlarmIds =
+        ownerAlarms.map((alarm) => alarm.alarmId).whereType<int>().toSet();
+
     final alarms = await Alarm.getAlarms();
     for (final alarm in alarms) {
+      final dbAlarmId = int.tryParse(alarm.payload ?? '');
+      if (dbAlarmId == null || !ownerAlarmIds.contains(dbAlarmId)) continue;
+
       await Alarm.set(alarmSettings: alarm.copyWith(assetAudioPath: audioPath));
     }
     await _loadAlarms();

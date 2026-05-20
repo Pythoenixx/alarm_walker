@@ -11,8 +11,12 @@ class AlarmRepository {
   AlarmRepository(this.db);
 
   /// Fetch alarms + days and map to AlarmModel
-  Future<List<AlarmModel>> getAlarms() async {
-    final alarmRows = await db.query('alarm');
+  Future<List<AlarmModel>> getAlarms({required String userId}) async {
+    final alarmRows = await db.query(
+      'alarm',
+      where: 'user_id = ?',
+      whereArgs: [userId],
+    );
 
     final List<AlarmModel> alarms = [];
 
@@ -26,11 +30,14 @@ class AlarmRepository {
     return alarms;
   }
 
-  Future<AlarmModel?> getAlarmById(int alarmId) async {
+  Future<AlarmModel?> getAlarmById(
+    int alarmId, {
+    required String userId,
+  }) async {
     final rows = await db.query(
       'alarm',
-      where: 'alarm_id = ?',
-      whereArgs: [alarmId],
+      where: 'alarm_id = ? AND user_id = ?',
+      whereArgs: [alarmId, userId],
       limit: 1,
     );
 
@@ -60,29 +67,38 @@ class AlarmRepository {
     return alarmId;
   }
 
-  Future<void> deleteAlarm(int alarmId) async {
-    await db.delete('alarm', where: 'alarm_id = ?', whereArgs: [alarmId]);
+  Future<void> deleteAlarm(int alarmId, {required String userId}) async {
+    await db.delete(
+      'alarm',
+      where: 'alarm_id = ? AND user_id = ?',
+      whereArgs: [alarmId, userId],
+    );
   }
 
-  Future<void> updateAlarmEnabled(int alarmId, bool enabled) async {
+  Future<void> updateAlarmEnabled(
+    int alarmId,
+    bool enabled, {
+    required String userId,
+  }) async {
     await db.update(
       'alarm',
       {'enabled': enabled ? 1 : 0},
-      where: 'alarm_id = ?',
-      whereArgs: [alarmId],
+      where: 'alarm_id = ? AND user_id = ?',
+      whereArgs: [alarmId, userId],
     );
   }
 
   Future<void> updateAlarmDays(
     int alarmId,
     List<int> days,
-    bool enabled,
-  ) async {
+    bool enabled, {
+    required String userId,
+  }) async {
     await db.update(
       'alarm',
       {'days': jsonEncode(days), 'enabled': enabled ? 1 : 0},
-      where: 'alarm_id = ?',
-      whereArgs: [alarmId],
+      where: 'alarm_id = ? AND user_id = ?',
+      whereArgs: [alarmId, userId],
     );
   }
 

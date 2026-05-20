@@ -12,6 +12,7 @@ import 'package:alarm_walker/services/settings_cubit.dart';
 import 'package:alarm_walker/theme/app_colors.dart';
 import 'package:alarm_walker/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
@@ -34,8 +35,9 @@ class _WakeAnalyticsScreenState extends State<WakeAnalyticsScreen> {
   }
 
   Future<_AnalyticsData> _load() async {
-    final logs = await widget.wakeRepo.getAllLogs();
-    final summary = await widget.wakeRepo.getSummary();
+    final ownerId = FirebaseAuth.instance.currentUser?.uid ?? 'local';
+    final logs = await widget.wakeRepo.getAllLogs(userId: ownerId);
+    final summary = await widget.wakeRepo.getSummary(userId: ownerId);
     final settingsCubit = context.read<SettingsCubit>();
     final settings = settingsCubit.state;
     final category =
@@ -47,6 +49,7 @@ class _WakeAnalyticsScreenState extends State<WakeAnalyticsScreen> {
               wakeRepo: widget.wakeRepo,
               settingsCubit: settingsCubit,
               category: category,
+              ownerId: ownerId,
             )
             : null;
 

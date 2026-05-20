@@ -37,6 +37,7 @@ Future<void> dismissActiveAlarmAndClose({
       wakeRepo: alarmCubit.wakeLogRepo,
       settingsCubit: settingsCubit,
       category: category,
+      ownerId: alarmCubit.currentOwnerId,
     );
   }
 

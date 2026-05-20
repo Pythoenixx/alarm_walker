@@ -92,7 +92,7 @@ class _HomeState extends State<Home> {
       return;
     }
 
-    final alarmModel = await alarmCubit.alarmRepo.getAlarmById(dbAlarmId);
+    final alarmModel = await alarmCubit.getAlarmForCurrentOwner(dbAlarmId);
 
     if (!mounted) return;
 

@@ -20,11 +20,13 @@ class AdaptiveDifficultyService {
     required WakeLogRepository wakeRepo,
     required SettingsCubit settingsCubit,
     required ProfileCategory category,
+    required String ownerId,
   }) {
     return _evaluate(
       wakeRepo: wakeRepo,
       settingsCubit: settingsCubit,
       category: category,
+      ownerId: ownerId,
       applyChange: false,
     );
   }
@@ -33,11 +35,13 @@ class AdaptiveDifficultyService {
     required WakeLogRepository wakeRepo,
     required SettingsCubit settingsCubit,
     required ProfileCategory category,
+    required String ownerId,
   }) {
     return _evaluate(
       wakeRepo: wakeRepo,
       settingsCubit: settingsCubit,
       category: category,
+      ownerId: ownerId,
       applyChange: true,
     );
   }
@@ -46,9 +50,10 @@ class AdaptiveDifficultyService {
     required WakeLogRepository wakeRepo,
     required SettingsCubit settingsCubit,
     required ProfileCategory category,
+    required String ownerId,
     required bool applyChange,
   }) async {
-    final logs = await wakeRepo.getAllLogs();
+    final logs = await wakeRepo.getAllLogs(userId: ownerId);
     final completedLogs =
         logs
             .where((log) => log.disarmDurationMs > 0)

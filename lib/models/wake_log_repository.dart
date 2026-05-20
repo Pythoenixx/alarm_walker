@@ -63,8 +63,23 @@ class WakeLogRepository {
 
   // ── read ───────────────────────────────────────────────────────────────────
 
-  Future<List<WakeLog>> getAllLogs() async {
-    final rows = await db.query('wake_log', orderBy: 'wake_time DESC');
+  Future<List<WakeLog>> getAllLogs({String? userId}) async {
+    if (userId == null) {
+      final rows = await db.query('wake_log', orderBy: 'wake_time DESC');
+      return rows.map(WakeLog.fromMap).toList();
+    }
+
+    final rows = await db.rawQuery(
+      '''
+      SELECT wake_log.*
+      FROM wake_log
+      INNER JOIN alarm ON alarm.alarm_id = wake_log.alarm_id
+      WHERE alarm.user_id = ?
+      ORDER BY wake_log.wake_time DESC
+      ''',
+      [userId],
+    );
+
     return rows.map(WakeLog.fromMap).toList();
   }
 
@@ -78,15 +93,33 @@ class WakeLogRepository {
     return rows.map(WakeLog.fromMap).toList();
   }
 
-  Future<Map<String, dynamic>> getSummary() async {
-    final result = await db.rawQuery('''
+  Future<Map<String, dynamic>> getSummary({String? userId}) async {
+    if (userId == null) {
+      final result = await db.rawQuery('''
+        SELECT
+          COUNT(*)              AS total,
+          SUM(success)          AS successes,
+          AVG(disarm_duration)  AS avg_duration,
+          AVG(snooze_count)     AS avg_snooze
+        FROM wake_log
+      ''');
+      return result.first;
+    }
+
+    final result = await db.rawQuery(
+      '''
       SELECT
         COUNT(*)              AS total,
         SUM(success)          AS successes,
         AVG(disarm_duration)  AS avg_duration,
         AVG(snooze_count)     AS avg_snooze
       FROM wake_log
-    ''');
+      INNER JOIN alarm ON alarm.alarm_id = wake_log.alarm_id
+      WHERE alarm.user_id = ?
+      ''',
+      [userId],
+    );
+
     return result.first;
   }
 

@@ -5,7 +5,9 @@ import 'package:alarm_walker/extensions/context_extensions.dart';
 import 'package:alarm_walker/models/profile_category.dart';
 import 'package:alarm_walker/models/user_profile_model.dart';
 import 'package:alarm_walker/models/user_profile_repository.dart';
+import 'package:alarm_walker/services/alarm_cubit.dart';
 import 'package:alarm_walker/services/profile_category_sync_service.dart';
+import 'package:alarm_walker/services/profile_cubit.dart';
 import 'package:alarm_walker/services/settings_cubit.dart';
 import 'package:alarm_walker/theme/app_colors.dart';
 import 'package:alarm_walker/theme/app_text_styles.dart';
@@ -439,6 +441,11 @@ class _AccountActionSection extends StatelessWidget {
         await FirebaseAuth.instance.signOut();
 
         // This satisfies the "async gap" check
+        if (!context.mounted) return;
+
+        await context.read<ProfileCubit>().loadProfile('local');
+        await context.read<AlarmCubit>().reloadForCurrentOwner();
+
         if (!context.mounted) return;
 
         context.goNamed(AppRoute.login.name);
