@@ -269,7 +269,7 @@ class AdaptiveDifficultyResult {
       analyzedLogs: analyzedLogs,
       metrics: null,
       changed: false,
-      message: 'At least $AdaptiveDifficultyService.minimumLogsRequired wake logs are required before adaptive difficulty can adjust defaults.',
+      message: 'At least ${AdaptiveDifficultyService.minimumLogsRequired} wake logs are required before adaptive difficulty can adjust defaults.',
     );
   }
 }

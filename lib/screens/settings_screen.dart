@@ -304,6 +304,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     isDark: isDark,
                   ),
                 ),
+                const SizedBox(height: 8),
+                SettingsTile(
+                  onTap: () => context.pushNamed(AppRoute.backupRestore.name),
+                  child: _NavRow(
+                    icon: Icons.backup_outlined,
+                    label: 'Backup & Restore', // TODO: localize
+                    subtitle: 'Export or restore alarms, settings, and logs',
+                    isDark: isDark,
+                  ),
+                ),
 
                 // ── About ────────────────────────────────────────────────
                 _SectionHeader(

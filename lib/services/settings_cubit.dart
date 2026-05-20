@@ -100,6 +100,22 @@ class SettingsState {
         adaptiveDifficultyEnabled ?? this.adaptiveDifficultyEnabled,
   );
 
+  Map<String, dynamic> toBackupJson() => {
+    'themeMode': themeMode.name,
+    'use24HourFormat': use24HourFormat,
+    'defaultVolume': defaultVolume,
+    'defaultAudioPath': defaultAudioPath,
+    'defaultFadeIn': defaultFadeIn,
+    'defaultVibration': defaultVibration,
+    'defaultFlashlight': defaultFlashlight,
+    'defaultAlarmDisarmMode': defaultAlarmDisarmMode.name,
+    'defaultSoundSettings': defaultSoundSettings.toJson(),
+    'defaultDismissSettings': defaultDismissSettings.toJson(),
+    'defaultSnoozeSettings': defaultSnoozeSettings.toJson(),
+    'weatherAwareEnabled': weatherAwareEnabled,
+    'adaptiveDifficultyEnabled': adaptiveDifficultyEnabled,
+  };
+
   /// Build a ready-to-use AlarmModel seeded with these defaults.
   AlarmModel buildDefaultAlarmModel() => AlarmModel.fromSettings(this);
 }
@@ -244,6 +260,104 @@ class SettingsCubit extends Cubit<SettingsState> {
         defaultSnoozeSettings: snoozeSettings,
       ),
     );
+  }
+
+
+  Future<void> restoreFromBackupJson(Map<String, dynamic> json) async {
+    final themeMode = ThemeMode.values.firstWhere(
+      (mode) => mode.name == json['themeMode'],
+      orElse: () => ThemeMode.system,
+    );
+    final defaultAlarmDisarmMode = AlarmDisarmMode.values.firstWhere(
+      (mode) => mode.name == json['defaultAlarmDisarmMode'],
+      orElse: () => AlarmDisarmMode.normal,
+    );
+
+    final defaultSoundSettings = SoundSettings.fromJson(
+      (json['defaultSoundSettings'] as Map?)?.cast<String, dynamic>() ??
+          const <String, dynamic>{},
+    );
+    final defaultDismissSettings = DismissSettings.fromJson(
+      (json['defaultDismissSettings'] as Map?)?.cast<String, dynamic>() ??
+          const <String, dynamic>{},
+    );
+    final defaultSnoozeSettings = SnoozeSettings.fromJson(
+      (json['defaultSnoozeSettings'] as Map?)?.cast<String, dynamic>() ??
+          const <String, dynamic>{},
+    );
+
+    final next = SettingsState(
+      themeMode: themeMode,
+      use24HourFormat: json['use24HourFormat'] as bool? ?? false,
+      defaultVolume: (json['defaultVolume'] as num?)?.toDouble() ?? 0.8,
+      defaultAudioPath:
+          json['defaultAudioPath'] as String? ?? SoundSettings.defaultSoundPath,
+      defaultFadeIn: json['defaultFadeIn'] as bool? ?? false,
+      defaultVibration: json['defaultVibration'] as bool? ?? true,
+      defaultFlashlight: json['defaultFlashlight'] as bool? ?? false,
+      defaultAlarmDisarmMode: defaultAlarmDisarmMode,
+      defaultSoundSettings: defaultSoundSettings,
+      defaultDismissSettings: defaultDismissSettings,
+      defaultSnoozeSettings: defaultSnoozeSettings,
+      weatherAwareEnabled: json['weatherAwareEnabled'] as bool? ?? true,
+      adaptiveDifficultyEnabled:
+          json['adaptiveDifficultyEnabled'] as bool? ?? true,
+    );
+
+    await SharedPreferencesWithCache.instance.setInt(
+      _K.themeMode,
+      next.themeMode.index,
+    );
+    await SharedPreferencesWithCache.instance.setInt(
+      _K.use24HourFormat,
+      next.use24HourFormat ? 1 : 0,
+    );
+    await SharedPreferencesWithCache.instance.setDouble(
+      _K.defaultVolume,
+      next.defaultVolume,
+    );
+    await SharedPreferencesWithCache.instance.setString(
+      _K.defaultAudioPath,
+      next.defaultAudioPath,
+    );
+    await SharedPreferencesWithCache.instance.setInt(
+      _K.defaultFadeIn,
+      next.defaultFadeIn ? 1 : 0,
+    );
+    await SharedPreferencesWithCache.instance.setInt(
+      _K.defaultVibration,
+      next.defaultVibration ? 1 : 0,
+    );
+    await SharedPreferencesWithCache.instance.setInt(
+      _K.defaultFlashlight,
+      next.defaultFlashlight ? 1 : 0,
+    );
+    await SharedPreferencesWithCache.instance.setString(
+      _K.defaultDisarmMode,
+      next.defaultAlarmDisarmMode.name,
+    );
+    await SharedPreferencesWithCache.instance.setString(
+      _K.defaultSoundSettings,
+      jsonEncode(next.defaultSoundSettings.toJson()),
+    );
+    await SharedPreferencesWithCache.instance.setString(
+      _K.defaultDismissSettings,
+      jsonEncode(next.defaultDismissSettings.toJson()),
+    );
+    await SharedPreferencesWithCache.instance.setString(
+      _K.defaultSnoozeSettings,
+      jsonEncode(next.defaultSnoozeSettings.toJson()),
+    );
+    await SharedPreferencesWithCache.instance.setInt(
+      _K.weatherAwareEnabled,
+      next.weatherAwareEnabled ? 1 : 0,
+    );
+    await SharedPreferencesWithCache.instance.setInt(
+      _K.adaptiveDifficultyEnabled,
+      next.adaptiveDifficultyEnabled ? 1 : 0,
+    );
+
+    emit(next);
   }
 
   Future<void> setAdaptiveDifficultyEnabled(bool v) async {

@@ -6,6 +6,7 @@ import 'package:alarm_walker/models/alarm_repository.dart';
 import 'package:alarm_walker/models/user_profile_repository.dart';
 import 'package:alarm_walker/models/wake_log_repository.dart';
 import 'package:alarm_walker/screens/add_alarm_screen.dart';
+import 'package:alarm_walker/screens/backup_restore_screen.dart';
 import 'package:alarm_walker/screens/alarm_gate_screen.dart';
 import 'package:alarm_walker/screens/database_screen.dart';
 import 'package:alarm_walker/screens/home.dart';
@@ -35,6 +36,7 @@ enum AppRoute {
   manageProfile,
   wakeAnalytics,
   settings,
+  backupRestore,
   normal,
   mathAlarm,
   shakeAlarm,
@@ -115,6 +117,15 @@ GoRouter createRouterWithStream(
         path: '/settings',
         name: AppRoute.settings.name,
         builder: (_, __) => const SettingsScreen(),
+      ),
+      GoRoute(
+        path: '/backupRestore',
+        name: AppRoute.backupRestore.name,
+        builder:
+            (_, __) => BackupRestoreScreen(
+              db: alarmRepo.db,
+              userRepo: userRepo,
+            ),
       ),
       GoRoute(
         path: '/database',
