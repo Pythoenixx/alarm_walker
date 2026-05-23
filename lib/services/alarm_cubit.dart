@@ -9,6 +9,7 @@ import 'package:alarm_walker/models/sound_settings.dart';
 import 'package:alarm_walker/models/user_profile_repository.dart';
 import 'package:alarm_walker/models/wake_log_repository.dart';
 import 'package:alarm_walker/services/shared_prefs_with_cache.dart';
+import 'package:alarm_walker/services/user_usage_stats_sync_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -47,6 +48,8 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
   final UserProfileRepository userRepo;
   final AlarmRepository alarmRepo;
   final WakeLogRepository wakeLogRepo;
+  final UserUsageStatsSyncService _usageStatsSyncService =
+      UserUsageStatsSyncService();
   late final Stopwatch _ringStopwatch;
 
   static String _logIdKey(int alarmId) => 'wake_log_id_$alarmId';
@@ -73,6 +76,16 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
 
   Future<void> reloadForCurrentOwner() => _loadAlarms();
 
+  void _syncUsageStatsForAdmin() {
+    unawaited(
+      _usageStatsSyncService.syncCurrentUser(
+        alarmRepo: alarmRepo,
+        wakeLogRepo: wakeLogRepo,
+        ownerId: currentOwnerId,
+      ),
+    );
+  }
+
   Future<AlarmModel?> getAlarmForCurrentOwner(int alarmId) {
     return alarmRepo.getAlarmById(alarmId, userId: currentOwnerId);
   }
@@ -91,6 +104,7 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
         }
       }
       emit(models);
+      _syncUsageStatsForAdmin();
       return;
     }
 
@@ -127,6 +141,7 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
     }
 
     emit(models);
+    _syncUsageStatsForAdmin();
   }
 
   Future<AlarmSettings?> _setAlarm(
@@ -418,6 +433,8 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
       );
     }
 
+    _syncUsageStatsForAdmin();
+
     await SharedPreferencesWithCache.instance.remove(_logIdKey(dbAlarmId));
     await SharedPreferencesWithCache.instance.remove(
       _snoozeCountKey(dbAlarmId),
@@ -462,6 +479,7 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
 
     // 3. Update state
     emit(state.where((e) => e.alarmId != alarmId).toList());
+    _syncUsageStatsForAdmin();
   }
 
   Future<void> toggleAlarmEnabled(AlarmModel alarmModel, bool enabled) async {
@@ -496,6 +514,7 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
 
     // 3. Reload state
     emit(await alarmRepo.getAlarms(userId: currentOwnerId));
+    _syncUsageStatsForAdmin();
   }
 
   Future<void> updateAlarmDays(AlarmModel alarmModel, List<int> days) async {
@@ -540,6 +559,7 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
     // 4. Reload state
     final updated = await alarmRepo.getAlarms(userId: currentOwnerId);
     emit(updated);
+    _syncUsageStatsForAdmin();
   }
 
   Future<void> updateAudioPathForAll(String audioPath) async {

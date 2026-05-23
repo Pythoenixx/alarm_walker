@@ -1,3 +1,4 @@
+import 'package:alarm_walker/models/alarm_model.dart';
 import 'package:alarm_walker/models/profile_category.dart';
 import 'package:alarm_walker/services/admin_report_service.dart';
 import 'package:alarm_walker/theme/app_colors.dart';
@@ -74,6 +75,8 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
             const SizedBox(height: 20),
             _ReportSummary(metrics: metrics),
             const SizedBox(height: 20),
+            _UsageStatisticsReport(metrics: metrics),
+            const SizedBox(height: 20),
             _CategoryReport(metrics: metrics),
             const SizedBox(height: 20),
             _IssueReadinessReport(metrics: metrics),
@@ -107,6 +110,100 @@ class _ReportSummary extends StatelessWidget {
             label: 'Email Coverage',
             value: '${metrics.emailCoveragePercent.toStringAsFixed(0)}%',
           ),
+        ],
+      ),
+    );
+  }
+}
+
+
+class _UsageStatisticsReport extends StatelessWidget {
+  final AdminReportMetrics metrics;
+
+  const _UsageStatisticsReport({required this.metrics});
+
+  @override
+  Widget build(BuildContext context) {
+    final coverageText =
+        metrics.usageStatsAvailable
+            ? '${metrics.usersWithUsageStats}/${metrics.totalUsers} synced users'
+            : 'Usage summaries unavailable';
+
+    return _ReportPanel(
+      title: 'Alarm Usage Statistics',
+      subtitle: 'Aggregated alarm, snooze, and wake-up behavior from synced user summaries.',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              _ReportChip(label: 'Usage Coverage', value: coverageText),
+              _ReportChip(label: 'Total Alarms', value: metrics.totalAlarms.toString()),
+              _ReportChip(label: 'Enabled Alarms', value: metrics.enabledAlarms.toString()),
+              _ReportChip(label: 'Wake Logs', value: metrics.totalWakeLogs.toString()),
+              _ReportChip(
+                label: 'Success Rate',
+                value: '${metrics.wakeSuccessRate.toStringAsFixed(0)}%',
+              ),
+              _ReportChip(
+                label: 'Avg Snooze',
+                value: metrics.averageSnoozeCount.toStringAsFixed(1),
+              ),
+              _ReportChip(
+                label: 'Avg Disarm Time',
+                value: _formatDurationSeconds(metrics.averageDisarmDurationSeconds),
+              ),
+              _ReportChip(label: 'Top Mode', value: metrics.topDisarmModeLabel),
+            ],
+          ),
+          const SizedBox(height: 22),
+          Text(
+            'Disarm mode distribution',
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 14),
+          ...AlarmDisarmMode.values.map((mode) {
+            final count = metrics.disarmModeCountFor(mode);
+            final percent = metrics.disarmModePercentFor(mode);
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 14),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 16,
+                    backgroundColor: _modeColor(mode).withValues(alpha: 0.12),
+                    child: Icon(_modeIcon(mode), size: 16, color: _modeColor(mode)),
+                  ),
+                  const SizedBox(width: 12),
+                  SizedBox(width: 72, child: Text(AdminReportMetrics.modeLabel(mode))),
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(99),
+                      child: LinearProgressIndicator(
+                        minHeight: 8,
+                        value: percent / 100,
+                        backgroundColor: _modeColor(mode).withValues(alpha: 0.12),
+                        valueColor: AlwaysStoppedAnimation<Color>(_modeColor(mode)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text('$count (${percent.toStringAsFixed(0)}%)'),
+                ],
+              ),
+            );
+          }),
+          if (!metrics.usageStatsAvailable && metrics.usageStatsError != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              metrics.usageStatsError!,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.red),
+            ),
+          ],
         ],
       ),
     );
@@ -334,6 +431,35 @@ class _ReportErrorState extends StatelessWidget {
       ),
     );
   }
+}
+
+
+Color _modeColor(AlarmDisarmMode mode) {
+  return switch (mode) {
+    AlarmDisarmMode.math => Colors.blue,
+    AlarmDisarmMode.retype => Colors.purple,
+    AlarmDisarmMode.shake => Colors.orange,
+    AlarmDisarmMode.walk => Colors.green,
+    AlarmDisarmMode.normal => Colors.grey,
+  };
+}
+
+IconData _modeIcon(AlarmDisarmMode mode) {
+  return switch (mode) {
+    AlarmDisarmMode.math => Icons.calculate_outlined,
+    AlarmDisarmMode.retype => Icons.keyboard_alt_outlined,
+    AlarmDisarmMode.shake => Icons.vibration_outlined,
+    AlarmDisarmMode.walk => Icons.directions_walk_outlined,
+    AlarmDisarmMode.normal => Icons.touch_app_outlined,
+  };
+}
+
+String _formatDurationSeconds(double seconds) {
+  if (seconds <= 0) return '0s';
+  if (seconds < 60) return '${seconds.toStringAsFixed(seconds < 10 ? 1 : 0)}s';
+  final minutes = seconds ~/ 60;
+  final remaining = (seconds % 60).round();
+  return '${minutes}m ${remaining}s';
 }
 
 Color _categoryColor(ProfileCategory category) {
