@@ -3,6 +3,7 @@ import 'package:alarm_walker/models/profile_category.dart';
 import 'package:alarm_walker/services/admin_report_service.dart';
 import 'package:alarm_walker/theme/app_colors.dart';
 import 'package:alarm_walker/widgets/admin_category_donut_chart.dart';
+import 'package:alarm_walker/widgets/admin_disarm_mode_donut_chart.dart';
 import 'package:flutter/material.dart';
 
 class AnalyticsPage extends StatefulWidget {
@@ -95,6 +96,8 @@ class _ReportSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _ReportPanel(
+      icon: Icons.people_alt_outlined,
+      color: AppColors.primary,
       title: 'Registered User Summary',
       subtitle: 'Basic user report generated from Firestore user records.',
       child: Wrap(
@@ -106,10 +109,6 @@ class _ReportSummary extends StatelessWidget {
           _ReportChip(label: 'Adult', value: metrics.adultUsers.toString()),
           _ReportChip(label: 'Senior', value: metrics.seniorUsers.toString()),
           _ReportChip(label: 'Top Category', value: metrics.topCategoryLabel),
-          _ReportChip(
-            label: 'Email Coverage',
-            value: '${metrics.emailCoveragePercent.toStringAsFixed(0)}%',
-          ),
         ],
       ),
     );
@@ -130,6 +129,8 @@ class _UsageStatisticsReport extends StatelessWidget {
             : 'Usage summaries unavailable';
 
     return _ReportPanel(
+      icon: Icons.analytics_outlined,
+      color: Colors.indigo,
       title: 'Alarm Usage Statistics',
       subtitle: 'Aggregated alarm, snooze, and wake-up behavior from synced user summaries.',
       child: Column(
@@ -155,48 +156,10 @@ class _UsageStatisticsReport extends StatelessWidget {
                 label: 'Avg Disarm Time',
                 value: _formatDurationSeconds(metrics.averageDisarmDurationSeconds),
               ),
-              _ReportChip(label: 'Top Mode', value: metrics.topDisarmModeLabel),
             ],
           ),
           const SizedBox(height: 22),
-          Text(
-            'Disarm mode distribution',
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 14),
-          ...AlarmDisarmMode.values.map((mode) {
-            final count = metrics.disarmModeCountFor(mode);
-            final percent = metrics.disarmModePercentFor(mode);
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 14),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 16,
-                    backgroundColor: _modeColor(mode).withValues(alpha: 0.12),
-                    child: Icon(_modeIcon(mode), size: 16, color: _modeColor(mode)),
-                  ),
-                  const SizedBox(width: 12),
-                  SizedBox(width: 72, child: Text(AdminReportMetrics.modeLabel(mode))),
-                  Expanded(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(99),
-                      child: LinearProgressIndicator(
-                        minHeight: 8,
-                        value: percent / 100,
-                        backgroundColor: _modeColor(mode).withValues(alpha: 0.12),
-                        valueColor: AlwaysStoppedAnimation<Color>(_modeColor(mode)),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text('$count (${percent.toStringAsFixed(0)}%)'),
-                ],
-              ),
-            );
-          }),
+          _DisarmModeDistributionReport(metrics: metrics),
           if (!metrics.usageStatsAvailable && metrics.usageStatsError != null) ...[
             const SizedBox(height: 8),
             Text(
@@ -210,6 +173,94 @@ class _UsageStatisticsReport extends StatelessWidget {
   }
 }
 
+
+class _DisarmModeDistributionReport extends StatelessWidget {
+  final AdminReportMetrics metrics;
+
+  const _DisarmModeDistributionReport({required this.metrics});
+
+  @override
+  Widget build(BuildContext context) {
+    final legend = Column(
+      children:
+          AlarmDisarmMode.values.map((mode) {
+            final count = metrics.disarmModeCountFor(mode);
+            final percent = metrics.disarmModePercentFor(mode);
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 16,
+                    backgroundColor: adminDisarmModeColor(mode).withValues(alpha: 0.12),
+                    child: Icon(
+                      adminDisarmModeIcon(mode),
+                      size: 16,
+                      color: adminDisarmModeColor(mode),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  SizedBox(width: 78, child: Text(AdminReportMetrics.modeLabel(mode))),
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(99),
+                      child: LinearProgressIndicator(
+                        minHeight: 8,
+                        value: percent / 100,
+                        backgroundColor: adminDisarmModeColor(mode).withValues(alpha: 0.12),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          adminDisarmModeColor(mode),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text('$count (${percent.toStringAsFixed(0)}%)'),
+                ],
+              ),
+            );
+          }).toList(),
+    );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isCompact = constraints.maxWidth < 620;
+        final chart = AdminDisarmModeDonutChart(
+          counts: metrics.disarmModeCounts,
+          total: metrics.totalDisarmModeSelections,
+          size: isCompact ? 160 : 190,
+          strokeWidth: 20,
+        );
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Disarm mode distribution',
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 14),
+            if (isCompact) ...[
+              Center(child: chart),
+              const SizedBox(height: 20),
+              legend,
+            ] else
+              Row(
+                children: [
+                  chart,
+                  const SizedBox(width: 28),
+                  Expanded(child: legend),
+                ],
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
 class _CategoryReport extends StatelessWidget {
   final AdminReportMetrics metrics;
 
@@ -218,6 +269,8 @@ class _CategoryReport extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _ReportPanel(
+      icon: Icons.groups_2_outlined,
+      color: Colors.teal,
       title: 'Profile Category Report',
       subtitle: 'Used to verify profile-category support and default difficulty grouping.',
       child: LayoutBuilder(
@@ -307,6 +360,8 @@ class _IssueReadinessReport extends StatelessWidget {
             : 'The issue log collection may not exist yet or may require Firestore permission updates. Patch A2 can add app-side issue logging.';
 
     return _ReportPanel(
+      icon: Icons.report_gmailerrorred_outlined,
+      color: Colors.orange,
       title: 'Issue Report Readiness',
       subtitle: 'Prepared for future app issue and system health reporting.',
       child: Row(
@@ -334,11 +389,15 @@ class _IssueReadinessReport extends StatelessWidget {
 }
 
 class _ReportPanel extends StatelessWidget {
+  final IconData? icon;
+  final Color? color;
   final String title;
   final String subtitle;
   final Widget child;
 
   const _ReportPanel({
+    this.icon,
+    this.color,
     required this.title,
     required this.subtitle,
     required this.child,
@@ -354,13 +413,27 @@ class _ReportPanel extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              title,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
+            Row(
+              children: [
+                if (icon != null) ...[
+                  CircleAvatar(
+                    radius: 18,
+                    backgroundColor: (color ?? AppColors.primary).withValues(alpha: 0.12),
+                    child: Icon(icon, size: 18, color: color ?? AppColors.primary),
+                  ),
+                  const SizedBox(width: 12),
+                ],
+                Expanded(
+                  child: Text(
+                    title,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 6),
             Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
             const SizedBox(height: 18),
             child,
@@ -433,26 +506,6 @@ class _ReportErrorState extends StatelessWidget {
   }
 }
 
-
-Color _modeColor(AlarmDisarmMode mode) {
-  return switch (mode) {
-    AlarmDisarmMode.math => Colors.blue,
-    AlarmDisarmMode.retype => Colors.purple,
-    AlarmDisarmMode.shake => Colors.orange,
-    AlarmDisarmMode.walk => Colors.green,
-    AlarmDisarmMode.normal => Colors.grey,
-  };
-}
-
-IconData _modeIcon(AlarmDisarmMode mode) {
-  return switch (mode) {
-    AlarmDisarmMode.math => Icons.calculate_outlined,
-    AlarmDisarmMode.retype => Icons.keyboard_alt_outlined,
-    AlarmDisarmMode.shake => Icons.vibration_outlined,
-    AlarmDisarmMode.walk => Icons.directions_walk_outlined,
-    AlarmDisarmMode.normal => Icons.touch_app_outlined,
-  };
-}
 
 String _formatDurationSeconds(double seconds) {
   if (seconds <= 0) return '0s';

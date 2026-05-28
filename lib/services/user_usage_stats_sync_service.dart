@@ -62,7 +62,7 @@ class UserUsageStatsSyncService {
 
     for (final alarm in alarms) {
       if (alarm.enabled) enabledAlarms++;
-      if (alarm.isOnce) {
+      if (alarm.days.isEmpty || alarm.isOnce) {
         oneTimeAlarms++;
       } else {
         repeatAlarms++;
@@ -80,7 +80,7 @@ class UserUsageStatsSyncService {
       if (log.success) successfulWakeLogs++;
       totalSnoozeCount += log.snoozeCount;
       totalDisarmDurationMs += log.disarmDurationMs;
-      if (latestWakeAt == null || log.wakeTime.isAfter(latestWakeAt!)) {
+      if (latestWakeAt == null || log.wakeTime.isAfter(latestWakeAt)) {
         latestWakeAt = log.wakeTime;
       }
     }

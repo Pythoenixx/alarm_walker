@@ -110,6 +110,9 @@ class AdminReportMetrics {
 
   String get topDisarmModeLabel => _modeLabel(topDisarmMode);
 
+  int get totalDisarmModeSelections =>
+      disarmModeCounts.values.fold<int>(0, (sum, value) => sum + value);
+
   int get usersMissingEmail => totalUsers - usersWithEmail;
 
   double get emailCoveragePercent {
@@ -148,7 +151,7 @@ class AdminReportMetrics {
   }
 
   double disarmModePercentFor(AlarmDisarmMode mode) {
-    final total = disarmModeCounts.values.fold<int>(0, (sum, value) => sum + value);
+    final total = totalDisarmModeSelections;
     if (total == 0) return 0;
     return (disarmModeCountFor(mode) / total) * 100;
   }

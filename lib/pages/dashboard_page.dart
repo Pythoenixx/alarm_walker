@@ -3,6 +3,7 @@ import 'package:alarm_walker/models/profile_category.dart';
 import 'package:alarm_walker/services/admin_report_service.dart';
 import 'package:alarm_walker/theme/app_colors.dart';
 import 'package:alarm_walker/widgets/admin_category_donut_chart.dart';
+import 'package:alarm_walker/widgets/admin_disarm_mode_donut_chart.dart';
 import 'package:flutter/material.dart';
 
 class DashboardPage extends StatefulWidget {
@@ -124,18 +125,11 @@ class _OverviewGrid extends StatelessWidget {
           color: Colors.orange,
         ),
         _MetricCard(
-          icon: Icons.psychology_alt_outlined,
-          title: 'Top Disarm Mode',
-          value: metrics.topDisarmModeLabel,
-          note: 'Most selected alarm challenge',
+          icon: Icons.verified_outlined,
+          title: 'Success Rate',
+          value: '${metrics.wakeSuccessRate.toStringAsFixed(0)}%',
+          note: '${metrics.successfulWakeLogs}/${metrics.totalWakeLogs} successful wake logs',
           color: Colors.green,
-        ),
-        _MetricCard(
-          icon: Icons.alternate_email_outlined,
-          title: 'Email Coverage',
-          value: '${metrics.emailCoveragePercent.toStringAsFixed(0)}%',
-          note: '${metrics.usersWithEmail}/${metrics.totalUsers} users have email',
-          color: Colors.blue,
         ),
         _MetricCard(
           icon: Icons.report_gmailerrorred_outlined,
@@ -247,10 +241,10 @@ class _SystemHealthCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           _HealthItem(
-            icon: Icons.alternate_email_outlined,
-            title: 'Email display data',
+            icon: Icons.insights_outlined,
+            title: 'Usage statistics',
             message:
-                '${metrics.usersWithEmail} of ${metrics.totalUsers} user record(s) include email for admin display.',
+                '${metrics.usersWithUsageStats} of ${metrics.totalUsers} user record(s) have synced alarm usage summaries.',
             color: Colors.blue,
           ),
           const SizedBox(height: 12),
@@ -319,28 +313,118 @@ class _UsageStatisticsCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 18),
-          Text(
-            'Disarm mode choices',
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 12),
-          ...AlarmDisarmMode.values.map((mode) {
+          _DisarmModeDistributionPreview(metrics: metrics),
+        ],
+      ),
+    );
+  }
+}
+
+
+class _DisarmModeDistributionPreview extends StatelessWidget {
+  final AdminReportMetrics metrics;
+
+  const _DisarmModeDistributionPreview({required this.metrics});
+
+  @override
+  Widget build(BuildContext context) {
+    final legend = Column(
+      children:
+          AlarmDisarmMode.values.map((mode) {
             final count = metrics.disarmModeCountFor(mode);
             final percent = metrics.disarmModePercentFor(mode);
             return Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: _UsageProgressRow(
-                label: AdminReportMetrics.modeLabel(mode),
-                count: count,
-                percent: percent,
-                color: _modeColor(mode),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 15,
+                    backgroundColor: adminDisarmModeColor(mode).withValues(alpha: 0.12),
+                    child: Icon(
+                      adminDisarmModeIcon(mode),
+                      size: 15,
+                      color: adminDisarmModeColor(mode),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          AdminReportMetrics.modeLabel(mode),
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                        const SizedBox(height: 5),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(99),
+                          child: LinearProgressIndicator(
+                            minHeight: 7,
+                            value: percent / 100,
+                            backgroundColor: adminDisarmModeColor(mode).withValues(alpha: 0.12),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              adminDisarmModeColor(mode),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Text('$count (${percent.toStringAsFixed(0)}%)'),
+                ],
               ),
             );
-          }),
-        ],
-      ),
+          }).toList(),
+    );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isCompact = constraints.maxWidth < 560;
+        final chart = AdminDisarmModeDonutChart(
+          counts: metrics.disarmModeCounts,
+          total: metrics.totalDisarmModeSelections,
+          size: isCompact ? 150 : 170,
+        );
+
+        if (isCompact) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Disarm mode choices',
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Center(child: chart),
+              const SizedBox(height: 18),
+              legend,
+            ],
+          );
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Disarm mode choices',
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                chart,
+                const SizedBox(width: 24),
+                Expanded(child: legend),
+              ],
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -699,16 +783,6 @@ class _AdminErrorState extends StatelessWidget {
   }
 }
 
-
-Color _modeColor(AlarmDisarmMode mode) {
-  return switch (mode) {
-    AlarmDisarmMode.math => Colors.blue,
-    AlarmDisarmMode.retype => Colors.purple,
-    AlarmDisarmMode.shake => Colors.orange,
-    AlarmDisarmMode.walk => Colors.green,
-    AlarmDisarmMode.normal => Colors.grey,
-  };
-}
 
 String _formatDurationSeconds(double seconds) {
   if (seconds <= 0) return '0s';
