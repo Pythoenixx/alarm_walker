@@ -60,7 +60,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        'Admin summaries for users, profile categories, and system issue readiness.',
+                        'Detailed reports for user distribution, alarm usage, disarm choices, and system readiness.',
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
                     ],
@@ -104,11 +104,36 @@ class _ReportSummary extends StatelessWidget {
         spacing: 12,
         runSpacing: 12,
         children: [
-          _ReportChip(label: 'Total Users', value: metrics.totalUsers.toString()),
-          _ReportChip(label: 'Child', value: metrics.childUsers.toString()),
-          _ReportChip(label: 'Adult', value: metrics.adultUsers.toString()),
-          _ReportChip(label: 'Senior', value: metrics.seniorUsers.toString()),
-          _ReportChip(label: 'Top Category', value: metrics.topCategoryLabel),
+          _ReportChip(
+            icon: Icons.people_alt_outlined,
+            color: AppColors.primary,
+            label: 'Total Users',
+            value: metrics.totalUsers.toString(),
+          ),
+          _ReportChip(
+            icon: Icons.child_care,
+            color: _categoryColor(ProfileCategory.child),
+            label: 'Child',
+            value: metrics.childUsers.toString(),
+          ),
+          _ReportChip(
+            icon: Icons.person,
+            color: _categoryColor(ProfileCategory.adult),
+            label: 'Adult',
+            value: metrics.adultUsers.toString(),
+          ),
+          _ReportChip(
+            icon: Icons.elderly,
+            color: _categoryColor(ProfileCategory.senior),
+            label: 'Senior',
+            value: metrics.seniorUsers.toString(),
+          ),
+          _ReportChip(
+            icon: Icons.auto_graph_outlined,
+            color: Colors.green,
+            label: 'Top Category',
+            value: metrics.topCategoryLabel,
+          ),
         ],
       ),
     );
@@ -140,23 +165,72 @@ class _UsageStatisticsReport extends StatelessWidget {
             spacing: 12,
             runSpacing: 12,
             children: [
-              _ReportChip(label: 'Usage Coverage', value: coverageText),
-              _ReportChip(label: 'Total Alarms', value: metrics.totalAlarms.toString()),
-              _ReportChip(label: 'Enabled Alarms', value: metrics.enabledAlarms.toString()),
-              _ReportChip(label: 'Wake Logs', value: metrics.totalWakeLogs.toString()),
               _ReportChip(
+                icon: Icons.cloud_sync_outlined,
+                color: AppColors.primary,
+                label: 'Usage Coverage',
+                value: coverageText,
+              ),
+              _ReportChip(
+                icon: Icons.alarm_on_outlined,
+                color: Colors.indigo,
+                label: 'Total Alarms',
+                value: metrics.totalAlarms.toString(),
+              ),
+              _ReportChip(
+                icon: Icons.toggle_on_outlined,
+                color: Colors.green,
+                label: 'Enabled Alarms',
+                value: metrics.enabledAlarms.toString(),
+              ),
+              _ReportChip(
+                icon: Icons.repeat_outlined,
+                color: Colors.blue,
+                label: 'Repeat Alarms',
+                value: metrics.repeatAlarms.toString(),
+              ),
+              _ReportChip(
+                icon: Icons.event_available_outlined,
+                color: Colors.teal,
+                label: 'No-repeat Alarms',
+                value: metrics.oneTimeAlarms.toString(),
+              ),
+              _ReportChip(
+                icon: Icons.nightlight_round_outlined,
+                color: Colors.deepPurple,
+                label: 'Wake Logs',
+                value: metrics.totalWakeLogs.toString(),
+              ),
+              _ReportChip(
+                icon: Icons.verified_outlined,
+                color: Colors.green,
                 label: 'Success Rate',
                 value: '${metrics.wakeSuccessRate.toStringAsFixed(0)}%',
               ),
               _ReportChip(
+                icon: Icons.report_gmailerrorred_outlined,
+                color: Colors.orange,
+                label: 'Incomplete / Failed',
+                value: metrics.failedWakeLogs.toString(),
+              ),
+              _ReportChip(
+                icon: Icons.snooze_outlined,
+                color: Colors.orange,
                 label: 'Avg Snooze',
                 value: metrics.averageSnoozeCount.toStringAsFixed(1),
               ),
               _ReportChip(
+                icon: Icons.timer_outlined,
+                color: Colors.pink,
                 label: 'Avg Disarm Time',
                 value: _formatDurationSeconds(metrics.averageDisarmDurationSeconds),
               ),
             ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'No-repeat alarms are saved without repeat days selected. Full one-time auto-disable behavior can be implemented separately.',
+            style: Theme.of(context).textTheme.bodySmall,
           ),
           const SizedBox(height: 22),
           _DisarmModeDistributionReport(metrics: metrics),
@@ -445,15 +519,24 @@ class _ReportPanel extends StatelessWidget {
 }
 
 class _ReportChip extends StatelessWidget {
+  final IconData? icon;
+  final Color? color;
   final String label;
   final String value;
 
-  const _ReportChip({required this.label, required this.value});
+  const _ReportChip({
+    this.icon,
+    this.color,
+    required this.label,
+    required this.value,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final accent = color ?? AppColors.primary;
+
     return Container(
-      width: 170,
+      width: 180,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
@@ -463,6 +546,14 @@ class _ReportChip extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (icon != null) ...[
+            CircleAvatar(
+              radius: 16,
+              backgroundColor: accent.withValues(alpha: 0.12),
+              child: Icon(icon, size: 16, color: accent),
+            ),
+            const SizedBox(height: 10),
+          ],
           Text(label, style: Theme.of(context).textTheme.bodySmall),
           const SizedBox(height: 6),
           Text(

@@ -1,9 +1,7 @@
-import 'package:alarm_walker/models/alarm_model.dart';
 import 'package:alarm_walker/models/profile_category.dart';
 import 'package:alarm_walker/services/admin_report_service.dart';
 import 'package:alarm_walker/theme/app_colors.dart';
 import 'package:alarm_walker/widgets/admin_category_donut_chart.dart';
-import 'package:alarm_walker/widgets/admin_disarm_mode_donut_chart.dart';
 import 'package:flutter/material.dart';
 
 class DashboardPage extends StatefulWidget {
@@ -55,7 +53,7 @@ class _DashboardPageState extends State<DashboardPage> {
               _AdminHeader(
                 title: 'Admin Dashboard',
                 subtitle:
-                    'System overview for users, alarm behavior, wake logs, and report readiness.',
+                    'Quick snapshot of users, alarm activity, wake performance, and report readiness.',
                 action: IconButton.filledTonal(
                   onPressed: _refresh,
                   icon: const Icon(Icons.refresh),
@@ -74,7 +72,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 ],
               ),
               const SizedBox(height: 20),
-              _UsageStatisticsCard(metrics: metrics),
+              _UsageHighlightsCard(metrics: metrics),
               const SizedBox(height: 20),
               _RecentUsersCard(users: metrics.recentUsers),
             ],
@@ -92,59 +90,57 @@ class _OverviewGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cards = [
+      _MetricCard(
+        icon: Icons.people_alt_outlined,
+        title: 'Total Users',
+        value: metrics.totalUsers.toString(),
+        note: 'Registered user records',
+        color: AppColors.primary,
+      ),
+      _MetricCard(
+        icon: Icons.alarm_on_outlined,
+        title: 'Total Alarms',
+        value: metrics.totalAlarms.toString(),
+        note: '${metrics.enabledAlarms} enabled · ${metrics.disabledAlarms} disabled',
+        color: Colors.indigo,
+      ),
+      _MetricCard(
+        icon: Icons.nightlight_round_outlined,
+        title: 'Wake Logs',
+        value: metrics.totalWakeLogs.toString(),
+        note: '${metrics.wakeSuccessRate.toStringAsFixed(0)}% success rate',
+        color: Colors.deepPurple,
+      ),
+      _MetricCard(
+        icon: Icons.verified_outlined,
+        title: 'Success Rate',
+        value: '${metrics.wakeSuccessRate.toStringAsFixed(0)}%',
+        note: '${metrics.successfulWakeLogs}/${metrics.totalWakeLogs} successful wake logs',
+        color: Colors.green,
+      ),
+      _MetricCard(
+        icon: Icons.snooze_outlined,
+        title: 'Avg Snooze',
+        value: metrics.averageSnoozeCount.toStringAsFixed(1),
+        note: 'Average snoozes per wake log',
+        color: Colors.orange,
+      ),
+      _MetricCard(
+        icon: Icons.report_gmailerrorred_outlined,
+        title: 'Issue Logs',
+        value: metrics.issueLogsAvailable ? metrics.issueLogs.toString() : 'N/A',
+        note: metrics.issueLogsAvailable ? 'App issue records available' : 'Collection unavailable',
+        color: Colors.orange,
+      ),
+    ];
+
     return Wrap(
       spacing: 16,
       runSpacing: 16,
       children: [
-        _MetricCard(
-          icon: Icons.people_alt_outlined,
-          title: 'Total Users',
-          value: metrics.totalUsers.toString(),
-          note: 'Registered user records',
-          color: AppColors.primary,
-        ),
-        _MetricCard(
-          icon: Icons.alarm_on_outlined,
-          title: 'Total Alarms',
-          value: metrics.totalAlarms.toString(),
-          note: '${metrics.enabledAlarms} enabled · ${metrics.disabledAlarms} disabled',
-          color: Colors.indigo,
-        ),
-        _MetricCard(
-          icon: Icons.nightlight_round_outlined,
-          title: 'Wake Logs',
-          value: metrics.totalWakeLogs.toString(),
-          note: '${metrics.wakeSuccessRate.toStringAsFixed(0)}% success rate',
-          color: Colors.deepPurple,
-        ),
-        _MetricCard(
-          icon: Icons.snooze_outlined,
-          title: 'Avg Snooze',
-          value: metrics.averageSnoozeCount.toStringAsFixed(1),
-          note: 'Average snoozes per wake log',
-          color: Colors.orange,
-        ),
-        _MetricCard(
-          icon: Icons.verified_outlined,
-          title: 'Success Rate',
-          value: '${metrics.wakeSuccessRate.toStringAsFixed(0)}%',
-          note: '${metrics.successfulWakeLogs}/${metrics.totalWakeLogs} successful wake logs',
-          color: Colors.green,
-        ),
-        _MetricCard(
-          icon: Icons.report_gmailerrorred_outlined,
-          title: 'Issue Logs',
-          value: metrics.issueLogsAvailable ? metrics.issueLogs.toString() : 'N/A',
-          note: metrics.issueLogsAvailable ? 'App issue records available' : 'Collection unavailable',
-          color: Colors.orange,
-        ),
-        _MetricCard(
-          icon: Icons.auto_graph_outlined,
-          title: 'Top Category',
-          value: metrics.topCategoryLabel,
-          note: 'Most common profile type',
-          color: Colors.green,
-        ),
+        for (var index = 0; index < cards.length; index++)
+          _AnimatedMetricCard(index: index, child: cards[index]),
       ],
     );
   }
@@ -261,10 +257,10 @@ class _SystemHealthCard extends StatelessWidget {
 }
 
 
-class _UsageStatisticsCard extends StatelessWidget {
+class _UsageHighlightsCard extends StatelessWidget {
   final AdminReportMetrics metrics;
 
-  const _UsageStatisticsCard({required this.metrics});
+  const _UsageHighlightsCard({required this.metrics});
 
   @override
   Widget build(BuildContext context) {
@@ -274,8 +270,8 @@ class _UsageStatisticsCard extends StatelessWidget {
             : 'Usage summary collection is unavailable yet.';
 
     return _PanelCard(
-      title: 'Alarm Usage Statistics',
-      subtitle: 'Aggregated from synced user alarm and wake-up summaries.',
+      title: 'Usage Highlights',
+      subtitle: 'Short dashboard preview. Open Reports for detailed breakdowns.',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -296,9 +292,9 @@ class _UsageStatisticsCard extends StatelessWidget {
                 helper: '${metrics.alarmEnabledPercent.toStringAsFixed(0)}% of saved alarms',
               ),
               _MiniStat(
-                label: 'Repeat alarms',
-                value: metrics.repeatAlarms.toString(),
-                helper: '${metrics.oneTimeAlarms} one-time alarm(s)',
+                label: 'No-repeat alarms',
+                value: metrics.oneTimeAlarms.toString(),
+                helper: 'Saved with no repeat day selected',
               ),
               _MiniStat(
                 label: 'Avg disarm time',
@@ -312,119 +308,8 @@ class _UsageStatisticsCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 18),
-          _DisarmModeDistributionPreview(metrics: metrics),
         ],
       ),
-    );
-  }
-}
-
-
-class _DisarmModeDistributionPreview extends StatelessWidget {
-  final AdminReportMetrics metrics;
-
-  const _DisarmModeDistributionPreview({required this.metrics});
-
-  @override
-  Widget build(BuildContext context) {
-    final legend = Column(
-      children:
-          AlarmDisarmMode.values.map((mode) {
-            final count = metrics.disarmModeCountFor(mode);
-            final percent = metrics.disarmModePercentFor(mode);
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 15,
-                    backgroundColor: adminDisarmModeColor(mode).withValues(alpha: 0.12),
-                    child: Icon(
-                      adminDisarmModeIcon(mode),
-                      size: 15,
-                      color: adminDisarmModeColor(mode),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          AdminReportMetrics.modeLabel(mode),
-                          style: const TextStyle(fontWeight: FontWeight.w700),
-                        ),
-                        const SizedBox(height: 5),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(99),
-                          child: LinearProgressIndicator(
-                            minHeight: 7,
-                            value: percent / 100,
-                            backgroundColor: adminDisarmModeColor(mode).withValues(alpha: 0.12),
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              adminDisarmModeColor(mode),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Text('$count (${percent.toStringAsFixed(0)}%)'),
-                ],
-              ),
-            );
-          }).toList(),
-    );
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isCompact = constraints.maxWidth < 560;
-        final chart = AdminDisarmModeDonutChart(
-          counts: metrics.disarmModeCounts,
-          total: metrics.totalDisarmModeSelections,
-          size: isCompact ? 150 : 170,
-        );
-
-        if (isCompact) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Disarm mode choices',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 14),
-              Center(child: chart),
-              const SizedBox(height: 18),
-              legend,
-            ],
-          );
-        }
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Disarm mode choices',
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                chart,
-                const SizedBox(width: 24),
-                Expanded(child: legend),
-              ],
-            ),
-          ],
-        );
-      },
     );
   }
 }
@@ -438,7 +323,7 @@ class _RecentUsersCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return _PanelCard(
       title: 'Recent User Records',
-      subtitle: 'Quick view of the first available user records.',
+      subtitle: 'Compact account preview. Open Users for full management details.',
       child:
           users.isEmpty
               ? const Padding(
@@ -504,44 +389,55 @@ class _MiniStat extends StatelessWidget {
   }
 }
 
-class _UsageProgressRow extends StatelessWidget {
-  final String label;
-  final int count;
-  final double percent;
-  final Color color;
+class _AnimatedMetricCard extends StatefulWidget {
+  final int index;
+  final Widget child;
 
-  const _UsageProgressRow({
-    required this.label,
-    required this.count,
-    required this.percent,
-    required this.color,
-  });
+  const _AnimatedMetricCard({required this.index, required this.child});
+
+  @override
+  State<_AnimatedMetricCard> createState() => _AnimatedMetricCardState();
+}
+
+class _AnimatedMetricCardState extends State<_AnimatedMetricCard>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _fade;
+  late final Animation<double> _scale;
+  late final Animation<Offset> _slide;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 420),
+    );
+    final curve = CurvedAnimation(parent: _controller, curve: Curves.easeOutBack);
+    _fade = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
+    _scale = Tween<double>(begin: 0.94, end: 1).animate(curve);
+    _slide = Tween<Offset>(begin: const Offset(0, 0.08), end: Offset.zero)
+        .animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
+
+    Future.delayed(Duration(milliseconds: widget.index * 80), () {
+      if (mounted) _controller.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        SizedBox(width: 72, child: Text(label)),
-        Expanded(
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(99),
-            child: LinearProgressIndicator(
-              minHeight: 8,
-              value: percent / 100,
-              backgroundColor: color.withValues(alpha: 0.12),
-              valueColor: AlwaysStoppedAnimation<Color>(color),
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        SizedBox(
-          width: 88,
-          child: Text(
-            '$count (${percent.toStringAsFixed(0)}%)',
-            textAlign: TextAlign.end,
-          ),
-        ),
-      ],
+    return FadeTransition(
+      opacity: _fade,
+      child: SlideTransition(
+        position: _slide,
+        child: ScaleTransition(scale: _scale, child: widget.child),
+      ),
     );
   }
 }
