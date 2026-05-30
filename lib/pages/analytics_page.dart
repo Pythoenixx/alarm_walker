@@ -4,6 +4,7 @@ import 'package:alarm_walker/services/admin_report_service.dart';
 import 'package:alarm_walker/theme/app_colors.dart';
 import 'package:alarm_walker/widgets/admin_category_donut_chart.dart';
 import 'package:alarm_walker/widgets/admin_disarm_mode_donut_chart.dart';
+import 'package:alarm_walker/widgets/admin_metric_card.dart';
 import 'package:flutter/material.dart';
 
 class AnalyticsPage extends StatefulWidget {
@@ -95,47 +96,45 @@ class _ReportSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final chips = [
+      _ReportChip(
+        icon: Icons.people_alt_outlined,
+        color: AppColors.primary,
+        label: 'Total Users',
+        value: metrics.totalUsers.toString(),
+      ),
+      _ReportChip(
+        icon: Icons.child_care,
+        color: _categoryColor(ProfileCategory.child),
+        label: 'Child',
+        value: metrics.childUsers.toString(),
+      ),
+      _ReportChip(
+        icon: Icons.person,
+        color: _categoryColor(ProfileCategory.adult),
+        label: 'Adult',
+        value: metrics.adultUsers.toString(),
+      ),
+      _ReportChip(
+        icon: Icons.elderly,
+        color: _categoryColor(ProfileCategory.senior),
+        label: 'Senior',
+        value: metrics.seniorUsers.toString(),
+      ),
+      _ReportChip(
+        icon: Icons.auto_graph_outlined,
+        color: Colors.green,
+        label: 'Top Category',
+        value: metrics.topCategoryLabel,
+      ),
+    ];
+
     return _ReportPanel(
       icon: Icons.people_alt_outlined,
       color: AppColors.primary,
       title: 'Registered User Summary',
       subtitle: 'Basic user report generated from Firestore user records.',
-      child: Wrap(
-        spacing: 12,
-        runSpacing: 12,
-        children: [
-          _ReportChip(
-            icon: Icons.people_alt_outlined,
-            color: AppColors.primary,
-            label: 'Total Users',
-            value: metrics.totalUsers.toString(),
-          ),
-          _ReportChip(
-            icon: Icons.child_care,
-            color: _categoryColor(ProfileCategory.child),
-            label: 'Child',
-            value: metrics.childUsers.toString(),
-          ),
-          _ReportChip(
-            icon: Icons.person,
-            color: _categoryColor(ProfileCategory.adult),
-            label: 'Adult',
-            value: metrics.adultUsers.toString(),
-          ),
-          _ReportChip(
-            icon: Icons.elderly,
-            color: _categoryColor(ProfileCategory.senior),
-            label: 'Senior',
-            value: metrics.seniorUsers.toString(),
-          ),
-          _ReportChip(
-            icon: Icons.auto_graph_outlined,
-            color: Colors.green,
-            label: 'Top Category',
-            value: metrics.topCategoryLabel,
-          ),
-        ],
-      ),
+      child: _AnimatedReportGrid(children: chips),
     );
   }
 }
@@ -161,9 +160,7 @@ class _UsageStatisticsReport extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
+          _AnimatedReportGrid(
             children: [
               _ReportChip(
                 icon: Icons.cloud_sync_outlined,
@@ -225,6 +222,7 @@ class _UsageStatisticsReport extends StatelessWidget {
                 label: 'Avg Disarm Time',
                 value: _formatDurationSeconds(metrics.averageDisarmDurationSeconds),
               ),
+            
             ],
           ),
           const SizedBox(height: 12),
@@ -518,6 +516,25 @@ class _ReportPanel extends StatelessWidget {
   }
 }
 
+
+class _AnimatedReportGrid extends StatelessWidget {
+  final List<Widget> children;
+
+  const _AnimatedReportGrid({required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 12,
+      runSpacing: 12,
+      children: [
+        for (var index = 0; index < children.length; index++)
+          AdminAnimatedCard(index: index, delayMs: 55, child: children[index]),
+      ],
+    );
+  }
+}
+
 class _ReportChip extends StatelessWidget {
   final IconData? icon;
   final Color? color;
@@ -533,37 +550,14 @@ class _ReportChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accent = color ?? AppColors.primary;
-
-    return Container(
+    return AdminMetricCard(
+      icon: icon ?? Icons.insights_outlined,
+      title: label,
+      value: value,
+      note: '',
+      color: color ?? AppColors.primary,
       width: 180,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
-        color: Theme.of(context).cardColor,
-        border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.35)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (icon != null) ...[
-            CircleAvatar(
-              radius: 16,
-              backgroundColor: accent.withValues(alpha: 0.12),
-              child: Icon(icon, size: 16, color: accent),
-            ),
-            const SizedBox(height: 10),
-          ],
-          Text(label, style: Theme.of(context).textTheme.bodySmall),
-          const SizedBox(height: 6),
-          Text(
-            value,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-        ],
-      ),
+      embedded: true,
     );
   }
 }
