@@ -517,6 +517,12 @@ class _SummaryCards extends StatelessWidget {
     final avgMs = (summary['avg_duration'] as num?)?.round() ?? 0;
     final successRate = total > 0 ? (success / total * 100).round() : 0;
     final totalSnoozes = logs.fold<int>(0, (sum, log) => sum + log.snoozeCount);
+    final totalFailedAttempts = logs.fold<int>(
+      0,
+      (sum, log) => sum + log.failedAttemptCount,
+    );
+    final averageFailedAttempts =
+        total > 0 ? totalFailedAttempts / total : 0.0;
 
     return Column(
       children: [
@@ -567,6 +573,32 @@ class _SummaryCards extends StatelessWidget {
                 caption: 'Total used',
                 isDark: isDark,
                 color: Colors.purple,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _StatCard(
+                icon: Icons.touch_app_rounded,
+                label: 'Failed Attempts',
+                value: totalFailedAttempts.toString(),
+                caption: 'Wrong challenge inputs',
+                isDark: isDark,
+                color: Colors.redAccent,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _StatCard(
+                icon: Icons.insights_rounded,
+                label: 'Avg Attempts',
+                value: averageFailedAttempts.toStringAsFixed(1),
+                caption: 'Per wake record',
+                isDark: isDark,
+                color: Colors.deepOrange,
               ),
             ),
           ],
@@ -1114,6 +1146,13 @@ class _WakeLogCard extends StatelessWidget {
                       label: '${_formatDurationMs(log.disarmDurationMs)} disarm',
                       isDark: isDark,
                     ),
+                    if (log.failedAttemptCount > 0)
+                      _CompactMetric(
+                        icon: Icons.touch_app_rounded,
+                        label:
+                            '${log.failedAttemptCount} failed attempt${log.failedAttemptCount == 1 ? '' : 's'}',
+                        isDark: isDark,
+                      ),
                   ],
                 ),
               ],

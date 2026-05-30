@@ -267,82 +267,17 @@ class _DisarmModeDistributionReport extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final legend = Column(
-      children:
-          AlarmDisarmMode.values.map((mode) {
-            final count = metrics.disarmModeCountFor(mode);
-            final percent = metrics.disarmModePercentFor(mode);
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 16,
-                    backgroundColor: adminDisarmModeColor(mode).withValues(alpha: 0.12),
-                    child: Icon(
-                      adminDisarmModeIcon(mode),
-                      size: 16,
-                      color: adminDisarmModeColor(mode),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  SizedBox(width: 78, child: Text(AdminReportMetrics.modeLabel(mode))),
-                  Expanded(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(99),
-                      child: LinearProgressIndicator(
-                        minHeight: 8,
-                        value: percent / 100,
-                        backgroundColor: adminDisarmModeColor(mode).withValues(alpha: 0.12),
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          adminDisarmModeColor(mode),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text('$count (${percent.toStringAsFixed(0)}%)'),
-                ],
-              ),
-            );
-          }).toList(),
-    );
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isCompact = constraints.maxWidth < 620;
-        final chart = AdminDisarmModeDonutChart(
-          counts: metrics.disarmModeCounts,
-          total: metrics.totalDisarmModeSelections,
-          size: isCompact ? 160 : 190,
-          strokeWidth: 20,
-        );
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Disarm mode distribution',
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 14),
-            if (isCompact) ...[
-              Center(child: chart),
-              const SizedBox(height: 20),
-              legend,
-            ] else
-              Row(
-                children: [
-                  chart,
-                  const SizedBox(width: 28),
-                  Expanded(child: legend),
-                ],
-              ),
-          ],
-        );
-      },
+    return _ModeDistributionSection(
+      icon: Icons.extension_outlined,
+      color: Colors.indigo,
+      title: 'Disarm Mode Distribution',
+      subtitle: 'Which alarm dismissal method users select most often.',
+      counts: metrics.disarmModeCounts,
+      total: metrics.totalDisarmModeSelections,
+      countFor: metrics.disarmModeCountFor,
+      percentFor: metrics.disarmModePercentFor,
+      centerLabel: 'Selections',
+      emptyMessage: 'No disarm mode selections have been synced yet.',
     );
   }
 }
@@ -354,60 +289,183 @@ class _FailedAttemptDistributionReport extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final total = metrics.totalFailedDisarmAttempts;
-
-    return _ReportPanel(
+    return _ModeDistributionSection(
       icon: Icons.touch_app_outlined,
       color: Colors.redAccent,
       title: 'Failed Attempt Distribution',
-      subtitle: 'Tracks incorrect challenge attempts before the alarm is successfully dismissed.',
-      child: total == 0
-          ? Text(
-              'No failed disarm attempts have been recorded yet. Wrong Math or Typing attempts will appear here after users retry and complete the alarm.',
-              style: Theme.of(context).textTheme.bodyMedium,
-            )
-          : Column(
-              children: AlarmDisarmMode.values.map((mode) {
-                final count = metrics.failedAttemptCountFor(mode);
-                final percent = metrics.failedAttemptModePercentFor(mode);
-                final color = adminDisarmModeColor(mode);
+      subtitle: 'Incorrect challenge attempts before users successfully dismiss alarms.',
+      counts: metrics.failedAttemptModeCounts,
+      total: metrics.totalFailedDisarmAttempts,
+      countFor: metrics.failedAttemptCountFor,
+      percentFor: metrics.failedAttemptModePercentFor,
+      centerLabel: 'Attempts',
+      emptyMessage:
+          'No failed disarm attempts have been recorded yet. Wrong Math or Typing attempts will appear here after users retry and complete the alarm.',
+    );
+  }
+}
 
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 16,
-                        backgroundColor: color.withValues(alpha: 0.12),
-                        child: Icon(
-                          adminDisarmModeIcon(mode),
-                          size: 16,
-                          color: color,
+class _ModeDistributionSection extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String subtitle;
+  final Map<AlarmDisarmMode, int> counts;
+  final int total;
+  final int Function(AlarmDisarmMode mode) countFor;
+  final double Function(AlarmDisarmMode mode) percentFor;
+  final String centerLabel;
+  final String emptyMessage;
+
+  const _ModeDistributionSection({
+    required this.icon,
+    required this.color,
+    required this.title,
+    required this.subtitle,
+    required this.counts,
+    required this.total,
+    required this.countFor,
+    required this.percentFor,
+    required this.centerLabel,
+    required this.emptyMessage,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SubReportHeader(
+          icon: icon,
+          color: color,
+          title: title,
+          subtitle: subtitle,
+        ),
+        const SizedBox(height: 14),
+        if (total == 0)
+          Text(emptyMessage, style: Theme.of(context).textTheme.bodyMedium)
+        else
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isCompact = constraints.maxWidth < 620;
+              final chart = AdminDisarmModeDonutChart(
+                counts: counts,
+                total: total,
+                size: isCompact ? 160 : 190,
+                strokeWidth: 20,
+                centerLabel: centerLabel,
+              );
+
+              final legend = Column(
+                children:
+                    AlarmDisarmMode.values.map((mode) {
+                      final count = countFor(mode);
+                      final percent = percentFor(mode);
+                      final modeColor = adminDisarmModeColor(mode);
+
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 16,
+                              backgroundColor: modeColor.withValues(alpha: 0.12),
+                              child: Icon(
+                                adminDisarmModeIcon(mode),
+                                size: 16,
+                                color: modeColor,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            SizedBox(
+                              width: 78,
+                              child: Text(AdminReportMetrics.modeLabel(mode)),
+                            ),
+                            Expanded(
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(99),
+                                child: LinearProgressIndicator(
+                                  minHeight: 8,
+                                  value: percent / 100,
+                                  backgroundColor:
+                                      modeColor.withValues(alpha: 0.12),
+                                  valueColor:
+                                      AlwaysStoppedAnimation<Color>(modeColor),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Text('$count (${percent.toStringAsFixed(0)}%)'),
+                          ],
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      SizedBox(
-                        width: 78,
-                        child: Text(AdminReportMetrics.modeLabel(mode)),
-                      ),
-                      Expanded(
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(99),
-                          child: LinearProgressIndicator(
-                            minHeight: 8,
-                            value: percent / 100,
-                            backgroundColor: color.withValues(alpha: 0.12),
-                            valueColor: AlwaysStoppedAnimation<Color>(color),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Text('$count (${percent.toStringAsFixed(0)}%)'),
-                    ],
-                  ),
+                      );
+                    }).toList(),
+              );
+
+              if (isCompact) {
+                return Column(
+                  children: [
+                    Center(child: chart),
+                    const SizedBox(height: 20),
+                    legend,
+                  ],
                 );
-              }).toList(),
-            ),
+              }
+
+              return Row(
+                children: [
+                  chart,
+                  const SizedBox(width: 28),
+                  Expanded(child: legend),
+                ],
+              );
+            },
+          ),
+      ],
+    );
+  }
+}
+
+class _SubReportHeader extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String subtitle;
+
+  const _SubReportHeader({
+    required this.icon,
+    required this.color,
+    required this.title,
+    required this.subtitle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        CircleAvatar(
+          radius: 17,
+          backgroundColor: color.withValues(alpha: 0.12),
+          child: Icon(icon, size: 17, color: color),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

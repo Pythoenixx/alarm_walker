@@ -9,6 +9,7 @@ class AdminDisarmModeDonutChart extends StatelessWidget {
   final double size;
   final double strokeWidth;
   final bool showCenterLabel;
+  final String centerLabel;
 
   const AdminDisarmModeDonutChart({
     super.key,
@@ -17,6 +18,7 @@ class AdminDisarmModeDonutChart extends StatelessWidget {
     this.size = 170,
     this.strokeWidth = 18,
     this.showCenterLabel = true,
+    this.centerLabel = 'Selections',
   });
 
   @override
@@ -64,7 +66,7 @@ class AdminDisarmModeDonutChart extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      'Selections',
+                      centerLabel,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
