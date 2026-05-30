@@ -45,46 +45,132 @@ class _AlarmTileState extends State<AlarmTile> {
     _selectedDays = widget.alarmModel.days.toSet();
   }
 
-  Widget _repeatDayText(bool isDark) {
-    const dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+  String _repeatLabel() {
+    if (widget.alarmModel.isOnce) return 'One-time';
+    if (_selectedDays.isEmpty) return 'No repeat days';
 
-    // Same mapping: Sunday is 7, Monday is 1, etc.
-    const daysOrder = [7, 1, 2, 3, 4, 5, 6];
+    const dayLabels = {
+      DateTime.monday: 'Mon',
+      DateTime.tuesday: 'Tue',
+      DateTime.wednesday: 'Wed',
+      DateTime.thursday: 'Thu',
+      DateTime.friday: 'Fri',
+      DateTime.saturday: 'Sat',
+      DateTime.sunday: 'Sun',
+    };
 
-    final textSpans = <TextSpan>[];
+    final ordered = [
+      DateTime.monday,
+      DateTime.tuesday,
+      DateTime.wednesday,
+      DateTime.thursday,
+      DateTime.friday,
+      DateTime.saturday,
+      DateTime.sunday,
+    ];
 
-    for (int i = 0; i < dayLabels.length; i++) {
-      // Check against the correct mapped day value
-      final dayValue = daysOrder[i];
-      final isSelected = _selectedDays.contains(dayValue);
-
-      final color =
-          isSelected
-              ? AppColors.primary
-              : isDark
-              ? AppColors.darkBackgroundText
-              : AppColors.lightBackgroundText;
-
-      textSpans.add(
-        TextSpan(text: '${dayLabels[i]} ', style: TextStyle(color: color)),
-      );
+    if (_selectedDays.length == 7) return 'Every day';
+    if (_selectedDays.length == 5 &&
+        _selectedDays.containsAll([
+          DateTime.monday,
+          DateTime.tuesday,
+          DateTime.wednesday,
+          DateTime.thursday,
+          DateTime.friday,
+        ])) {
+      return 'Weekdays';
     }
 
-    return Text.rich(
-      TextSpan(children: textSpans),
-      style: AppTextStyles.caption(context),
+    return ordered
+        .where(_selectedDays.contains)
+        .map((day) => dayLabels[day]!)
+        .join(' · ');
+  }
+
+  IconData _dismissModeIcon(AlarmDisarmMode mode) {
+    return switch (mode) {
+      AlarmDisarmMode.normal => Icons.alarm_off_outlined,
+      AlarmDisarmMode.walk => Icons.directions_walk_outlined,
+      AlarmDisarmMode.math => Icons.calculate_outlined,
+      AlarmDisarmMode.shake => Icons.vibration,
+      AlarmDisarmMode.retype => Icons.keyboard_outlined,
+    };
+  }
+
+  String _dismissModeLabel(AlarmDisarmMode mode) {
+    return switch (mode) {
+      AlarmDisarmMode.normal => 'Normal',
+      AlarmDisarmMode.walk => 'Walk',
+      AlarmDisarmMode.math => 'Math',
+      AlarmDisarmMode.shake => 'Shake',
+      AlarmDisarmMode.retype => 'Retype',
+    };
+  }
+
+  String _snoozeLabel() {
+    final snooze = widget.alarmModel.snoozeSettings;
+    if (!snooze.enabled) return 'Snooze off';
+    final max = snooze.maxCount == 0 ? '∞' : '${snooze.maxCount}×';
+    return '${snooze.durationMinutes} min · max $max';
+  }
+
+  Widget _infoChip({
+    required IconData icon,
+    required String label,
+    required bool isDark,
+    Color? color,
+  }) {
+    final chipColor = color ?? AppColors.primary;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: chipColor.withValues(alpha: isDark ? 0.16 : 0.10),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: chipColor.withValues(alpha: 0.22)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: chipColor),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppTextStyles.caption(context).copyWith(
+                color:
+                    isDark
+                        ? AppColors.darkBackgroundText
+                        : AppColors.lightBackgroundText,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final bool isDark = context.isDarkMode;
-    final bool use24h = context.watch<SettingsCubit>().state.use24HourFormat;
+    final settings = context.watch<SettingsCubit>().state;
+    final bool use24h = settings.use24HourFormat;
+    final vacationMode = settings.vacationModeEnabled;
+    final alarm = widget.alarmModel;
+    final isPausedByVacation = vacationMode && _enabled;
+
+    final time = MaterialLocalizations.of(context).formatTimeOfDay(
+      alarm.time,
+      alwaysUse24HourFormat: use24h,
+    );
+
     return Padding(
-      padding: const EdgeInsets.only(top: 23),
+      padding: const EdgeInsets.only(top: 18),
       child: DecoratedBox(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(24),
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -124,57 +210,116 @@ class _AlarmTileState extends State<AlarmTile> {
         ),
         child: Padding(
           padding: const EdgeInsets.all(1),
-          child: SizedBox(
-            height: 74,
-            width: double.infinity,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                borderRadius: const BorderRadius.all(Radius.circular(20)),
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors:
-                      isDark
-                          ? [AppColors.darkClock1, AppColors.darkScaffold1]
-                          : [
-                            AppColors.lightScaffold1,
-                            AppColors.lightGradient2,
-                          ],
-                ),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              borderRadius: const BorderRadius.all(Radius.circular(24)),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors:
+                    isDark
+                        ? [AppColors.darkClock1, AppColors.darkScaffold1]
+                        : [AppColors.lightScaffold1, AppColors.lightGradient2],
               ),
-              child: Material(
-                type: MaterialType.transparency,
-                child: InkWell(
-                  onTap:
-                      () => context.pushNamed(
-                        AppRoute.addAlarm.name,
-                        extra: widget.alarmModel,
-                      ),
-                  borderRadius: const BorderRadius.all(Radius.circular(20)),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 18),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            MaterialLocalizations.of(context).formatTimeOfDay(
-                              widget.alarmModel.time,
-                              alwaysUse24HourFormat: use24h,
-                            ),
-                            style: AppTextStyles.bigTime(context),
-                          ),
-                        ),
-                        _repeatDayText(isDark),
-                        const SizedBox(width: 12),
-                        GradientSwitch(
-                          value: _enabled,
-                          onChanged: (v) {
-                            setState(() => _enabled = v);
-                            widget.onEnabledChanged(v);
-                          },
-                        ),
-                      ],
+            ),
+            child: Material(
+              type: MaterialType.transparency,
+              child: InkWell(
+                onTap:
+                    () => context.pushNamed(
+                      AppRoute.addAlarm.name,
+                      extra: alarm,
                     ),
+                borderRadius: const BorderRadius.all(Radius.circular(24)),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(18, 16, 16, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(time, style: AppTextStyles.bigTime(context)),
+                                if (alarm.title.trim().isNotEmpty) ...[
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    alarm.title.trim(),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: AppTextStyles.caption(context).copyWith(
+                                      color:
+                                          isDark
+                                              ? AppColors.darkBackgroundText
+                                              : AppColors.lightBackgroundText,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          GradientSwitch(
+                            value: _enabled,
+                            onChanged: (v) {
+                              setState(() => _enabled = v);
+                              widget.onEnabledChanged(v);
+                            },
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          _infoChip(
+                            icon: _dismissModeIcon(alarm.dismissSettings.mode),
+                            label: _dismissModeLabel(alarm.dismissSettings.mode),
+                            isDark: isDark,
+                          ),
+                          _infoChip(
+                            icon:
+                                alarm.isOnce
+                                    ? Icons.looks_one_outlined
+                                    : Icons.repeat_rounded,
+                            label: _repeatLabel(),
+                            isDark: isDark,
+                            color: alarm.isOnce ? Colors.deepPurple : null,
+                          ),
+                          _infoChip(
+                            icon: Icons.music_note_outlined,
+                            label: alarm.soundSettings.soundName ?? 'Default',
+                            isDark: isDark,
+                            color: Colors.indigo,
+                          ),
+                          _infoChip(
+                            icon: Icons.snooze_outlined,
+                            label: _snoozeLabel(),
+                            isDark: isDark,
+                            color: Colors.orange,
+                          ),
+                          if (!_enabled)
+                            _infoChip(
+                              icon: Icons.pause_circle_outline,
+                              label: 'Disabled',
+                              isDark: isDark,
+                              color: Colors.grey,
+                            ),
+                          if (isPausedByVacation)
+                            _infoChip(
+                              icon: Icons.beach_access_outlined,
+                              label: 'Paused by vacation mode',
+                              isDark: isDark,
+                              color: Colors.orange,
+                            ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
               ),

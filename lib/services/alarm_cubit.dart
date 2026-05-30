@@ -193,6 +193,36 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
     return null;
   }
 
+  DateTime _nextOneTimeDate(TimeOfDay timeOfDay) {
+    final now = DateTime.now();
+    var scheduledDate = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      timeOfDay.hour,
+      timeOfDay.minute,
+    );
+
+    if (!scheduledDate.isAfter(now)) {
+      scheduledDate = scheduledDate.add(const Duration(days: 1));
+    }
+
+    return scheduledDate;
+  }
+
+  bool _runtimeAlarmMatchesModelOnDate(
+    AlarmSettings alarm,
+    AlarmModel model,
+    DateTime dateTime,
+  ) {
+    return _runtimeAlarmBelongsToModel(alarm, model) &&
+        alarm.dateTime.year == dateTime.year &&
+        alarm.dateTime.month == dateTime.month &&
+        alarm.dateTime.day == dateTime.day &&
+        alarm.dateTime.hour == dateTime.hour &&
+        alarm.dateTime.minute == dateTime.minute;
+  }
+
   //refactor later
   Future<void> _ensureUpcomingWeek(
     AlarmModel currentAlarmModel,
@@ -202,6 +232,32 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
     required String title,
   }) async {
     final now = DateTime.now();
+
+    if (currentAlarmModel.isOnce) {
+      final dateTime = _nextOneTimeDate(timeOfDay);
+      final runtimeAlarms = current.values.expand((alarms) => alarms);
+      final exists = runtimeAlarms.any(
+        (alarm) => _runtimeAlarmMatchesModelOnDate(
+          alarm,
+          currentAlarmModel,
+          dateTime,
+        ),
+      );
+
+      if (!exists) {
+        final newAlarm = await _setAlarm(
+          dateTime.millisecondsSinceEpoch.hashCode,
+          dateTime,
+          title: title,
+          alarmModel: currentAlarmModel,
+        );
+        if (newAlarm != null) {
+          current.putIfAbsent(timeOfDay, () => []).add(newAlarm);
+        }
+      }
+      return;
+    }
+
     for (var i = 0; i < 7; i++) {
       final dateTime = DateTime(
         now.year,
@@ -267,8 +323,17 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
             ? await alarmRepo.getAlarmById(alarmId, userId: uid)
             : null;
 
-    final updatedDays = days.toSet().toList();
+    final updatedDays = isOnce ? <int>[] : days.toSet().toList();
     final enabled = existingAlarm?.enabled ?? true;
+
+    if (existingAlarm != null) {
+      final runtimeAlarms = await Alarm.getAlarms();
+      for (final alarm in runtimeAlarms) {
+        if (_runtimeAlarmBelongsToModel(alarm, existingAlarm)) {
+          await stopRuntimeAlarm(alarm.id);
+        }
+      }
+    }
 
     final updatedAlarm = AlarmModel(
       alarmId: existingAlarm?.alarmId, // 🔥 null for new
@@ -445,6 +510,22 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
         success: result == AlarmResult.success,
         disarmDurationMs: durationMs,
       );
+    }
+
+    if (result == AlarmResult.success) {
+      final completedAlarm = await alarmRepo.getAlarmById(
+        dbAlarmId,
+        userId: currentOwnerId,
+      );
+      if (completedAlarm?.isOnce == true && completedAlarm!.enabled) {
+        await alarmRepo.updateAlarmEnabled(
+          dbAlarmId,
+          false,
+          userId: currentOwnerId,
+        );
+        final updated = await alarmRepo.getAlarms(userId: currentOwnerId);
+        emit(updated);
+      }
     }
 
     _syncUsageStatsForAdmin();

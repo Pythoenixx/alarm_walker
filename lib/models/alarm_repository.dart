@@ -60,8 +60,8 @@ class AlarmRepository {
       await db.update(
         'alarm',
         entry.toMap(),
-        where: 'alarm_id = ?',
-        whereArgs: [model.alarmId],
+        where: 'alarm_id = ? AND user_id = ?',
+        whereArgs: [model.alarmId, userId],
       );
     }
     return alarmId;

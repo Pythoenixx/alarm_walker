@@ -35,6 +35,7 @@ class _AddAlarmScreenState extends State<AddAlarmScreen> {
   late SoundSettings _soundSettings;
   late DismissSettings _dismissSettings;
   late bool _wakeupCheck;
+  late bool _isOneTime;
 
   @override
   void initState() {
@@ -48,6 +49,7 @@ class _AddAlarmScreenState extends State<AddAlarmScreen> {
       _soundSettings = m.soundSettings;
       _dismissSettings = m.dismissSettings;
       _wakeupCheck = m.wakeupCheck;
+      _isOneTime = m.isOnce;
     } else {
       _selectedTime = TimeOfDay.now();
       _selectedDays = <int>{
@@ -65,6 +67,7 @@ class _AddAlarmScreenState extends State<AddAlarmScreen> {
       _soundSettings = appDefaults.defaultSoundSettings;
       _dismissSettings = appDefaults.defaultDismissSettings;
       _wakeupCheck = false;
+      _isOneTime = false;
     }
   }
 
@@ -86,38 +89,31 @@ class _AddAlarmScreenState extends State<AddAlarmScreen> {
   }
 
   Future<void> _addAlarm() async {
-    if (_selectedDays.isEmpty) return;
     final title = _titleController.text.trim();
     final cubit = context.read<AlarmCubit>();
-    if (widget.alarmModel != null) {
-      final oldModel = widget.alarmModel!;
-      await cubit.deleteAlarmModel(oldModel);
-      await cubit.setPeriodicAlarms(
-        alarmId: oldModel.alarmId,
-        timeOfDay: _selectedTime,
-        days: _selectedDays.toList(),
-        title: title,
-        snoozeSettings: _snoozeSettings,
-        soundSettings: _soundSettings,
-        dismissSettings: _dismissSettings,
-        wakeupCheck: _wakeupCheck,
-        isOnce: false, //to do feature
+    final days = _isOneTime ? <int>[] : _selectedDays.toList();
+
+    if (!_isOneTime && days.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select at least one repeat day.'),
+        ),
       );
-      if (!oldModel.enabled) {
-        await cubit.toggleAlarmEnabled(oldModel, false);
-      }
-    } else {
-      await cubit.setPeriodicAlarms(
-        timeOfDay: _selectedTime,
-        days: _selectedDays.toList(),
-        title: title,
-        snoozeSettings: _snoozeSettings,
-        soundSettings: _soundSettings,
-        dismissSettings: _dismissSettings,
-        wakeupCheck: _wakeupCheck,
-        isOnce: false, //to do feature
-      );
+      return;
     }
+
+    await cubit.setPeriodicAlarms(
+      alarmId: widget.alarmModel?.alarmId,
+      timeOfDay: _selectedTime,
+      days: days,
+      title: title,
+      snoozeSettings: _snoozeSettings,
+      soundSettings: _soundSettings,
+      dismissSettings: _dismissSettings,
+      wakeupCheck: _wakeupCheck,
+      isOnce: _isOneTime,
+    );
+
     if (mounted) context.pop();
   }
 
@@ -241,6 +237,141 @@ class _AddAlarmScreenState extends State<AddAlarmScreen> {
               ? Text(subtitle, style: AppTextStyles.caption(context))
               : null,
       trailing: GradientSwitch(value: value, onChanged: onChanged),
+    );
+  }
+
+
+  Widget _alarmTypeSelector(bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+      child: Container(
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          color:
+              isDark
+                  ? AppColors.darkScaffold2.withValues(alpha: 0.8)
+                  : Colors.white.withValues(alpha: 0.9),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: isDark ? AppColors.darkBorder : AppColors.lightBlueGrey,
+          ),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: _alarmTypeButton(
+                icon: Icons.repeat_rounded,
+                label: 'Repeat',
+                selected: !_isOneTime,
+                onTap: () {
+                  setState(() {
+                    _isOneTime = false;
+                    if (_selectedDays.isEmpty) {
+                      _selectedDays = <int>{
+                        DateTime.monday,
+                        DateTime.tuesday,
+                        DateTime.wednesday,
+                        DateTime.thursday,
+                        DateTime.friday,
+                      };
+                    }
+                  });
+                },
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _alarmTypeButton(
+                icon: Icons.looks_one_outlined,
+                label: 'One-time',
+                selected: _isOneTime,
+                onTap: () {
+                  setState(() {
+                    _isOneTime = true;
+                    _selectedDays = <int>{};
+                  });
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _alarmTypeButton({
+    required IconData icon,
+    required String label,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(14),
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(14),
+          gradient:
+              selected
+                  ? const LinearGradient(
+                    colors: [AppColors.primary, AppColors.primaryAlt],
+                  )
+                  : null,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 18,
+              color: selected ? Colors.white : AppColors.primary,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: AppTextStyles.caption(context).copyWith(
+                color: selected ? Colors.white : AppColors.primary,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _oneTimeInfoCard(bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppColors.primary.withValues(alpha: isDark ? 0.16 : 0.10),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.primary.withValues(alpha: 0.25)),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(Icons.info_outline, color: AppColors.primary, size: 20),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'This alarm will ring once at the next matching time and then disable itself after successful dismiss.',
+                style: AppTextStyles.caption(context).copyWith(
+                  color:
+                      isDark
+                          ? AppColors.darkBackgroundText
+                          : AppColors.lightBackgroundText,
+                  height: 1.35,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -420,11 +551,15 @@ class _AddAlarmScreenState extends State<AddAlarmScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        // Day picker
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          child: _daySelector(isDark),
-                        ),
+                        _alarmTypeSelector(isDark),
+
+                        if (_isOneTime)
+                          _oneTimeInfoCard(isDark)
+                        else
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            child: _daySelector(isDark),
+                          ),
 
                         // Title field
                         Padding(
