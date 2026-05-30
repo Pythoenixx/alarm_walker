@@ -111,43 +111,93 @@ class _AlarmTileState extends State<AlarmTile> {
     final snooze = widget.alarmModel.snoozeSettings;
     if (!snooze.enabled) return 'Snooze off';
     final max = snooze.maxCount == 0 ? '∞' : '${snooze.maxCount}×';
-    return '${snooze.durationMinutes} min · max $max';
+    return 'Snooze ${snooze.durationMinutes} min · max $max';
   }
 
-  Widget _infoChip({
+  Color _mutedColor(bool isDark) {
+    return isDark
+        ? AppColors.darkBackgroundText.withValues(alpha: 0.52)
+        : AppColors.lightBackgroundText.withValues(alpha: 0.52);
+  }
+
+  Widget _metaPill({
     required IconData icon,
     required String label,
     required bool isDark,
+    required bool active,
     Color? color,
   }) {
-    final chipColor = color ?? AppColors.primary;
+    final accent = active ? (color ?? AppColors.primary) : _mutedColor(isDark);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
       decoration: BoxDecoration(
-        color: chipColor.withValues(alpha: isDark ? 0.16 : 0.10),
+        color: accent.withValues(alpha: active ? 0.10 : 0.06),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: chipColor.withValues(alpha: 0.22)),
+        border: Border.all(color: accent.withValues(alpha: active ? 0.20 : 0.10)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: chipColor),
-          const SizedBox(width: 6),
-          Flexible(
-            child: Text(
+          Icon(icon, size: 14, color: accent),
+          if (label.isNotEmpty) ...[
+            const SizedBox(width: 6),
+            Text(
               label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: AppTextStyles.caption(context).copyWith(
-                color:
-                    isDark
-                        ? AppColors.darkBackgroundText
-                        : AppColors.lightBackgroundText,
-                fontWeight: FontWeight.w700,
+                color: accent,
+                fontWeight: FontWeight.w800,
               ),
             ),
-          ),
+          ],
         ],
+      ),
+    );
+  }
+
+  Widget _iconBadge({
+    required IconData icon,
+    required String tooltip,
+    required bool isDark,
+    required bool active,
+    Color? color,
+  }) {
+    final accent = active ? (color ?? AppColors.primary) : _mutedColor(isDark);
+    return Tooltip(
+      message: tooltip,
+      child: Container(
+        width: 30,
+        height: 30,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: accent.withValues(alpha: active ? 0.10 : 0.06),
+          border: Border.all(color: accent.withValues(alpha: active ? 0.18 : 0.10)),
+        ),
+        child: Icon(icon, size: 15, color: accent),
+      ),
+    );
+  }
+
+  Widget _largeSwitchHitBox() {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () {
+        final next = !_enabled;
+        setState(() => _enabled = next);
+        widget.onEnabledChanged(next);
+      },
+      child: SizedBox(
+        width: 64,
+        height: 48,
+        child: Center(
+          child: Transform.scale(
+            scale: 1.12,
+            child: AbsorbPointer(
+              child: GradientSwitch(value: _enabled, onChanged: (_) {}),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -243,7 +293,15 @@ class _AlarmTileState extends State<AlarmTile> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(time, style: AppTextStyles.bigTime(context)),
+                                Text(
+                                  time,
+                                  style: AppTextStyles.bigTime(context).copyWith(
+                                    color:
+                                        _enabled
+                                            ? null
+                                            : _mutedColor(isDark),
+                                  ),
+                                ),
                                 if (alarm.title.trim().isNotEmpty) ...[
                                   const SizedBox(height: 4),
                                   Text(
@@ -252,9 +310,11 @@ class _AlarmTileState extends State<AlarmTile> {
                                     overflow: TextOverflow.ellipsis,
                                     style: AppTextStyles.caption(context).copyWith(
                                       color:
-                                          isDark
-                                              ? AppColors.darkBackgroundText
-                                              : AppColors.lightBackgroundText,
+                                          _enabled
+                                              ? isDark
+                                                  ? AppColors.darkBackgroundText
+                                                  : AppColors.lightBackgroundText
+                                              : _mutedColor(isDark),
                                       fontWeight: FontWeight.w700,
                                     ),
                                   ),
@@ -262,59 +322,45 @@ class _AlarmTileState extends State<AlarmTile> {
                               ],
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          GradientSwitch(
-                            value: _enabled,
-                            onChanged: (v) {
-                              setState(() => _enabled = v);
-                              widget.onEnabledChanged(v);
-                            },
-                          ),
+                          const SizedBox(width: 8),
+                          _largeSwitchHitBox(),
                         ],
                       ),
-                      const SizedBox(height: 14),
+                      const SizedBox(height: 12),
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
                         children: [
-                          _infoChip(
+                          _metaPill(
                             icon: _dismissModeIcon(alarm.dismissSettings.mode),
                             label: _dismissModeLabel(alarm.dismissSettings.mode),
                             isDark: isDark,
+                            active: _enabled && !isPausedByVacation,
                           ),
-                          _infoChip(
+                          _metaPill(
                             icon:
                                 alarm.isOnce
                                     ? Icons.looks_one_outlined
                                     : Icons.repeat_rounded,
                             label: _repeatLabel(),
                             isDark: isDark,
-                            color: alarm.isOnce ? Colors.deepPurple : null,
+                            active: _enabled && !isPausedByVacation,
                           ),
-                          _infoChip(
-                            icon: Icons.music_note_outlined,
-                            label: alarm.soundSettings.soundName ?? 'Default',
+                          _iconBadge(
+                            icon:
+                                alarm.snoozeSettings.enabled
+                                    ? Icons.snooze_outlined
+                                    : Icons.snooze_rounded,
+                            tooltip: _snoozeLabel(),
                             isDark: isDark,
-                            color: Colors.indigo,
+                            active: _enabled && alarm.snoozeSettings.enabled,
                           ),
-                          _infoChip(
-                            icon: Icons.snooze_outlined,
-                            label: _snoozeLabel(),
-                            isDark: isDark,
-                            color: Colors.orange,
-                          ),
-                          if (!_enabled)
-                            _infoChip(
-                              icon: Icons.pause_circle_outline,
-                              label: 'Disabled',
-                              isDark: isDark,
-                              color: Colors.grey,
-                            ),
                           if (isPausedByVacation)
-                            _infoChip(
+                            _metaPill(
                               icon: Icons.beach_access_outlined,
-                              label: 'Paused by vacation mode',
+                              label: 'Vacation paused',
                               isDark: isDark,
+                              active: true,
                               color: Colors.orange,
                             ),
                         ],
