@@ -233,6 +233,13 @@ class _MathAlarmScreenState extends State<MathAlarmScreen>
 
   void _onTimerExpired() {
     unawaited(HapticFeedback.heavyImpact());
+    unawaited(
+      recordFailedDisarmAttemptForActiveAlarm(
+        context: context,
+        alarmSettings: widget.alarmSettings,
+        alarmModel: widget.alarmModel,
+      ),
+    );
 
     setState(() {
       _error = 'Time\'s up!'; // TODO: localize
@@ -276,6 +283,13 @@ class _MathAlarmScreenState extends State<MathAlarmScreen>
       });
     } else {
       unawaited(HapticFeedback.vibrate());
+      unawaited(
+        recordFailedDisarmAttemptForActiveAlarm(
+          context: context,
+          alarmSettings: widget.alarmSettings,
+          alarmModel: widget.alarmModel,
+        ),
+      );
 
       await _shakeCtrl.forward(from: 0);
 

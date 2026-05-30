@@ -74,12 +74,20 @@ class UserUsageStatsSyncService {
     var successfulWakeLogs = 0;
     var totalSnoozeCount = 0;
     var totalDisarmDurationMs = 0;
+    var totalFailedDisarmAttempts = 0;
+    final failedAttemptModeCounts = <String, int>{};
     DateTime? latestWakeAt;
 
     for (final log in wakeLogs) {
       if (log.success) successfulWakeLogs++;
       totalSnoozeCount += log.snoozeCount;
       totalDisarmDurationMs += log.disarmDurationMs;
+      totalFailedDisarmAttempts += log.failedAttemptCount;
+      if (log.failedAttemptCount > 0) {
+        final mode = log.disarmMode.name;
+        failedAttemptModeCounts[mode] =
+            (failedAttemptModeCounts[mode] ?? 0) + log.failedAttemptCount;
+      }
       if (latestWakeAt == null || log.wakeTime.isAfter(latestWakeAt)) {
         latestWakeAt = log.wakeTime;
       }
@@ -99,6 +107,8 @@ class UserUsageStatsSyncService {
       'failedWakeLogs': wakeLogs.length - successfulWakeLogs,
       'totalSnoozeCount': totalSnoozeCount,
       'totalDisarmDurationMs': totalDisarmDurationMs,
+      'totalFailedDisarmAttempts': totalFailedDisarmAttempts,
+      'failedAttemptModeCounts': failedAttemptModeCounts,
       'latestWakeAt': latestWakeAt?.toIso8601String(),
       'updatedAt': FieldValue.serverTimestamp(),
     };

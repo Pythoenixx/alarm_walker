@@ -8,6 +8,7 @@ class WakeLog {
   final bool success;
   final AlarmDisarmMode disarmMode; // enum, not String
   final int disarmDurationMs;
+  final int failedAttemptCount;
 
   WakeLog({
     this.logId,
@@ -17,6 +18,7 @@ class WakeLog {
     required this.success,
     required this.disarmMode,
     required this.disarmDurationMs,
+    this.failedAttemptCount = 0,
   });
 
   Map<String, Object?> toMap() {
@@ -28,6 +30,7 @@ class WakeLog {
       'success': success ? 1 : 0,
       'disarm_mode': disarmMode.dbValue,
       'disarm_duration': disarmDurationMs,
+      'failed_attempt_count': failedAttemptCount,
     };
   }
 
@@ -40,6 +43,15 @@ class WakeLog {
       success: (map['success'] as int) == 1,
       disarmMode: AlarmDisarmModeX.fromDb(map['disarm_mode'] as String),
       disarmDurationMs: map['disarm_duration'] as int,
+      failedAttemptCount: _readInt(map['failed_attempt_count']),
     );
   }
+}
+
+
+int _readInt(Object? value) {
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  if (value is String) return int.tryParse(value) ?? 0;
+  return 0;
 }

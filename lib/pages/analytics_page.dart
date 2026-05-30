@@ -217,6 +217,18 @@ class _UsageStatisticsReport extends StatelessWidget {
                 value: metrics.averageSnoozeCount.toStringAsFixed(1),
               ),
               _ReportChip(
+                icon: Icons.touch_app_outlined,
+                color: Colors.redAccent,
+                label: 'Failed Attempts',
+                value: metrics.totalFailedDisarmAttempts.toString(),
+              ),
+              _ReportChip(
+                icon: Icons.insights_outlined,
+                color: Colors.redAccent,
+                label: 'Avg Failed Attempts',
+                value: metrics.averageFailedAttemptsPerWakeLog.toStringAsFixed(1),
+              ),
+              _ReportChip(
                 icon: Icons.timer_outlined,
                 color: Colors.pink,
                 label: 'Avg Disarm Time',
@@ -227,11 +239,13 @@ class _UsageStatisticsReport extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            'No-repeat alarms are saved without repeat days selected. Full one-time auto-disable behavior can be implemented separately.',
+            'Failed attempts count incorrect challenge inputs while the alarm remains active. No-repeat alarms are saved without repeat days selected; full one-time auto-disable behavior can be implemented separately.',
             style: Theme.of(context).textTheme.bodySmall,
           ),
           const SizedBox(height: 22),
           _DisarmModeDistributionReport(metrics: metrics),
+          const SizedBox(height: 22),
+          _FailedAttemptDistributionReport(metrics: metrics),
           if (!metrics.usageStatsAvailable && metrics.usageStatsError != null) ...[
             const SizedBox(height: 8),
             Text(
@@ -332,6 +346,72 @@ class _DisarmModeDistributionReport extends StatelessWidget {
     );
   }
 }
+
+class _FailedAttemptDistributionReport extends StatelessWidget {
+  final AdminReportMetrics metrics;
+
+  const _FailedAttemptDistributionReport({required this.metrics});
+
+  @override
+  Widget build(BuildContext context) {
+    final total = metrics.totalFailedDisarmAttempts;
+
+    return _ReportPanel(
+      icon: Icons.touch_app_outlined,
+      color: Colors.redAccent,
+      title: 'Failed Attempt Distribution',
+      subtitle: 'Tracks incorrect challenge attempts before the alarm is successfully dismissed.',
+      child: total == 0
+          ? Text(
+              'No failed disarm attempts have been recorded yet. Wrong Math or Typing attempts will appear here after users retry and complete the alarm.',
+              style: Theme.of(context).textTheme.bodyMedium,
+            )
+          : Column(
+              children: AlarmDisarmMode.values.map((mode) {
+                final count = metrics.failedAttemptCountFor(mode);
+                final percent = metrics.failedAttemptModePercentFor(mode);
+                final color = adminDisarmModeColor(mode);
+
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 16,
+                        backgroundColor: color.withValues(alpha: 0.12),
+                        child: Icon(
+                          adminDisarmModeIcon(mode),
+                          size: 16,
+                          color: color,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      SizedBox(
+                        width: 78,
+                        child: Text(AdminReportMetrics.modeLabel(mode)),
+                      ),
+                      Expanded(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(99),
+                          child: LinearProgressIndicator(
+                            minHeight: 8,
+                            value: percent / 100,
+                            backgroundColor: color.withValues(alpha: 0.12),
+                            valueColor: AlwaysStoppedAnimation<Color>(color),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text('$count (${percent.toStringAsFixed(0)}%)'),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+    );
+  }
+}
+
 
 class _CategoryReport extends StatelessWidget {
   final AdminReportMetrics metrics;

@@ -45,3 +45,18 @@ Future<void> dismissActiveAlarmAndClose({
     context.pop();
   }
 }
+
+Future<void> recordFailedDisarmAttemptForActiveAlarm({
+  required BuildContext context,
+  required AlarmSettings alarmSettings,
+  required AlarmModel alarmModel,
+}) async {
+  final alarmCubit = context.read<AlarmCubit>();
+  final alarmRef = ActiveAlarmRef.from(
+    alarmSettings: alarmSettings,
+    alarmModel: alarmModel,
+  );
+
+  await alarmCubit.recordFailedDisarmAttempt(alarmRef: alarmRef);
+}
+

@@ -20,6 +20,7 @@ class WakeLogRepository {
       'success': 0,
       'disarm_mode': disarmMode.dbValue,
       'disarm_duration': 0,
+      'failed_attempt_count': 0,
     });
   }
 
@@ -43,6 +44,19 @@ class WakeLogRepository {
     SET snooze_count = MAX(0, snooze_count - 1)
     WHERE log_id = ?
   ''',
+      [logId],
+    );
+  }
+
+  /// Called when the user makes an incorrect disarm attempt while the alarm
+  /// stays active. This is different from a failed wake log/session.
+  Future<void> incrementFailedAttempt(int logId) async {
+    await db.rawUpdate(
+      '''
+      UPDATE wake_log
+      SET failed_attempt_count = failed_attempt_count + 1
+      WHERE log_id = ?
+    ''',
       [logId],
     );
   }

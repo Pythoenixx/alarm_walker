@@ -8,7 +8,7 @@ class AlarmDatabase {
     final path = '$dir/alarms.db';
     _db = await openDatabase(
       path,
-      version: 16,
+      version: 17,
       onCreate: (db, version) => _createAllTables(db),
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 16) {
@@ -17,6 +17,15 @@ class AlarmDatabase {
             tableName: 'user_profile',
             columnName: 'profile_category',
             definition: "TEXT NOT NULL DEFAULT 'adult'",
+          );
+        }
+
+        if (oldVersion < 17) {
+          await _addColumnIfMissing(
+            db,
+            tableName: 'wake_log',
+            columnName: 'failed_attempt_count',
+            definition: 'INTEGER NOT NULL DEFAULT 0',
           );
         }
       },
@@ -59,6 +68,7 @@ class AlarmDatabase {
         success         INTEGER NOT NULL,
         disarm_mode     TEXT    NOT NULL,
         disarm_duration INTEGER NOT NULL,
+        failed_attempt_count INTEGER NOT NULL DEFAULT 0,
         FOREIGN KEY (alarm_id) REFERENCES alarm(alarm_id) ON DELETE CASCADE
       )
     ''');

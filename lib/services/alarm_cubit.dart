@@ -406,6 +406,20 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
     }
   }
 
+  Future<void> recordFailedDisarmAttempt({
+    required ActiveAlarmRef alarmRef,
+  }) async {
+    final dbAlarmId = alarmRef.dbAlarmId;
+    final logId = SharedPreferencesWithCache.instance.get<int>(
+      _logIdKey(dbAlarmId),
+    );
+
+    if (logId == null) return;
+
+    await wakeLogRepo.incrementFailedAttempt(logId);
+    _syncUsageStatsForAdmin();
+  }
+
   Future<void> finishRingingAlarm({
     required ActiveAlarmRef alarmRef,
     required AlarmResult result,

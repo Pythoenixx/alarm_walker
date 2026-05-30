@@ -250,6 +250,7 @@ class BackupRestoreService {
           'success': _readInt(log['success']) ?? 0,
           'disarm_mode': log['disarm_mode'] as String? ?? 'normal',
           'disarm_duration': _readInt(log['disarm_duration']) ?? 0,
+          'failed_attempt_count': _readInt(log['failed_attempt_count']) ?? 0,
         });
       }
     });

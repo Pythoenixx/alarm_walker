@@ -132,6 +132,13 @@ class _OverviewGrid extends StatelessWidget {
         color: Colors.orange,
       ),
       AdminMetricCard(
+        icon: Icons.touch_app_outlined,
+        title: 'Failed Attempts',
+        value: metrics.totalFailedDisarmAttempts.toString(),
+        note: '${metrics.averageFailedAttemptsPerWakeLog.toStringAsFixed(1)} average per wake log',
+        color: Colors.redAccent,
+      ),
+      AdminMetricCard(
         icon: Icons.report_gmailerrorred_outlined,
         title: 'Issue Logs',
         value:
@@ -448,6 +455,11 @@ class _UsageHighlightsCard extends StatelessWidget {
                 label: 'Total snoozes',
                 value: metrics.totalSnoozeCount.toString(),
                 helper: 'From synced wake logs',
+              ),
+              _MiniStat(
+                label: 'Failed attempts',
+                value: metrics.totalFailedDisarmAttempts.toString(),
+                helper: 'Wrong challenge inputs recorded',
               ),
             ],
           ),

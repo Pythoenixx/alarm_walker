@@ -86,6 +86,14 @@ class _RetypeAlarmScreenState extends State<RetypeAlarmScreen> {
         alarmModel: widget.alarmModel,
       );
     } else {
+      unawaited(
+        recordFailedDisarmAttemptForActiveAlarm(
+          context: context,
+          alarmSettings: widget.alarmSettings,
+          alarmModel: widget.alarmModel,
+        ),
+      );
+
       setState(() {
         _error = 'Incorrect! Please type the sentence exactly as shown.';
         _isCorrect = false;

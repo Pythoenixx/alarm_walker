@@ -44,7 +44,9 @@ class AdminReportMetrics {
   final int failedWakeLogs;
   final int totalSnoozeCount;
   final int totalDisarmDurationMs;
+  final int totalFailedDisarmAttempts;
   final Map<AlarmDisarmMode, int> disarmModeCounts;
+  final Map<AlarmDisarmMode, int> failedAttemptModeCounts;
 
   const AdminReportMetrics({
     required this.totalUsers,
@@ -66,13 +68,17 @@ class AdminReportMetrics {
     required this.failedWakeLogs,
     required this.totalSnoozeCount,
     required this.totalDisarmDurationMs,
+    required this.totalFailedDisarmAttempts,
     required this.disarmModeCounts,
+    required this.failedAttemptModeCounts,
     this.issueLogsError,
     this.usageStatsError,
   });
 
   int countFor(ProfileCategory category) => categoryCounts[category] ?? 0;
   int disarmModeCountFor(AlarmDisarmMode mode) => disarmModeCounts[mode] ?? 0;
+  int failedAttemptCountFor(AlarmDisarmMode mode) =>
+      failedAttemptModeCounts[mode] ?? 0;
 
   int get childUsers => countFor(ProfileCategory.child);
   int get adultUsers => countFor(ProfileCategory.adult);
@@ -111,7 +117,10 @@ class AdminReportMetrics {
   String get topDisarmModeLabel => _modeLabel(topDisarmMode);
 
   int get totalDisarmModeSelections =>
-      disarmModeCounts.values.fold<int>(0, (sum, value) => sum + value);
+      disarmModeCounts.values.fold<int>(0, (total, value) => total + value);
+
+  int get totalFailedAttemptModeSelections =>
+      failedAttemptModeCounts.values.fold<int>(0, (total, value) => total + value);
 
   int get usersMissingEmail => totalUsers - usersWithEmail;
 
@@ -140,6 +149,11 @@ class AdminReportMetrics {
     return totalSnoozeCount / totalWakeLogs;
   }
 
+  double get averageFailedAttemptsPerWakeLog {
+    if (totalWakeLogs == 0) return 0;
+    return totalFailedDisarmAttempts / totalWakeLogs;
+  }
+
   double get averageDisarmDurationSeconds {
     if (totalWakeLogs == 0) return 0;
     return (totalDisarmDurationMs / totalWakeLogs) / 1000;
@@ -154,6 +168,12 @@ class AdminReportMetrics {
     final total = totalDisarmModeSelections;
     if (total == 0) return 0;
     return (disarmModeCountFor(mode) / total) * 100;
+  }
+
+  double failedAttemptModePercentFor(AlarmDisarmMode mode) {
+    final total = totalFailedAttemptModeSelections;
+    if (total == 0) return 0;
+    return (failedAttemptCountFor(mode) / total) * 100;
   }
 
   static String modeLabel(AlarmDisarmMode mode) => _modeLabel(mode);
@@ -228,7 +248,15 @@ class AdminReportService {
     var failedWakeLogs = 0;
     var totalSnoozeCount = 0;
     var totalDisarmDurationMs = 0;
+    var totalFailedDisarmAttempts = 0;
     final disarmModeCounts = <AlarmDisarmMode, int>{
+      AlarmDisarmMode.math: 0,
+      AlarmDisarmMode.retype: 0,
+      AlarmDisarmMode.shake: 0,
+      AlarmDisarmMode.walk: 0,
+      AlarmDisarmMode.normal: 0,
+    };
+    final failedAttemptModeCounts = <AlarmDisarmMode, int>{
       AlarmDisarmMode.math: 0,
       AlarmDisarmMode.retype: 0,
       AlarmDisarmMode.shake: 0,
@@ -253,6 +281,10 @@ class AdminReportService {
         failedWakeLogs += _readInt(data, 'failedWakeLogs');
         totalSnoozeCount += _readInt(data, 'totalSnoozeCount');
         totalDisarmDurationMs += _readInt(data, 'totalDisarmDurationMs');
+        totalFailedDisarmAttempts += _readInt(
+          data,
+          'totalFailedDisarmAttempts',
+        );
 
         final rawCounts = data['disarmModeCounts'];
         if (rawCounts is Map) {
@@ -260,6 +292,16 @@ class AdminReportService {
             final mode = AlarmDisarmModeX.fromDb(entry.key.toString());
             final count = _toInt(entry.value);
             disarmModeCounts[mode] = (disarmModeCounts[mode] ?? 0) + count;
+          }
+        }
+
+        final rawFailedCounts = data['failedAttemptModeCounts'];
+        if (rawFailedCounts is Map) {
+          for (final entry in rawFailedCounts.entries) {
+            final mode = AlarmDisarmModeX.fromDb(entry.key.toString());
+            final count = _toInt(entry.value);
+            failedAttemptModeCounts[mode] =
+                (failedAttemptModeCounts[mode] ?? 0) + count;
           }
         }
       }
@@ -290,7 +332,9 @@ class AdminReportService {
       failedWakeLogs: failedWakeLogs,
       totalSnoozeCount: totalSnoozeCount,
       totalDisarmDurationMs: totalDisarmDurationMs,
+      totalFailedDisarmAttempts: totalFailedDisarmAttempts,
       disarmModeCounts: disarmModeCounts,
+      failedAttemptModeCounts: failedAttemptModeCounts,
     );
   }
 
