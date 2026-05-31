@@ -1,0 +1,18 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Alarm Walker App",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart"
+    },
+    {
+      "name": "Alarm Walker Admin Web",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main_admin.dart",
+      "deviceId": "chrome"
+    }
+  ]
+}

@@ -250,8 +250,6 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                             label: Text(_isLoading ? 'Logging in...' : 'Log in'),
                           ),
                         ),
-                        const SizedBox(height: 18),
-                        _AdminLoginNotice(theme: theme),
                       ],
                     ),
                   ),
@@ -365,39 +363,5 @@ class _AdminMessageBox extends StatelessWidget {
   }
 }
 
-class _AdminLoginNotice extends StatelessWidget {
-  final ThemeData theme;
-
-  const _AdminLoginNotice({required this.theme});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(
-          alpha: 0.45,
-        ),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            Icons.verified_user_outlined,
-            color: theme.colorScheme.primary,
-            size: 20,
-          ),
-          const SizedBox(width: 10),
-          const Expanded(
-            child: Text(
-              'Admin access only. Please sign in with an authorized administrator account.',
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 final _emailRegex = RegExp(r'^[\w\-.]+@([\w-]+\.)+[\w-]{2,4}$');

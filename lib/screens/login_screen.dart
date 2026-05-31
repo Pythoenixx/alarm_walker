@@ -456,7 +456,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 backgroundColor: AppColors.primary,
                                 minimumSize: const Size.fromHeight(48),
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
+                                  borderRadius: BorderRadius.circular(16),
                                 ),
                                 elevation: 2,
                               ),
@@ -582,27 +582,27 @@ class _InputField extends StatelessWidget {
                     ? AppColors.darkScaffold1.withValues(alpha: 0.5)
                     : Colors.white.withValues(alpha: 0.8),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(16),
               borderSide: BorderSide(
                 color: isDark ? AppColors.darkBorder : AppColors.lightBlueGrey,
               ),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(16),
               borderSide: BorderSide(
                 color: isDark ? AppColors.darkBorder : AppColors.lightBlueGrey,
               ),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.blue, width: 2),
+              borderRadius: BorderRadius.circular(16),
+              borderSide: const BorderSide(color: AppColors.primary, width: 2),
             ),
             errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(16),
               borderSide: const BorderSide(color: Colors.red),
             ),
             focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(16),
               borderSide: const BorderSide(color: Colors.red, width: 2),
             ),
             contentPadding: const EdgeInsets.symmetric(
