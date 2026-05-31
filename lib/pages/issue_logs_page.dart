@@ -12,6 +12,9 @@ class IssueLogsPage extends StatefulWidget {
 }
 
 class _IssueLogsPageState extends State<IssueLogsPage> {
+  final _searchController = TextEditingController();
+  final _searchFocusNode = FocusNode();
+  late final Stream<QuerySnapshot<Map<String, dynamic>>> _issueLogsStream;
   String _statusFilter = 'all';
   String _severityFilter = 'all';
   String _searchQuery = '';
@@ -25,9 +28,22 @@ class _IssueLogsPageState extends State<IssueLogsPage> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _issueLogsStream = _issueLogStream();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _searchFocusNode.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-      stream: _issueLogStream(),
+      stream: _issueLogsStream,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -48,6 +64,9 @@ class _IssueLogsPageState extends State<IssueLogsPage> {
             _IssueLogsHeader(openCount: openCount, crashCount: crashCount),
             const SizedBox(height: 18),
             _IssueLogFilters(
+              searchController: _searchController,
+              searchFocusNode: _searchFocusNode,
+              searchQuery: _searchQuery,
               statusFilter: _statusFilter,
               severityFilter: _severityFilter,
               onStatusChanged: (value) => setState(() => _statusFilter = value),
@@ -178,6 +197,9 @@ class _HeaderCounter extends StatelessWidget {
 }
 
 class _IssueLogFilters extends StatelessWidget {
+  final TextEditingController searchController;
+  final FocusNode searchFocusNode;
+  final String searchQuery;
   final String statusFilter;
   final String severityFilter;
   final ValueChanged<String> onStatusChanged;
@@ -185,6 +207,9 @@ class _IssueLogFilters extends StatelessWidget {
   final ValueChanged<String> onSearchChanged;
 
   const _IssueLogFilters({
+    required this.searchController,
+    required this.searchFocusNode,
+    required this.searchQuery,
     required this.statusFilter,
     required this.severityFilter,
     required this.onStatusChanged,
@@ -207,9 +232,22 @@ class _IssueLogFilters extends StatelessWidget {
             SizedBox(
               width: 320,
               child: TextField(
+                controller: searchController,
+                focusNode: searchFocusNode,
+                textInputAction: TextInputAction.search,
                 decoration: InputDecoration(
                   labelText: 'Search logs',
                   prefixIcon: const Icon(Icons.search),
+                  suffixIcon: searchQuery.isEmpty
+                      ? null
+                      : IconButton(
+                          tooltip: 'Clear search',
+                          icon: const Icon(Icons.close),
+                          onPressed: () {
+                            searchController.clear();
+                            onSearchChanged('');
+                          },
+                        ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),

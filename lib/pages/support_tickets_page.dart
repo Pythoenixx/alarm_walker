@@ -15,20 +15,29 @@ class SupportTicketsPage extends StatefulWidget {
 class _SupportTicketsPageState extends State<SupportTicketsPage> {
   final _service = SupportTicketService();
   final _searchController = TextEditingController();
+  final _searchFocusNode = FocusNode();
+  late final Stream<QuerySnapshot<Map<String, dynamic>>> _ticketsStream;
   String _statusFilter = 'all';
   String _categoryFilter = 'all';
   String _searchQuery = '';
 
   @override
+  void initState() {
+    super.initState();
+    _ticketsStream = _service.watchLatestTickets();
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-      stream: _service.watchLatestTickets(),
+      stream: _ticketsStream,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -51,13 +60,14 @@ class _SupportTicketsPageState extends State<SupportTicketsPage> {
             const SizedBox(height: 18),
             _SupportFilters(
               searchController: _searchController,
+              searchFocusNode: _searchFocusNode,
               searchQuery: _searchQuery,
               statusFilter: _statusFilter,
               categoryFilter: _categoryFilter,
               onStatusChanged: (value) => setState(() => _statusFilter = value),
               onCategoryChanged: (value) => setState(() => _categoryFilter = value),
               onSearchChanged: (value) {
-                setState(() => _searchQuery = value.toLowerCase());
+                setState(() => _searchQuery = value.trim().toLowerCase());
               },
             ),
             const SizedBox(height: 18),
@@ -183,6 +193,7 @@ class _HeaderCounter extends StatelessWidget {
 
 class _SupportFilters extends StatelessWidget {
   final TextEditingController searchController;
+  final FocusNode searchFocusNode;
   final String searchQuery;
   final String statusFilter;
   final String categoryFilter;
@@ -192,6 +203,7 @@ class _SupportFilters extends StatelessWidget {
 
   const _SupportFilters({
     required this.searchController,
+    required this.searchFocusNode,
     required this.searchQuery,
     required this.statusFilter,
     required this.categoryFilter,
@@ -216,6 +228,7 @@ class _SupportFilters extends StatelessWidget {
               width: 320,
               child: TextField(
                 controller: searchController,
+                focusNode: searchFocusNode,
                 textInputAction: TextInputAction.search,
                 decoration: InputDecoration(
                   labelText: 'Search tickets',
