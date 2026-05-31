@@ -4,6 +4,7 @@ import 'package:alarm_walker/extensions/context_extensions.dart';
 import 'package:alarm_walker/models/sound_settings.dart';
 import 'package:alarm_walker/theme/app_colors.dart';
 import 'package:alarm_walker/theme/app_text_styles.dart';
+import 'package:alarm_walker/widgets/app_switch_tile.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
@@ -267,12 +268,11 @@ class _SoundSettingsScreenState extends State<SoundSettingsScreen> {
 
             // ── Volume ─────────────────────────────────────────────────────
             _buildSection('Volume', [
-              SwitchListTile(
-                secondary: const Icon(Icons.volume_up_outlined),
-                title: const Text('Override phone volume'), // TODO: localize
-                subtitle: const Text('Alarm uses its own volume level'),
+              AppSwitchTile(
+                icon: Icons.volume_up_outlined,
+                title: 'Override phone volume', // TODO: localize
+                subtitle: 'Alarm uses its own volume level',
                 value: s.overrideVolume,
-                activeColor: AppColors.primary,
                 onChanged:
                     (v) => setState(
                       () => _settings = s.copyWith(overrideVolume: v),
@@ -315,16 +315,11 @@ class _SoundSettingsScreenState extends State<SoundSettingsScreen> {
                         : const SizedBox.shrink(),
               ),
               const Divider(height: 1, indent: 16),
-              SwitchListTile(
-                secondary: const Icon(Icons.tune_outlined),
-                title: const Text(
-                  'Allow volume changes mid-alarm',
-                ), // TODO: localize
-                subtitle: const Text(
-                  'Let hardware buttons adjust alarm volume',
-                ),
+              AppSwitchTile(
+                icon: Icons.tune_outlined,
+                title: 'Allow volume changes mid-alarm', // TODO: localize
+                subtitle: 'Let hardware buttons adjust alarm volume',
                 value: s.allowMidAlarmVolumeChange,
-                activeColor: AppColors.primary,
                 onChanged:
                     (v) => setState(
                       () =>
@@ -335,14 +330,11 @@ class _SoundSettingsScreenState extends State<SoundSettingsScreen> {
 
             // ── Fade in ────────────────────────────────────────────────────
             _buildSection('Fade in', [
-              SwitchListTile(
-                secondary: const Icon(Icons.trending_up_outlined),
-                title: const Text(
-                  'Gradually increase volume',
-                ), // TODO: localize
-                subtitle: const Text('Starts quiet and builds up over time'),
+              AppSwitchTile(
+                icon: Icons.trending_up_outlined,
+                title: 'Gradually increase volume', // TODO: localize
+                subtitle: 'Starts quiet and builds up over time',
                 value: s.gradualVolumeIncrease,
-                activeColor: AppColors.primary,
                 onChanged:
                     (v) => setState(
                       () => _settings = s.copyWith(gradualVolumeIncrease: v),
@@ -389,11 +381,10 @@ class _SoundSettingsScreenState extends State<SoundSettingsScreen> {
 
             // ── Haptics ────────────────────────────────────────────────────
             _buildSection('Haptics', [
-              SwitchListTile(
-                secondary: const Icon(Icons.vibration),
-                title: const Text('Vibrate'), // TODO: localize
+              AppSwitchTile(
+                icon: Icons.vibration,
+                title: 'Vibrate', // TODO: localize
                 value: s.vibrate,
-                activeColor: AppColors.primary,
                 onChanged:
                     (v) => setState(() => _settings = s.copyWith(vibrate: v)),
               ),
@@ -401,14 +392,11 @@ class _SoundSettingsScreenState extends State<SoundSettingsScreen> {
 
             // ── Flashlight ─────────────────────────────────────────────────
             _buildSection('Flashlight', [
-              SwitchListTile(
-                secondary: const Icon(Icons.flashlight_on_outlined),
-                title: const Text('Flash torch on alarm'), // TODO: localize
-                subtitle: const Text(
-                  'Blinks the rear flashlight when alarm fires',
-                ),
+              AppSwitchTile(
+                icon: Icons.flashlight_on_outlined,
+                title: 'Flash torch on alarm', // TODO: localize
+                subtitle: 'Blinks the rear flashlight when alarm fires',
                 value: s.flashlight,
-                activeColor: AppColors.primary,
                 onChanged:
                     (v) =>
                         setState(() => _settings = s.copyWith(flashlight: v)),

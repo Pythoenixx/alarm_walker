@@ -3,6 +3,7 @@ import 'package:alarm_walker/models/alarm_model.dart';
 import 'package:alarm_walker/models/dismiss_settings.dart';
 import 'package:alarm_walker/theme/app_colors.dart';
 import 'package:alarm_walker/theme/app_text_styles.dart';
+import 'package:alarm_walker/widgets/app_switch_tile.dart';
 import 'package:flutter/material.dart';
 
 class DismissModeConfigScreen extends StatefulWidget {
@@ -188,11 +189,10 @@ class _DismissModeConfigScreenState extends State<DismissModeConfigScreen> {
                 setState(() => _s = _s.copyWith(mathProblemCount: v.round())),
       ),
       const Divider(height: 1, indent: 16),
-      SwitchListTile(
-        title: const Text('Allow skipping problems'), // TODO: localize
-        subtitle: const Text('Can skip a hard problem at a small time penalty'),
+      AppSwitchTile(
+        title: 'Allow skipping problems', // TODO: localize
+        subtitle: 'Can skip a hard problem at a small time penalty',
         value: _s.mathAllowSkip,
-        activeColor: AppColors.primary,
         onChanged: (v) => setState(() => _s = _s.copyWith(mathAllowSkip: v)),
       ),
     ], isDark),
@@ -286,10 +286,9 @@ class _DismissModeConfigScreenState extends State<DismissModeConfigScreen> {
         ),
       ),
       const Divider(height: 1, indent: 16),
-      SwitchListTile(
-        title: const Text('Case sensitive'), // TODO: localize
+      AppSwitchTile(
+        title: 'Case sensitive', // TODO: localize
         value: _s.reTypeCaseSensitive,
-        activeColor: AppColors.primary,
         onChanged:
             (v) => setState(() => _s = _s.copyWith(reTypeCaseSensitive: v)),
       ),
@@ -303,11 +302,10 @@ class _DismissModeConfigScreenState extends State<DismissModeConfigScreen> {
     return [
       _buildSection('Task timer', [
         // TODO: localize
-        SwitchListTile(
-          title: const Text('Limit time per task'), // TODO: localize
-          subtitle: const Text('Auto-fails a task if not completed in time'),
+        AppSwitchTile(
+          title: 'Limit time per task', // TODO: localize
+          subtitle: 'Auto-fails a task if not completed in time',
           value: hasTimer,
-          activeColor: AppColors.primary,
           onChanged:
               (v) => setState(
                 () =>

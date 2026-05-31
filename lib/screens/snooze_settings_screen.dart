@@ -2,6 +2,7 @@ import 'package:alarm_walker/extensions/context_extensions.dart';
 import 'package:alarm_walker/models/snooze_settings.dart';
 import 'package:alarm_walker/theme/app_colors.dart';
 import 'package:alarm_walker/theme/app_text_styles.dart';
+import 'package:alarm_walker/widgets/app_switch_tile.dart';
 import 'package:flutter/material.dart';
 
 class SnoozeSettingsScreen extends StatefulWidget {
@@ -127,11 +128,10 @@ class _SnoozeSettingsScreenState extends State<SnoozeSettingsScreen> {
             // ── Enable toggle ──────────────────────────────────────────────
             _buildSection('Snooze', [
               // TODO: localize
-              SwitchListTile(
-                secondary: const Icon(Icons.snooze),
-                title: const Text('Enable snooze'), // TODO: localize
+              AppSwitchTile(
+                icon: Icons.snooze,
+                title: 'Enable snooze', // TODO: localize
                 value: s.enabled,
-                activeColor: AppColors.primary,
                 onChanged:
                     (v) => setState(() => _settings = s.copyWith(enabled: v)),
               ),

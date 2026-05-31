@@ -184,6 +184,17 @@ class AppTheme {
         padding: const WidgetStatePropertyAll(
           EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         ),
+        backgroundColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.disabled)) {
+            return AppColors.primary.withValues(alpha: 0.45);
+          }
+          return AppColors.primary;
+        }),
+        foregroundColor: const WidgetStatePropertyAll(Colors.white),
+        iconColor: const WidgetStatePropertyAll(Colors.white),
+        overlayColor: WidgetStatePropertyAll(
+          Colors.white.withValues(alpha: 0.10),
+        ),
         shape: WidgetStatePropertyAll(
           RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         ),

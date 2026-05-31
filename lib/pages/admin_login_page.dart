@@ -244,6 +244,10 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                                       height: 18,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                              Colors.white,
+                                            ),
                                       ),
                                     )
                                     : const Icon(Icons.login_rounded),

@@ -328,7 +328,12 @@ class _FeedbackFormCard extends StatelessWidget {
                         ? const SizedBox(
                           width: 16,
                           height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
+                          ),
                         )
                         : const Icon(Icons.send_outlined),
                 label: Text(isSubmitting ? 'Submitting...' : 'Submit Feedback'),
