@@ -463,8 +463,24 @@ class _LoginScreenState extends State<LoginScreen> {
                               onPressed: _isLoading ? null : _login,
                               child:
                                   _isLoading
-                                      ? const CircularProgressIndicator()
-                                      : const Text('Log in'),
+                                      ? const SizedBox(
+                                        height: 24,
+                                        width: 24,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                                Colors.white,
+                                              ),
+                                        ),
+                                      )
+                                      : const Text(
+                                        'Log in',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
                             ),
                           ),
                         ],

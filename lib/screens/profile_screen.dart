@@ -427,7 +427,10 @@ class _AccountActionSection extends StatelessWidget {
           ),
         ),
         onPressed: () => context.goNamed(AppRoute.login.name),
-        child: const Text('Sign in to sync & backup'),
+        child: const Text(
+          'Sign in to sync & backup',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
       );
     }
 
@@ -451,7 +454,10 @@ class _AccountActionSection extends StatelessWidget {
         context.goNamed(AppRoute.login.name);
       },
 
-      child: const Text('Sign out'),
+      child: const Text(
+        'Sign out',
+        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+      ),
     );
   }
 }

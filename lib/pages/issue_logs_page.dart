@@ -301,13 +301,33 @@ class _FilterDropdown extends StatelessWidget {
       width: 190,
       child: DropdownButtonFormField<String>(
         value: value,
+        isExpanded: true,
         decoration: InputDecoration(
           labelText: label,
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
         ),
+        selectedItemBuilder: (context) {
+          return items.values.map((label) {
+            return Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            );
+          }).toList();
+        },
         items:
             items.entries.map((entry) {
-              return DropdownMenuItem(value: entry.key, child: Text(entry.value));
+              return DropdownMenuItem(
+                value: entry.key,
+                child: Text(
+                  entry.value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              );
             }).toList(),
         onChanged: (value) {
           if (value != null) onChanged(value);

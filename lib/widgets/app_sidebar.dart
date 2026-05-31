@@ -36,10 +36,18 @@ class AppSidebar extends StatelessWidget {
               selectedIndex: selectedIndex,
               onDestinationSelected: onSelect,
               labelType: NavigationRailLabelType.all,
-              selectedIconTheme: const IconThemeData(color: AppColors.primary),
+              indicatorColor: AppColors.primary,
+              selectedIconTheme: const IconThemeData(color: Colors.white),
+              unselectedIconTheme: IconThemeData(
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.62),
+              ),
               selectedLabelTextStyle: const TextStyle(
                 color: AppColors.primary,
                 fontWeight: FontWeight.w700,
+              ),
+              unselectedLabelTextStyle: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.62),
+                fontWeight: FontWeight.w600,
               ),
               destinations: const [
                 NavigationRailDestination(
@@ -120,7 +128,11 @@ class _AdminAccountFooter extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          IconButton.filledTonal(
+          IconButton.filled(
+            style: IconButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+            ),
             tooltip: 'Log out admin',
             onPressed: () async {
               final confirmed = await showDialog<bool>(
