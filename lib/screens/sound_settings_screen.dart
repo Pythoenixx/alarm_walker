@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:alarm_walker/extensions/context_extensions.dart';
@@ -5,6 +6,7 @@ import 'package:alarm_walker/models/sound_settings.dart';
 import 'package:alarm_walker/theme/app_colors.dart';
 import 'package:alarm_walker/theme/app_text_styles.dart';
 import 'package:alarm_walker/widgets/app_switch_tile.dart';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
@@ -20,6 +22,9 @@ class SoundSettingsScreen extends StatefulWidget {
 
 class _SoundSettingsScreenState extends State<SoundSettingsScreen> {
   late SoundSettings _settings;
+  final AudioPlayer _previewPlayer = AudioPlayer();
+  StreamSubscription<void>? _previewCompleteSub;
+  bool _isPreviewing = false;
 
   // Preset sounds bundled with the app.
   // Keep only assets that actually exist in the project.
@@ -45,13 +50,83 @@ class _SoundSettingsScreenState extends State<SoundSettingsScreen> {
   void initState() {
     super.initState();
     _settings = widget.initial;
+    _previewCompleteSub = _previewPlayer.onPlayerComplete.listen((_) {
+      if (!mounted) return;
+      setState(() => _isPreviewing = false);
+    });
   }
 
-  void _save() => Navigator.of(context).pop(_settings);
+  @override
+  void dispose() {
+    _previewCompleteSub?.cancel();
+    unawaited(_previewPlayer.dispose());
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    await _stopPreview();
+    if (!mounted) return;
+    Navigator.of(context).pop(_settings);
+  }
 
   bool _isSupportedAudioFile(String fileName) {
     final extension = fileName.split('.').last.toLowerCase();
     return _allowedAudioExtensions.contains(extension);
+  }
+
+  bool _isBundledAsset(String soundPath) => soundPath.startsWith('assets/');
+
+  Future<void> _previewSound() async {
+    final soundPath = _settings.soundPath;
+
+    if (soundPath == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('System default sound cannot be previewed.')),
+      );
+      return;
+    }
+
+    try {
+      await _previewPlayer.stop();
+      await _previewPlayer.setReleaseMode(ReleaseMode.stop);
+
+      if (_isBundledAsset(soundPath)) {
+        final assetPath = soundPath.replaceFirst('assets/', '');
+        await _previewPlayer.play(AssetSource(assetPath));
+      } else {
+        await _previewPlayer.play(DeviceFileSource(soundPath));
+      }
+
+      if (!mounted) return;
+      setState(() => _isPreviewing = true);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isPreviewing = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to preview this sound.')),
+      );
+    }
+  }
+
+  Future<void> _stopPreview() async {
+    await _previewPlayer.stop();
+    if (!mounted) return;
+    setState(() => _isPreviewing = false);
+  }
+
+  Future<void> _selectSound({
+    required String name,
+    required String? soundPath,
+  }) async {
+    await _stopPreview();
+    if (!mounted) return;
+    setState(
+      () => _settings = _settings.copyWith(
+        soundPath: soundPath,
+        soundName: name,
+        clearSound: soundPath == null,
+      ),
+    );
   }
 
   Future<String> _copyCustomSoundToAppStorage({
@@ -119,6 +194,9 @@ class _SoundSettingsScreenState extends State<SoundSettingsScreen> {
 
       if (!mounted) return;
 
+      await _stopPreview();
+      if (!mounted) return;
+
       setState(() {
         _settings = _settings.copyWith(
           soundPath: savedPath,
@@ -140,7 +218,9 @@ class _SoundSettingsScreenState extends State<SoundSettingsScreen> {
     }
   }
 
-  void _clearCustomSound() {
+  Future<void> _clearCustomSound() async {
+    await _stopPreview();
+    if (!mounted) return;
     setState(() {
       _settings = _settings.copyWith(clearSound: true);
     });
@@ -198,7 +278,7 @@ class _SoundSettingsScreenState extends State<SoundSettingsScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: _save,
+            onPressed: () => _save(),
             child: Text(
               'Save', // TODO: localize
               style: TextStyle(color: AppColors.primary),
@@ -226,18 +306,35 @@ class _SoundSettingsScreenState extends State<SoundSettingsScreen> {
                 leading: const Icon(Icons.music_note),
                 title: Text(s.soundName ?? 'Default'),
                 subtitle: Text(
-                  isCustomSound
-                      ? 'Saved custom audio from device'
-                      : 'Bundled alarm sound',
+                  s.soundPath == null
+                      ? 'System default sound'
+                      : isCustomSound
+                          ? 'Saved custom audio from device'
+                          : 'Bundled alarm sound',
                 ),
                 trailing:
                     isCustomSound
                         ? IconButton(
                           icon: const Icon(Icons.close),
                           tooltip: 'Remove custom sound',
-                          onPressed: _clearCustomSound,
+                          onPressed: () => _clearCustomSound(),
                         )
                         : null,
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                child: FilledButton.icon(
+                  onPressed:
+                      s.soundPath == null
+                          ? null
+                          : () => _isPreviewing ? _stopPreview() : _previewSound(),
+                  icon: Icon(
+                    _isPreviewing
+                        ? Icons.stop_circle_outlined
+                        : Icons.play_circle_outline,
+                  ),
+                  label: Text(_isPreviewing ? 'Stop preview' : 'Preview sound'),
+                ),
               ),
               const Divider(height: 1, indent: 16),
               ..._presets.entries.map(
@@ -247,14 +344,7 @@ class _SoundSettingsScreenState extends State<SoundSettingsScreen> {
                   groupValue: s.soundPath,
                   activeColor: AppColors.primary,
                   onChanged:
-                      (v) => setState(
-                        () =>
-                            _settings = s.copyWith(
-                              soundPath: v,
-                              soundName: e.key,
-                              clearSound: v == null,
-                            ),
-                      ),
+                      (_) => _selectSound(name: e.key, soundPath: e.value),
                 ),
               ),
               const Divider(height: 1, indent: 16),

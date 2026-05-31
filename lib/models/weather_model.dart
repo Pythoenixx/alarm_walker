@@ -3,15 +3,29 @@ class WeatherModel {
   final int weatherCode;
   final String condition;
   final String message;
+  final String locationName;
+  final DateTime? updatedAt;
+  final bool isCached;
+  final bool isManualLocation;
 
   const WeatherModel({
     required this.temperature,
     required this.weatherCode,
     required this.condition,
     required this.message,
+    this.locationName = 'Current location',
+    this.updatedAt,
+    this.isCached = false,
+    this.isManualLocation = false,
   });
 
-  factory WeatherModel.fromOpenMeteo(Map<String, dynamic> json) {
+  factory WeatherModel.fromOpenMeteo(
+    Map<String, dynamic> json, {
+    String locationName = 'Current location',
+    bool isManualLocation = false,
+    bool isCached = false,
+    DateTime? updatedAt,
+  }) {
     final current = json['current'];
 
     if (current is! Map<String, dynamic>) {
@@ -33,8 +47,63 @@ class WeatherModel {
       weatherCode: code,
       condition: condition,
       message: messageFromCode(code),
+      locationName: locationName,
+      updatedAt: updatedAt ?? DateTime.now(),
+      isCached: isCached,
+      isManualLocation: isManualLocation,
     );
   }
+
+  factory WeatherModel.fromCacheJson(Map<String, dynamic> json) {
+    final temperatureValue = json['temperature'];
+    final weatherCodeValue = json['weatherCode'];
+
+    if (temperatureValue is! num || weatherCodeValue is! num) {
+      throw const FormatException('Saved weather cache is invalid.');
+    }
+
+    final code = weatherCodeValue.toInt();
+    final updatedAtText = json['updatedAt'];
+
+    return WeatherModel(
+      temperature: temperatureValue.toDouble(),
+      weatherCode: code,
+      condition:
+          json['condition'] as String? ?? WeatherModel.conditionFromCode(code),
+      message: json['message'] as String? ?? WeatherModel.messageFromCode(code),
+      locationName: json['locationName'] as String? ?? 'Saved location',
+      updatedAt:
+          updatedAtText is String ? DateTime.tryParse(updatedAtText) : null,
+      isCached: true,
+      isManualLocation: json['isManualLocation'] as bool? ?? false,
+    );
+  }
+
+  Map<String, dynamic> toCacheJson() => {
+    'temperature': temperature,
+    'weatherCode': weatherCode,
+    'condition': condition,
+    'message': message,
+    'locationName': locationName,
+    'updatedAt': (updatedAt ?? DateTime.now()).toIso8601String(),
+    'isManualLocation': isManualLocation,
+  };
+
+  WeatherModel copyWith({
+    String? locationName,
+    DateTime? updatedAt,
+    bool? isCached,
+    bool? isManualLocation,
+  }) => WeatherModel(
+    temperature: temperature,
+    weatherCode: weatherCode,
+    condition: condition,
+    message: message,
+    locationName: locationName ?? this.locationName,
+    updatedAt: updatedAt ?? this.updatedAt,
+    isCached: isCached ?? this.isCached,
+    isManualLocation: isManualLocation ?? this.isManualLocation,
+  );
 
   static String conditionFromCode(int code) {
     return switch (code) {

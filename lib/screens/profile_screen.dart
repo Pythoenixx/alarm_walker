@@ -269,6 +269,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final currentCategory = _profile?.profileCategory ?? ProfileCategory.fallback;
 
     return Scaffold(
+      backgroundColor: isDark ? AppColors.darkScaffold1 : AppColors.lightScaffold1,
+      appBar: AppBar(
+        scrolledUnderElevation: 0,
+        backgroundColor:
+            isDark ? AppColors.darkScaffold1 : AppColors.lightScaffold1,
+        leading:
+            Navigator.of(context).canPop()
+                ? IconButton(
+                  tooltip: 'Back',
+                  onPressed: () => context.pop(),
+                  icon: const Icon(Icons.arrow_back),
+                )
+                : null,
+        centerTitle: true,
+        title: const Text('Profile'),
+        titleTextStyle: AppTextStyles.heading(context),
+      ),
       body: DecoratedBox(
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -281,13 +298,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ),
         child: SafeArea(
+          top: false,
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Profile', style: AppTextStyles.large(context)),
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
 
                 _ProfileCard(
                   user: _user,

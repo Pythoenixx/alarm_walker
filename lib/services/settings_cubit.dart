@@ -10,6 +10,7 @@ import 'package:alarm_walker/models/profile_category_presets.dart';
 import 'package:alarm_walker/models/snooze_settings.dart';
 import 'package:alarm_walker/models/sound_settings.dart';
 import 'package:alarm_walker/services/shared_prefs_with_cache.dart';
+import 'package:alarm_walker/services/weather_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -59,6 +60,9 @@ abstract final class _K {
   static const defaultDismissSettings = 'defaultDismissSettings';
   static const defaultSnoozeSettings = 'defaultSnoozeSettings';
   static const weatherAwareEnabled = 'weatherAwareEnabled';
+  static const weatherLocationName = WeatherService.manualLocationNameKey;
+  static const weatherLatitude = WeatherService.manualLatitudeKey;
+  static const weatherLongitude = WeatherService.manualLongitudeKey;
   static const adaptiveDifficultyEnabled = 'adaptiveDifficultyEnabled';
   static const bedtimeAlertEnabled = 'bedtimeAlertEnabled';
   static const bedtimeAlertHour = 'bedtimeAlertHour';
@@ -89,6 +93,9 @@ class SettingsState {
   final DismissSettings defaultDismissSettings;
   final SnoozeSettings defaultSnoozeSettings;
   final bool weatherAwareEnabled;
+  final String? weatherLocationName;
+  final double? weatherLatitude;
+  final double? weatherLongitude;
   final bool adaptiveDifficultyEnabled;
   final bool bedtimeAlertEnabled;
   final TimeOfDay bedtimeAlertTime;
@@ -111,6 +118,9 @@ class SettingsState {
     required this.defaultDismissSettings,
     required this.defaultSnoozeSettings,
     required this.weatherAwareEnabled,
+    required this.weatherLocationName,
+    required this.weatherLatitude,
+    required this.weatherLongitude,
     required this.adaptiveDifficultyEnabled,
     required this.bedtimeAlertEnabled,
     required this.bedtimeAlertTime,
@@ -134,6 +144,10 @@ class SettingsState {
     DismissSettings? defaultDismissSettings,
     SnoozeSettings? defaultSnoozeSettings,
     bool? weatherAwareEnabled,
+    String? weatherLocationName,
+    double? weatherLatitude,
+    double? weatherLongitude,
+    bool clearWeatherLocation = false,
     bool? adaptiveDifficultyEnabled,
     bool? bedtimeAlertEnabled,
     TimeOfDay? bedtimeAlertTime,
@@ -158,6 +172,14 @@ class SettingsState {
         defaultDismissSettings ?? this.defaultDismissSettings,
     defaultSnoozeSettings: defaultSnoozeSettings ?? this.defaultSnoozeSettings,
     weatherAwareEnabled: weatherAwareEnabled ?? this.weatherAwareEnabled,
+    weatherLocationName:
+        clearWeatherLocation
+            ? null
+            : weatherLocationName ?? this.weatherLocationName,
+    weatherLatitude:
+        clearWeatherLocation ? null : weatherLatitude ?? this.weatherLatitude,
+    weatherLongitude:
+        clearWeatherLocation ? null : weatherLongitude ?? this.weatherLongitude,
     adaptiveDifficultyEnabled:
         adaptiveDifficultyEnabled ?? this.adaptiveDifficultyEnabled,
     bedtimeAlertEnabled: bedtimeAlertEnabled ?? this.bedtimeAlertEnabled,
@@ -187,6 +209,9 @@ class SettingsState {
     'defaultDismissSettings': defaultDismissSettings.toJson(),
     'defaultSnoozeSettings': defaultSnoozeSettings.toJson(),
     'weatherAwareEnabled': weatherAwareEnabled,
+    'weatherLocationName': weatherLocationName,
+    'weatherLatitude': weatherLatitude,
+    'weatherLongitude': weatherLongitude,
     'adaptiveDifficultyEnabled': adaptiveDifficultyEnabled,
     'bedtimeAlertEnabled': bedtimeAlertEnabled,
     'bedtimeAlertTime': _settingsTimeToJson(bedtimeAlertTime),
@@ -236,6 +261,9 @@ class SettingsCubit extends Cubit<SettingsState> {
             as Map<String, dynamic>,
       ),
       weatherAwareEnabled: (p.get<int>(_K.weatherAwareEnabled) ?? 1) == 1,
+      weatherLocationName: p.get<String>(_K.weatherLocationName),
+      weatherLatitude: p.get<double>(_K.weatherLatitude),
+      weatherLongitude: p.get<double>(_K.weatherLongitude),
       adaptiveDifficultyEnabled:
           (p.get<int>(_K.adaptiveDifficultyEnabled) ?? 1) == 1,
       bedtimeAlertEnabled: (p.get<int>(_K.bedtimeAlertEnabled) ?? 0) == 1,
@@ -402,6 +430,9 @@ class SettingsCubit extends Cubit<SettingsState> {
       defaultDismissSettings: defaultDismissSettings,
       defaultSnoozeSettings: defaultSnoozeSettings,
       weatherAwareEnabled: json['weatherAwareEnabled'] as bool? ?? true,
+      weatherLocationName: json['weatherLocationName'] as String?,
+      weatherLatitude: (json['weatherLatitude'] as num?)?.toDouble(),
+      weatherLongitude: (json['weatherLongitude'] as num?)?.toDouble(),
       adaptiveDifficultyEnabled:
           json['adaptiveDifficultyEnabled'] as bool? ?? true,
       bedtimeAlertEnabled: json['bedtimeAlertEnabled'] as bool? ?? false,
@@ -467,6 +498,26 @@ class SettingsCubit extends Cubit<SettingsState> {
       _K.weatherAwareEnabled,
       next.weatherAwareEnabled ? 1 : 0,
     );
+    if (next.weatherLocationName == null ||
+        next.weatherLatitude == null ||
+        next.weatherLongitude == null) {
+      await SharedPreferencesWithCache.instance.remove(_K.weatherLocationName);
+      await SharedPreferencesWithCache.instance.remove(_K.weatherLatitude);
+      await SharedPreferencesWithCache.instance.remove(_K.weatherLongitude);
+    } else {
+      await SharedPreferencesWithCache.instance.setString(
+        _K.weatherLocationName,
+        next.weatherLocationName!,
+      );
+      await SharedPreferencesWithCache.instance.setDouble(
+        _K.weatherLatitude,
+        next.weatherLatitude!,
+      );
+      await SharedPreferencesWithCache.instance.setDouble(
+        _K.weatherLongitude,
+        next.weatherLongitude!,
+      );
+    }
     await SharedPreferencesWithCache.instance.setInt(
       _K.adaptiveDifficultyEnabled,
       next.adaptiveDifficultyEnabled ? 1 : 0,
@@ -526,6 +577,39 @@ class SettingsCubit extends Cubit<SettingsState> {
       v ? 1 : 0,
     );
     emit(state.copyWith(weatherAwareEnabled: v));
+  }
+
+  Future<void> setWeatherLocation({
+    required String name,
+    required double latitude,
+    required double longitude,
+  }) async {
+    await SharedPreferencesWithCache.instance.setString(
+      _K.weatherLocationName,
+      name,
+    );
+    await SharedPreferencesWithCache.instance.setDouble(
+      _K.weatherLatitude,
+      latitude,
+    );
+    await SharedPreferencesWithCache.instance.setDouble(
+      _K.weatherLongitude,
+      longitude,
+    );
+    emit(
+      state.copyWith(
+        weatherLocationName: name,
+        weatherLatitude: latitude,
+        weatherLongitude: longitude,
+      ),
+    );
+  }
+
+  Future<void> clearWeatherLocation() async {
+    await SharedPreferencesWithCache.instance.remove(_K.weatherLocationName);
+    await SharedPreferencesWithCache.instance.remove(_K.weatherLatitude);
+    await SharedPreferencesWithCache.instance.remove(_K.weatherLongitude);
+    emit(state.copyWith(clearWeatherLocation: true));
   }
 
 

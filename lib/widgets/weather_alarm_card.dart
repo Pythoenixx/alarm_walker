@@ -105,7 +105,7 @@ class _WeatherAlarmCardState extends State<WeatherAlarmCard> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        '${weather.temperature.round()}°C · ${weather.condition}',
+                        '${weather.temperature.round()}°C · ${weather.condition} · ${weather.locationName}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: AppTextStyles.caption(context).copyWith(
@@ -115,7 +115,9 @@ class _WeatherAlarmCardState extends State<WeatherAlarmCard> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        weather.message,
+                        weather.isCached
+                            ? '${weather.message} · using saved weather'
+                            : weather.message,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: AppTextStyles.caption(context),

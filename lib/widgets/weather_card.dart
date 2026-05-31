@@ -204,6 +204,10 @@ class _WeatherContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textColor =
+        isDark ? AppColors.darkBackgroundText : AppColors.lightBackgroundText;
+    final updatedLabel = _updatedLabel(weather.updatedAt);
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -231,9 +235,7 @@ class _WeatherContent extends StatelessWidget {
                     '${weather.temperature.round()}°C',
                     style: AppTextStyles.large(context).copyWith(
                       fontWeight: FontWeight.w600,
-                      color: isDark
-                          ? AppColors.darkBackgroundText
-                          : AppColors.lightBackgroundText,
+                      color: textColor,
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -251,11 +253,47 @@ class _WeatherContent extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 4),
+              Row(
+                children: [
+                  Icon(
+                    weather.isManualLocation
+                        ? Icons.place_outlined
+                        : Icons.my_location_outlined,
+                    size: 14,
+                    color: AppColors.primary,
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      weather.locationName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyles.caption(context).copyWith(
+                        color: textColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
               Text(
                 weather.message,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: AppTextStyles.caption(context),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                weather.isCached
+                    ? 'Using saved weather · $updatedLabel'
+                    : updatedLabel,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTextStyles.caption(context).copyWith(
+                  color: weather.isCached ? Colors.orange : null,
+                  fontWeight: weather.isCached ? FontWeight.w600 : null,
+                ),
               ),
             ],
           ),
@@ -268,6 +306,15 @@ class _WeatherContent extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  String _updatedLabel(DateTime? updatedAt) {
+    if (updatedAt == null) return 'Updated time unavailable';
+    final diff = DateTime.now().difference(updatedAt);
+    if (diff.inMinutes < 1) return 'Updated just now';
+    if (diff.inMinutes < 60) return 'Updated ${diff.inMinutes} min ago';
+    if (diff.inHours < 24) return 'Updated ${diff.inHours} hr ago';
+    return 'Updated ${diff.inDays} day${diff.inDays == 1 ? '' : 's'} ago';
   }
 
   IconData _iconForCode(int code) {
