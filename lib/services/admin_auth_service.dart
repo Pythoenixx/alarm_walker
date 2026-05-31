@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -32,25 +34,50 @@ class AdminAuthService {
   Future<bool> isAuthorizedAdmin(User user) async {
     final email = (user.email ?? '').trim().toLowerCase();
 
-    if (await _documentExists('admin_users', user.uid)) return true;
-    if (await _documentExists('admins', user.uid)) return true;
+    if (await _hasAdminUserDocument(user.uid)) return true;
+
+    if (await _safeDocumentExists('admin_users', user.uid)) return true;
+    if (await _safeDocumentExists('admins', user.uid)) return true;
 
     if (email.isNotEmpty) {
-      if (await _documentExists('admin_users', email)) return true;
-      if (await _documentExists('admins', email)) return true;
+      if (await _safeDocumentExists('admin_users', email)) return true;
+      if (await _safeDocumentExists('admins', email)) return true;
     }
 
-    final userDoc = await _firestore.collection('users').doc(user.uid).get();
-    final userData = userDoc.data();
+    return false;
+  }
+
+  Future<bool> _hasAdminUserDocument(String uid) async {
+    if (uid.trim().isEmpty) return false;
+
+    final userDoc = await _safeGetDocument('users', uid);
+    final userData = userDoc?.data();
     if (userData == null) return false;
 
     return _hasAdminFlag(userData);
   }
 
-  Future<bool> _documentExists(String collection, String docId) async {
+  Future<bool> _safeDocumentExists(String collection, String docId) async {
     if (docId.trim().isEmpty) return false;
-    final doc = await _firestore.collection(collection).doc(docId).get();
-    return doc.exists;
+    final doc = await _safeGetDocument(collection, docId);
+    return doc?.exists ?? false;
+  }
+
+  Future<DocumentSnapshot<Map<String, dynamic>>?> _safeGetDocument(
+    String collection,
+    String docId,
+  ) async {
+    try {
+      return await _firestore
+          .collection(collection)
+          .doc(docId)
+          .get()
+          .timeout(const Duration(seconds: 8));
+    } on TimeoutException {
+      return null;
+    } on FirebaseException {
+      return null;
+    }
   }
 
   bool _hasAdminFlag(Map<String, dynamic> data) {

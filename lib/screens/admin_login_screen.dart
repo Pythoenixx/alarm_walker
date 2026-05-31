@@ -43,27 +43,10 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
     });
 
     try {
-      final credential = await widget.authService.signIn(
+      await widget.authService.signIn(
         email: _emailController.text,
         password: _passwordController.text,
       );
-
-      final user = credential.user;
-      if (user == null) {
-        throw Exception('Admin login succeeded but user is null.');
-      }
-
-      final isAdmin = await widget.authService.isAuthorizedAdmin(user);
-      if (!isAdmin) {
-        await widget.authService.signOut();
-        if (!mounted) return;
-        setState(() {
-          _isLoading = false;
-          _errorMessage =
-              'Access denied. This account is not registered as an admin.';
-        });
-        return;
-      }
 
       if (mounted) {
         setState(() => _isLoading = false);
@@ -264,7 +247,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                                       ),
                                     )
                                     : const Icon(Icons.login_rounded),
-                            label: Text(_isLoading ? 'Checking...' : 'Log in'),
+                            label: Text(_isLoading ? 'Logging in...' : 'Log in'),
                           ),
                         ),
                         const SizedBox(height: 18),

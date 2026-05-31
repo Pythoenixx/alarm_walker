@@ -30,6 +30,17 @@ class AdminAuthGate extends StatefulWidget {
 class _AdminAuthGateState extends State<AdminAuthGate> {
   final _authService = AdminAuthService();
 
+  String? _checkedUid;
+  Future<bool>? _adminCheckFuture;
+
+  Future<bool> _adminCheckFor(User user) {
+    if (_checkedUid != user.uid) {
+      _checkedUid = user.uid;
+      _adminCheckFuture = _authService.isAuthorizedAdmin(user);
+    }
+    return _adminCheckFuture!;
+  }
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<User?>(
@@ -46,7 +57,7 @@ class _AdminAuthGateState extends State<AdminAuthGate> {
         }
 
         return FutureBuilder<bool>(
-          future: _authService.isAuthorizedAdmin(user),
+          future: _adminCheckFor(user),
           builder: (context, adminSnapshot) {
             if (adminSnapshot.connectionState != ConnectionState.done) {
               return const _AdminLoadingScreen(
