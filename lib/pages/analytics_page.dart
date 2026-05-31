@@ -563,17 +563,17 @@ class _IssueReadinessReport extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final title = metrics.issueLogsAvailable ? 'Issue Logs Available' : 'Issue Logs Not Available Yet';
+    final title = metrics.issueLogsAvailable ? 'Open Issues' : 'Issue Logs Not Available Yet';
     final message =
         metrics.issueLogsAvailable
-            ? 'The app_issue_logs collection is reachable. ${metrics.issueLogs} issue record(s) are currently available.'
-            : 'The issue log collection may not exist yet or may require Firestore permission updates. Patch A2 can add app-side issue logging.';
+            ? '${metrics.issueLogs} unresolved issue record(s) currently need admin review.'
+            : 'The issue log collection may not exist yet or may require Firestore permission updates.';
 
     return _ReportPanel(
       icon: Icons.report_gmailerrorred_outlined,
       color: Colors.orange,
-      title: 'Issue Report Readiness',
-      subtitle: 'Prepared for future app issue and system health reporting.',
+      title: 'Open Issues',
+      subtitle: 'Unresolved app problems and crash logs that still need admin review.',
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

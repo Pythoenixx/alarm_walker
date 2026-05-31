@@ -145,6 +145,50 @@ class _AlarmTileState extends State<AlarmTile> {
     );
   }
 
+  Widget _repeatBadge({
+    required bool isDark,
+    required bool active,
+  }) {
+    final accent = active ? AppColors.primary : _mutedColor(isDark);
+    return Tooltip(
+      message: 'Repeat: ${_repeatLabel()}',
+      child: Container(
+        height: 28,
+        padding: const EdgeInsets.symmetric(horizontal: 9),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(999),
+          color: accent.withValues(alpha: active ? 0.10 : 0.06),
+          border: Border.all(
+            color: accent.withValues(alpha: active ? 0.18 : 0.10),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              widget.alarmModel.isOnce
+                  ? Icons.looks_one_outlined
+                  : Icons.repeat_rounded,
+              size: 14,
+              color: accent,
+            ),
+            const SizedBox(width: 5),
+            Text(
+              _repeatLabel(),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: accent,
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _largeSwitchHitBox() {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -245,92 +289,95 @@ class _AlarmTileState extends State<AlarmTile> {
                         context.pushNamed(AppRoute.addAlarm.name, extra: alarm),
                 borderRadius: const BorderRadius.all(Radius.circular(24)),
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 14, 12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  padding: const EdgeInsets.fromLTRB(16, 10, 12, 10),
+                  child: Stack(
                     children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  time,
-                                  style: AppTextStyles.bigTime(
-                                    context,
-                                  ).copyWith(
-                                    color:
-                                        _enabled ? null : _mutedColor(isDark),
+                      Padding(
+                        padding: const EdgeInsets.only(right: 78),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              alarm.title.trim().isEmpty
+                                  ? 'Alarm'
+                                  : alarm.title.trim(),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTextStyles.caption(context).copyWith(
+                                color:
+                                    _enabled
+                                        ? isDark
+                                            ? AppColors.darkBackgroundText
+                                            : AppColors.lightBackgroundText
+                                        : _mutedColor(isDark),
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              time,
+                              style: AppTextStyles.bigTime(context).copyWith(
+                                height: 0.98,
+                                color: _enabled ? null : _mutedColor(isDark),
+                              ),
+                            ),
+                            const SizedBox(height: 7),
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: Wrap(
+                                spacing: 7,
+                                runSpacing: 6,
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                children: [
+                                  _repeatBadge(
+                                    isDark: isDark,
+                                    active: _enabled && !isPausedByVacation,
                                   ),
-                                ),
-                                if (alarm.title.trim().isNotEmpty) ...[
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    alarm.title.trim(),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: AppTextStyles.caption(
-                                      context,
-                                    ).copyWith(
-                                      color:
-                                          _enabled
-                                              ? isDark
-                                                  ? AppColors.darkBackgroundText
-                                                  : AppColors
-                                                      .lightBackgroundText
-                                              : _mutedColor(isDark),
-                                      fontWeight: FontWeight.w700,
+                                  _iconBadge(
+                                    icon: _dismissModeIcon(
+                                      alarm.dismissSettings.mode,
                                     ),
+                                    tooltip:
+                                        'Dismiss mode: ${_dismissModeLabel(alarm.dismissSettings.mode)}',
+                                    isDark: isDark,
+                                    active: _enabled && !isPausedByVacation,
                                   ),
+                                  _iconBadge(
+                                    icon: Icons.music_note_outlined,
+                                    tooltip:
+                                        'Sound: ${alarm.soundSettings.soundName ?? 'Default'}',
+                                    isDark: isDark,
+                                    active: _enabled && !isPausedByVacation,
+                                  ),
+                                  _iconBadge(
+                                    icon:
+                                        alarm.snoozeSettings.enabled
+                                            ? Icons.snooze_outlined
+                                            : Icons.snooze_rounded,
+                                    tooltip: _snoozeLabel(),
+                                    isDark: isDark,
+                                    active:
+                                        _enabled && alarm.snoozeSettings.enabled,
+                                  ),
+                                  if (isPausedByVacation)
+                                    _iconBadge(
+                                      icon: Icons.beach_access_outlined,
+                                      tooltip: 'Vacation paused',
+                                      isDark: isDark,
+                                      active: true,
+                                      color: Colors.orange,
+                                    ),
                                 ],
-                              ],
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          _largeSwitchHitBox(),
-                        ],
+                          ],
+                        ),
                       ),
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 7,
-                        runSpacing: 7,
-                        children: [
-                          _iconBadge(
-                            icon: _dismissModeIcon(alarm.dismissSettings.mode),
-                            tooltip:
-                                'Dismiss mode: ${_dismissModeLabel(alarm.dismissSettings.mode)}',
-                            isDark: isDark,
-                            active: _enabled && !isPausedByVacation,
-                          ),
-                          _iconBadge(
-                            icon:
-                                alarm.isOnce
-                                    ? Icons.looks_one_outlined
-                                    : Icons.repeat_rounded,
-                            tooltip: 'Repeat: ${_repeatLabel()}',
-                            isDark: isDark,
-                            active: _enabled && !isPausedByVacation,
-                          ),
-                          _iconBadge(
-                            icon:
-                                alarm.snoozeSettings.enabled
-                                    ? Icons.snooze_outlined
-                                    : Icons.snooze_rounded,
-                            tooltip: _snoozeLabel(),
-                            isDark: isDark,
-                            active: _enabled && alarm.snoozeSettings.enabled,
-                          ),
-                          if (isPausedByVacation)
-                            _iconBadge(
-                              icon: Icons.beach_access_outlined,
-                              tooltip: 'Vacation paused',
-                              isDark: isDark,
-                              active: true,
-                              color: Colors.orange,
-                            ),
-                        ],
+                      Positioned.fill(
+                        child: Align(
+                          alignment: Alignment.centerRight,
+                          child: _largeSwitchHitBox(),
+                        ),
                       ),
                     ],
                   ),

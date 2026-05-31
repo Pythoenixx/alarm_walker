@@ -229,7 +229,12 @@ class AdminReportService {
     try {
       final issueSnapshot =
           await _firestore.collection('app_issue_logs').limit(200).get();
-      issueLogs = issueSnapshot.docs.length;
+      issueLogs =
+          issueSnapshot.docs.where((doc) {
+            final data = doc.data();
+            final status = _readText(data, 'status', fallback: 'open');
+            return status != 'resolved';
+          }).length;
     } catch (error) {
       issueLogsAvailable = false;
       issueLogsError = error.toString();

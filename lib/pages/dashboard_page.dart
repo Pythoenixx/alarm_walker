@@ -56,7 +56,7 @@ class _DashboardPageState extends State<DashboardPage> {
               _AdminHeader(
                 title: 'Admin Dashboard',
                 subtitle:
-                    'Quick snapshot of users, alarm activity, wake performance, and report readiness.',
+                    'Quick snapshot of users, alarm activity, wake performance, and open issues.',
                 action: IconButton.filledTonal(
                   onPressed: _refresh,
                   icon: const Icon(Icons.refresh),
@@ -140,12 +140,12 @@ class _OverviewGrid extends StatelessWidget {
       ),
       AdminMetricCard(
         icon: Icons.report_gmailerrorred_outlined,
-        title: 'Issue Logs',
+        title: 'Open Issues',
         value:
             metrics.issueLogsAvailable ? metrics.issueLogs.toString() : 'N/A',
         note:
             metrics.issueLogsAvailable
-                ? 'App issue records available'
+                ? 'Unresolved issue records'
                 : 'Collection unavailable',
         color: Colors.orange,
       ),
@@ -360,12 +360,12 @@ class _SystemHealthCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final issueText =
         metrics.issueLogsAvailable
-            ? '${metrics.issueLogs} issue log record(s) found.'
+            ? '${metrics.issueLogs} open issue(s) need review.'
             : 'Issue log collection is not available yet.';
 
     return _PanelCard(
       title: 'System Health Overview',
-      subtitle: 'Basic report readiness for admin monitoring.',
+      subtitle: 'Basic app monitoring status for admin review.',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -378,7 +378,7 @@ class _SystemHealthCard extends StatelessWidget {
           const SizedBox(height: 12),
           _HealthItem(
             icon: Icons.info_outline,
-            title: 'Issue reporting',
+            title: 'Open issue tracking',
             message: issueText,
             color: Colors.orange,
           ),
