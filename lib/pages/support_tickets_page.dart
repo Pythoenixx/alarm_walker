@@ -14,9 +14,16 @@ class SupportTicketsPage extends StatefulWidget {
 
 class _SupportTicketsPageState extends State<SupportTicketsPage> {
   final _service = SupportTicketService();
+  final _searchController = TextEditingController();
   String _statusFilter = 'all';
   String _categoryFilter = 'all';
   String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -43,12 +50,14 @@ class _SupportTicketsPageState extends State<SupportTicketsPage> {
             _SupportHeader(openCount: openCount, resolvedCount: resolvedCount),
             const SizedBox(height: 18),
             _SupportFilters(
+              searchController: _searchController,
+              searchQuery: _searchQuery,
               statusFilter: _statusFilter,
               categoryFilter: _categoryFilter,
               onStatusChanged: (value) => setState(() => _statusFilter = value),
               onCategoryChanged: (value) => setState(() => _categoryFilter = value),
               onSearchChanged: (value) {
-                setState(() => _searchQuery = value.trim().toLowerCase());
+                setState(() => _searchQuery = value.toLowerCase());
               },
             ),
             const SizedBox(height: 18),
@@ -173,6 +182,8 @@ class _HeaderCounter extends StatelessWidget {
 }
 
 class _SupportFilters extends StatelessWidget {
+  final TextEditingController searchController;
+  final String searchQuery;
   final String statusFilter;
   final String categoryFilter;
   final ValueChanged<String> onStatusChanged;
@@ -180,6 +191,8 @@ class _SupportFilters extends StatelessWidget {
   final ValueChanged<String> onSearchChanged;
 
   const _SupportFilters({
+    required this.searchController,
+    required this.searchQuery,
     required this.statusFilter,
     required this.categoryFilter,
     required this.onStatusChanged,
@@ -202,9 +215,21 @@ class _SupportFilters extends StatelessWidget {
             SizedBox(
               width: 320,
               child: TextField(
+                controller: searchController,
+                textInputAction: TextInputAction.search,
                 decoration: InputDecoration(
                   labelText: 'Search tickets',
                   prefixIcon: const Icon(Icons.search),
+                  suffixIcon: searchQuery.isEmpty
+                      ? null
+                      : IconButton(
+                          tooltip: 'Clear search',
+                          icon: const Icon(Icons.close),
+                          onPressed: () {
+                            searchController.clear();
+                            onSearchChanged('');
+                          },
+                        ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),
