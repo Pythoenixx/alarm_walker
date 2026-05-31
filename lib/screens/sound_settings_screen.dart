@@ -77,14 +77,7 @@ class _SoundSettingsScreenState extends State<SoundSettingsScreen> {
   bool _isBundledAsset(String soundPath) => soundPath.startsWith('assets/');
 
   Future<void> _previewSound() async {
-    final soundPath = _settings.soundPath;
-
-    if (soundPath == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('System default sound cannot be previewed.')),
-      );
-      return;
-    }
+    final soundPath = _settings.soundPath ?? 'assets/alarm_ringtone.mp3';
 
     try {
       await _previewPlayer.stop();
@@ -324,10 +317,7 @@ class _SoundSettingsScreenState extends State<SoundSettingsScreen> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                 child: FilledButton.icon(
-                  onPressed:
-                      s.soundPath == null
-                          ? null
-                          : () => _isPreviewing ? _stopPreview() : _previewSound(),
+                  onPressed: () => _isPreviewing ? _stopPreview() : _previewSound(),
                   icon: Icon(
                     _isPreviewing
                         ? Icons.stop_circle_outlined

@@ -10,7 +10,6 @@ import 'package:alarm_walker/screens/snooze_settings_screen.dart';
 import 'package:alarm_walker/screens/sound_settings_screen.dart';
 import 'package:alarm_walker/services/alarm_cubit.dart';
 import 'package:alarm_walker/services/settings_cubit.dart';
-import 'package:alarm_walker/services/weather_service.dart';
 import 'package:alarm_walker/services/reminder_notification_service.dart';
 import 'package:alarm_walker/theme/app_colors.dart';
 import 'package:alarm_walker/theme/app_text_styles.dart';
@@ -227,128 +226,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
 
-  Future<void> _openWeatherLocationPicker(
-    SettingsCubit cubit,
-    SettingsState state,
-  ) async {
-    final controller = TextEditingController(text: state.weatherLocationName ?? '');
-    final result = await showDialog<_WeatherLocationDialogResult>(
-      context: context,
-      builder: (dialogContext) {
-        var isResolving = false;
-        String? errorText;
-
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            Future<void> resolveAndClose() async {
-              final query = controller.text.trim();
-              if (query.isEmpty) {
-                Navigator.of(dialogContext).pop(
-                  const _WeatherLocationDialogResult.clear(),
-                );
-                return;
-              }
-
-              setDialogState(() {
-                isResolving = true;
-                errorText = null;
-              });
-
-              try {
-                final location = await const WeatherService().resolveLocation(query);
-                if (!dialogContext.mounted) return;
-                Navigator.of(dialogContext).pop(
-                  _WeatherLocationDialogResult.set(location),
-                );
-              } catch (error) {
-                if (!dialogContext.mounted) return;
-                setDialogState(() {
-                  isResolving = false;
-                  errorText = error.toString();
-                });
-              }
-            }
-
-            return AlertDialog(
-              title: const Text('Weather location'), // TODO: localize
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Set a city so weather can still work when device location is off. Leave blank to use automatic GPS location.',
-                  ),
-                  const SizedBox(height: 14),
-                  TextField(
-                    controller: controller,
-                    enabled: !isResolving,
-                    decoration: InputDecoration(
-                      labelText: 'City or area', // TODO: localize
-                      hintText: 'Example: Kuala Lumpur',
-                      errorText: errorText,
-                    ),
-                    textInputAction: TextInputAction.search,
-                    onSubmitted: (_) => resolveAndClose(),
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed:
-                      isResolving ? null : () => Navigator.of(dialogContext).pop(),
-                  child: const Text('Cancel'), // TODO: localize
-                ),
-                TextButton(
-                  onPressed:
-                      isResolving
-                          ? null
-                          : () => Navigator.of(dialogContext).pop(
-                            const _WeatherLocationDialogResult.clear(),
-                          ),
-                  child: const Text('Use GPS'), // TODO: localize
-                ),
-                FilledButton.icon(
-                  onPressed: isResolving ? null : () => resolveAndClose(),
-                  icon:
-                      isResolving
-                          ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                          : const Icon(Icons.search_rounded),
-                  label: Text(isResolving ? 'Searching...' : 'Save'),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-    controller.dispose();
-
-    if (!mounted || result == null) return;
-
-    if (result.location == null) {
-      await cubit.clearWeatherLocation();
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Weather location set to automatic GPS.')),
-      );
-      return;
-    }
-
-    final location = result.location!;
-    await cubit.setWeatherLocation(
-      name: location.name,
-      latitude: location.latitude,
-      longitude: location.longitude,
-    );
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Weather location set to ${location.name}.')),
-    );
-  }
 
   // ── build ──────────────────────────────────────────────────────────────────
 
@@ -445,21 +322,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     isDark: isDark,
                   ),
                 ),
-                if (state.weatherAwareEnabled) ...[
-                  const SizedBox(height: 8),
-                  SettingsTile(
-                    onTap: () => _openWeatherLocationPicker(cubit, state),
-                    child: _NavRow(
-                      icon: Icons.place_outlined,
-                      label: 'Weather location', // TODO: localize
-                      subtitle:
-                          state.weatherLocationName ??
-                          'Automatic using device location',
-                      isDark: isDark,
-                    ),
-                  ),
-                ],
-
                 // ── Adaptive difficulty ──────────────────────────────
                 _SectionHeader(
                   label: 'Adaptive difficulty',
@@ -709,13 +571,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   };
 }
 
-
-class _WeatherLocationDialogResult {
-  final WeatherLocationResult? location;
-
-  const _WeatherLocationDialogResult.set(this.location);
-  const _WeatherLocationDialogResult.clear() : location = null;
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared small widgets (private to this file)

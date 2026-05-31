@@ -37,8 +37,8 @@ class _WeatherCardState extends State<WeatherCard> {
     final isDark = context.isDarkMode;
 
     return Container(
-      margin: const EdgeInsets.fromLTRB(0, 14, 0, 12),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.fromLTRB(0, 10, 0, 8),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(22),
         gradient: LinearGradient(
@@ -212,8 +212,8 @@ class _WeatherContent extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          width: 48,
-          height: 48,
+          width: 42,
+          height: 42,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: AppColors.primary.withValues(alpha: 0.12),
@@ -221,10 +221,10 @@ class _WeatherContent extends StatelessWidget {
           child: Icon(
             _iconForCode(weather.weatherCode),
             color: AppColors.primary,
-            size: 26,
+            size: 23,
           ),
         ),
-        const SizedBox(width: 14),
+        const SizedBox(width: 12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -276,25 +276,18 @@ class _WeatherContent extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 4),
-              Text(
-                weather.message,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: AppTextStyles.caption(context),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                weather.isCached
-                    ? 'Using saved weather · $updatedLabel'
-                    : updatedLabel,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: AppTextStyles.caption(context).copyWith(
-                  color: weather.isCached ? Colors.orange : null,
-                  fontWeight: weather.isCached ? FontWeight.w600 : null,
+              if (weather.isCached) ...[
+                const SizedBox(height: 4),
+                Text(
+                  'Saved weather · $updatedLabel',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.caption(context).copyWith(
+                    color: Colors.orange,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              ),
+              ],
             ],
           ),
         ),
