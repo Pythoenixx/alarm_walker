@@ -219,7 +219,9 @@ class _AlarmTileState extends State<AlarmTile> {
     final bool use24h = settings.use24HourFormat;
     final vacationMode = settings.vacationModeEnabled;
     final alarm = widget.alarmModel;
-    final isPausedByVacation = vacationMode && _enabled;
+    final isAlarmOn = _enabled;
+    final isPausedByVacation = vacationMode && isAlarmOn;
+    final isVisuallyActive = isAlarmOn && !isPausedByVacation;
 
     final time = MaterialLocalizations.of(
       context,
@@ -305,7 +307,7 @@ class _AlarmTileState extends State<AlarmTile> {
                               overflow: TextOverflow.ellipsis,
                               style: AppTextStyles.caption(context).copyWith(
                                 color:
-                                    _enabled
+                                    isVisuallyActive
                                         ? isDark
                                             ? AppColors.darkBackgroundText
                                             : AppColors.lightBackgroundText
@@ -318,7 +320,10 @@ class _AlarmTileState extends State<AlarmTile> {
                               time,
                               style: AppTextStyles.bigTime(context).copyWith(
                                 height: 0.98,
-                                color: _enabled ? null : _mutedColor(isDark),
+                                color:
+                                    isVisuallyActive
+                                        ? null
+                                        : _mutedColor(isDark),
                               ),
                             ),
                             const SizedBox(height: 7),
@@ -331,7 +336,7 @@ class _AlarmTileState extends State<AlarmTile> {
                                 children: [
                                   _repeatBadge(
                                     isDark: isDark,
-                                    active: _enabled && !isPausedByVacation,
+                                    active: isVisuallyActive,
                                   ),
                                   _iconBadge(
                                     icon: _dismissModeIcon(
@@ -340,14 +345,14 @@ class _AlarmTileState extends State<AlarmTile> {
                                     tooltip:
                                         'Dismiss mode: ${_dismissModeLabel(alarm.dismissSettings.mode)}',
                                     isDark: isDark,
-                                    active: _enabled && !isPausedByVacation,
+                                    active: isVisuallyActive,
                                   ),
                                   _iconBadge(
                                     icon: Icons.music_note_outlined,
                                     tooltip:
                                         'Sound: ${alarm.soundSettings.soundName ?? 'Default'}',
                                     isDark: isDark,
-                                    active: _enabled && !isPausedByVacation,
+                                    active: isVisuallyActive,
                                   ),
                                   _iconBadge(
                                     icon:
@@ -357,8 +362,7 @@ class _AlarmTileState extends State<AlarmTile> {
                                     tooltip: _snoozeLabel(),
                                     isDark: isDark,
                                     active:
-                                        _enabled &&
-                                        !isPausedByVacation &&
+                                        isVisuallyActive &&
                                         alarm.snoozeSettings.enabled,
                                   ),
                                   if (isPausedByVacation)
