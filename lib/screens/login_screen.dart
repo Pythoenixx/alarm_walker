@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:alarm_walker/app_router.dart';
+import 'package:alarm_walker/services/app_issue_log_service.dart';
 import 'package:alarm_walker/extensions/context_extensions.dart';
 import 'package:alarm_walker/models/profile_category.dart';
 import 'package:alarm_walker/models/user_profile_model.dart';
@@ -193,7 +194,16 @@ class _LoginScreenState extends State<LoginScreen> {
           _errorMessage = message;
         });
       }
-    } catch (e) {
+    } catch (error, stackTrace) {
+      unawaited(
+        AppIssueLogService.recordError(
+          error,
+          stackTrace,
+          source: 'auth_flow',
+          screen: 'LoginScreen',
+          fatal: false,
+        ),
+      );
       if (mounted) {
         setState(() {
           _isLoading = false;

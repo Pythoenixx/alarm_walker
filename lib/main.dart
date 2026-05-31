@@ -11,6 +11,7 @@ import 'package:alarm_walker/models/user_profile_repository.dart';
 import 'package:alarm_walker/models/wake_log_repository.dart';
 import 'package:alarm_walker/services/alarm_cubit.dart';
 import 'package:alarm_walker/services/alarm_database.dart';
+import 'package:alarm_walker/services/app_issue_log_service.dart';
 import 'package:alarm_walker/services/custom_sounds_cubit.dart';
 import 'package:alarm_walker/services/profile_cubit.dart';
 import 'package:alarm_walker/services/reminder_notification_service.dart';
@@ -24,19 +25,35 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  await SharedPreferencesWithCache.initialize();
-  await AlarmDatabase.initialize();
-  await Alarm.init();
-  await ReminderNotificationService.initialize();
+Future<void> main() async {
+  await runZonedGuarded<Future<void>>(
+    () async {
+      WidgetsFlutterBinding.ensureInitialized();
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+      AppIssueLogService.initialize(appArea: 'user_app');
+      await SharedPreferencesWithCache.initialize();
+      await AlarmDatabase.initialize();
+      await Alarm.init();
+      await ReminderNotificationService.initialize();
 
-  if (appFlavor == "development") {
-    runApp(DevicePreview(builder: (context) => const MyApp()));
-  } else {
-    runApp(const MyApp());
-  }
+      if (appFlavor == "development") {
+        runApp(DevicePreview(builder: (context) => const MyApp()));
+      } else {
+        runApp(const MyApp());
+      }
+    },
+    (error, stackTrace) {
+      unawaited(
+        AppIssueLogService.recordError(
+          error,
+          stackTrace,
+          source: 'user_app_zone',
+        ),
+      );
+    },
+  );
 }
 
 Locale? _resolveLocale(

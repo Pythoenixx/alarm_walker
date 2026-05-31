@@ -9,6 +9,7 @@ import 'package:alarm_walker/models/sound_settings.dart';
 import 'package:alarm_walker/models/user_profile_repository.dart';
 import 'package:alarm_walker/models/wake_log_repository.dart';
 import 'package:alarm_walker/services/shared_prefs_with_cache.dart';
+import 'package:alarm_walker/services/app_issue_log_service.dart';
 import 'package:alarm_walker/services/user_usage_stats_sync_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -187,8 +188,17 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
 
       final alarmSet = await Alarm.set(alarmSettings: alarmSetting);
       if (alarmSet) return alarmSetting;
-    } catch (e) {
-      debugPrint('Error setting alarm: $e');
+    } catch (error, stackTrace) {
+      debugPrint('Error setting alarm: $error');
+      unawaited(
+        AppIssueLogService.recordError(
+          error,
+          stackTrace,
+          source: 'alarm_scheduler',
+          screen: 'AlarmCubit._setAlarm',
+          fatal: false,
+        ),
+      );
     }
     return null;
   }

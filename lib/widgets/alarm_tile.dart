@@ -120,42 +120,6 @@ class _AlarmTileState extends State<AlarmTile> {
         : AppColors.lightBackgroundText.withValues(alpha: 0.52);
   }
 
-  Widget _metaPill({
-    required IconData icon,
-    required String label,
-    required bool isDark,
-    required bool active,
-    Color? color,
-  }) {
-    final accent = active ? (color ?? AppColors.primary) : _mutedColor(isDark);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
-      decoration: BoxDecoration(
-        color: accent.withValues(alpha: active ? 0.10 : 0.06),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: accent.withValues(alpha: active ? 0.20 : 0.10)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: accent),
-          if (label.isNotEmpty) ...[
-            const SizedBox(width: 6),
-            Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: AppTextStyles.caption(context).copyWith(
-                color: accent,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
   Widget _iconBadge({
     required IconData icon,
     required String tooltip,
@@ -167,14 +131,16 @@ class _AlarmTileState extends State<AlarmTile> {
     return Tooltip(
       message: tooltip,
       child: Container(
-        width: 30,
-        height: 30,
+        width: 28,
+        height: 28,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: accent.withValues(alpha: active ? 0.10 : 0.06),
-          border: Border.all(color: accent.withValues(alpha: active ? 0.18 : 0.10)),
+          border: Border.all(
+            color: accent.withValues(alpha: active ? 0.18 : 0.10),
+          ),
         ),
-        child: Icon(icon, size: 15, color: accent),
+        child: Icon(icon, size: 14, color: accent),
       ),
     );
   }
@@ -188,11 +154,11 @@ class _AlarmTileState extends State<AlarmTile> {
         widget.onEnabledChanged(next);
       },
       child: SizedBox(
-        width: 64,
-        height: 48,
+        width: 72,
+        height: 56,
         child: Center(
           child: Transform.scale(
-            scale: 1.12,
+            scale: 1.18,
             child: AbsorbPointer(
               child: GradientSwitch(value: _enabled, onChanged: (_) {}),
             ),
@@ -211,13 +177,12 @@ class _AlarmTileState extends State<AlarmTile> {
     final alarm = widget.alarmModel;
     final isPausedByVacation = vacationMode && _enabled;
 
-    final time = MaterialLocalizations.of(context).formatTimeOfDay(
-      alarm.time,
-      alwaysUse24HourFormat: use24h,
-    );
+    final time = MaterialLocalizations.of(
+      context,
+    ).formatTimeOfDay(alarm.time, alwaysUse24HourFormat: use24h);
 
     return Padding(
-      padding: const EdgeInsets.only(top: 18),
+      padding: const EdgeInsets.only(top: 12),
       child: DecoratedBox(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(24),
@@ -276,18 +241,16 @@ class _AlarmTileState extends State<AlarmTile> {
               type: MaterialType.transparency,
               child: InkWell(
                 onTap:
-                    () => context.pushNamed(
-                      AppRoute.addAlarm.name,
-                      extra: alarm,
-                    ),
+                    () =>
+                        context.pushNamed(AppRoute.addAlarm.name, extra: alarm),
                 borderRadius: const BorderRadius.all(Radius.circular(24)),
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(18, 16, 16, 16),
+                  padding: const EdgeInsets.fromLTRB(16, 12, 14, 12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Expanded(
                             child: Column(
@@ -295,25 +258,28 @@ class _AlarmTileState extends State<AlarmTile> {
                               children: [
                                 Text(
                                   time,
-                                  style: AppTextStyles.bigTime(context).copyWith(
+                                  style: AppTextStyles.bigTime(
+                                    context,
+                                  ).copyWith(
                                     color:
-                                        _enabled
-                                            ? null
-                                            : _mutedColor(isDark),
+                                        _enabled ? null : _mutedColor(isDark),
                                   ),
                                 ),
                                 if (alarm.title.trim().isNotEmpty) ...[
-                                  const SizedBox(height: 4),
+                                  const SizedBox(height: 2),
                                   Text(
                                     alarm.title.trim(),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
-                                    style: AppTextStyles.caption(context).copyWith(
+                                    style: AppTextStyles.caption(
+                                      context,
+                                    ).copyWith(
                                       color:
                                           _enabled
                                               ? isDark
                                                   ? AppColors.darkBackgroundText
-                                                  : AppColors.lightBackgroundText
+                                                  : AppColors
+                                                      .lightBackgroundText
                                               : _mutedColor(isDark),
                                       fontWeight: FontWeight.w700,
                                     ),
@@ -326,23 +292,24 @@ class _AlarmTileState extends State<AlarmTile> {
                           _largeSwitchHitBox(),
                         ],
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 8),
                       Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
+                        spacing: 7,
+                        runSpacing: 7,
                         children: [
-                          _metaPill(
+                          _iconBadge(
                             icon: _dismissModeIcon(alarm.dismissSettings.mode),
-                            label: _dismissModeLabel(alarm.dismissSettings.mode),
+                            tooltip:
+                                'Dismiss mode: ${_dismissModeLabel(alarm.dismissSettings.mode)}',
                             isDark: isDark,
                             active: _enabled && !isPausedByVacation,
                           ),
-                          _metaPill(
+                          _iconBadge(
                             icon:
                                 alarm.isOnce
                                     ? Icons.looks_one_outlined
                                     : Icons.repeat_rounded,
-                            label: _repeatLabel(),
+                            tooltip: 'Repeat: ${_repeatLabel()}',
                             isDark: isDark,
                             active: _enabled && !isPausedByVacation,
                           ),
@@ -356,9 +323,9 @@ class _AlarmTileState extends State<AlarmTile> {
                             active: _enabled && alarm.snoozeSettings.enabled,
                           ),
                           if (isPausedByVacation)
-                            _metaPill(
+                            _iconBadge(
                               icon: Icons.beach_access_outlined,
-                              label: 'Vacation paused',
+                              tooltip: 'Vacation paused',
                               isDark: isDark,
                               active: true,
                               color: Colors.orange,

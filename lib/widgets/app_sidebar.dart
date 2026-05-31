@@ -48,6 +48,11 @@ class AppSidebar extends StatelessWidget {
             selectedIcon: Icon(Icons.assessment),
             label: Text('Reports'),
           ),
+          NavigationRailDestination(
+            icon: Icon(Icons.report_gmailerrorred_outlined),
+            selectedIcon: Icon(Icons.report_gmailerrorred),
+            label: Text('Issues'),
+          ),
         ],
       ),
     );
