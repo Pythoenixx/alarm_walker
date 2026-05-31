@@ -357,7 +357,9 @@ class _AlarmTileState extends State<AlarmTile> {
                                     tooltip: _snoozeLabel(),
                                     isDark: isDark,
                                     active:
-                                        _enabled && alarm.snoozeSettings.enabled,
+                                        _enabled &&
+                                        !isPausedByVacation &&
+                                        alarm.snoozeSettings.enabled,
                                   ),
                                   if (isPausedByVacation)
                                     _iconBadge(
