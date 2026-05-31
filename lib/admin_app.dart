@@ -1,5 +1,5 @@
 import 'package:alarm_walker/layout/admin_layout.dart';
-import 'package:alarm_walker/screens/admin_login_screen.dart';
+import 'package:alarm_walker/pages/admin_login_page.dart';
 import 'package:alarm_walker/services/admin_auth_service.dart';
 import 'package:alarm_walker/theme/app_theme.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -11,7 +11,7 @@ class AdminApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Admin Panel',
+      title: 'Alarm Walker Admin',
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       home: const AdminAuthGate(),
@@ -53,7 +53,7 @@ class _AdminAuthGateState extends State<AdminAuthGate> {
         }
 
         if (user == null) {
-          return AdminLoginScreen(authService: _authService);
+          return AdminLoginPage(authService: _authService);
         }
 
         return FutureBuilder<bool>(
@@ -69,7 +69,7 @@ class _AdminAuthGateState extends State<AdminAuthGate> {
               return _AdminAccessProblemScreen(
                 title: 'Unable to verify admin access',
                 message:
-                    'The panel could not check your admin permission. Please review Firestore rules or try again.',
+                    'The panel could not confirm your admin permission. Please check your connection or try again.',
                 onSignOut: _authService.signOut,
               );
             }
@@ -84,7 +84,7 @@ class _AdminAuthGateState extends State<AdminAuthGate> {
             return _AdminAccessProblemScreen(
               title: 'Access denied',
               message:
-                  'This signed-in account is not marked as an admin. Use an authorized admin account to continue.',
+                  'This account is not authorized to access the admin panel. Please use an approved administrator account.',
               onSignOut: _authService.signOut,
             );
           },
@@ -165,7 +165,7 @@ class _AdminAccessProblemScreen extends StatelessWidget {
                   FilledButton.icon(
                     onPressed: () => onSignOut(),
                     icon: const Icon(Icons.logout_rounded),
-                    label: const Text('Back to admin login'),
+                    label: const Text('Return to admin login'),
                   ),
                 ],
               ),

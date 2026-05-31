@@ -7,16 +7,16 @@ import 'package:alarm_walker/theme/app_text_styles.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
-class AdminLoginScreen extends StatefulWidget {
+class AdminLoginPage extends StatefulWidget {
   final AdminAuthService authService;
 
-  const AdminLoginScreen({super.key, required this.authService});
+  const AdminLoginPage({super.key, required this.authService});
 
   @override
-  State<AdminLoginScreen> createState() => _AdminLoginScreenState();
+  State<AdminLoginPage> createState() => _AdminLoginPageState();
 }
 
-class _AdminLoginScreenState extends State<AdminLoginScreen> {
+class _AdminLoginPageState extends State<AdminLoginPage> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -63,7 +63,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
           error,
           stackTrace,
           source: 'admin_login',
-          screen: 'AdminLoginScreen',
+          screen: 'AdminLoginPage',
           fatal: false,
         ),
       );
@@ -71,7 +71,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
       if (!mounted) return;
       setState(() {
         _isLoading = false;
-        _errorMessage = 'Unable to verify admin access. Please try again.';
+        _errorMessage = 'Unable to complete admin login. Please try again.';
       });
     }
   }
@@ -251,7 +251,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                           ),
                         ),
                         const SizedBox(height: 18),
-                        _AdminAccessNote(theme: theme),
+                        _AdminLoginNotice(theme: theme),
                       ],
                     ),
                   ),
@@ -324,7 +324,7 @@ class _AdminLoginHeader extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         Text(
-          'Access users, reports, issue logs, and support tickets.',
+          'Authorized administrators only. Sign in to manage users, reports, issues, and support tickets.',
           style: AppTextStyles.caption(context),
           textAlign: TextAlign.center,
         ),
@@ -365,10 +365,10 @@ class _AdminMessageBox extends StatelessWidget {
   }
 }
 
-class _AdminAccessNote extends StatelessWidget {
+class _AdminLoginNotice extends StatelessWidget {
   final ThemeData theme;
 
-  const _AdminAccessNote({required this.theme});
+  const _AdminLoginNotice({required this.theme});
 
   @override
   Widget build(BuildContext context) {
@@ -391,7 +391,7 @@ class _AdminAccessNote extends StatelessWidget {
           const SizedBox(width: 10),
           const Expanded(
             child: Text(
-              'Only authorized admin accounts can open this panel. Mark an admin by setting users/{uid}.role to admin, users/{uid}.isAdmin to true, or by creating admin_users/{uid}.',
+              'Admin access only. Please sign in with an authorized administrator account.',
             ),
           ),
         ],
