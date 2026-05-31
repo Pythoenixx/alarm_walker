@@ -461,6 +461,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ),
 
+                // ── Help & feedback ─────────────────────────────────────
+                _SectionHeader(
+                  label: 'Help & Feedback',
+                  isDark: isDark,
+                ), // TODO: localize
+                SettingsTile(
+                  onTap: () => context.pushNamed(AppRoute.helpFeedback.name),
+                  child: _NavRow(
+                    icon: Icons.support_agent_outlined,
+                    label: 'Report a problem', // TODO: localize
+                    subtitle: 'Send feedback or request help from admin',
+                    isDark: isDark,
+                  ),
+                ),
+
                 // ── System ───────────────────────────────────────────────
                 _SectionHeader(
                   label: 'System',

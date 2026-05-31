@@ -10,6 +10,7 @@ import 'package:alarm_walker/screens/backup_restore_screen.dart';
 import 'package:alarm_walker/screens/alarm_gate_screen.dart';
 import 'package:alarm_walker/screens/database_screen.dart';
 import 'package:alarm_walker/screens/home.dart';
+import 'package:alarm_walker/screens/help_feedback_screen.dart';
 import 'package:alarm_walker/screens/login_screen.dart';
 import 'package:alarm_walker/screens/onboarding_screen.dart';
 import 'package:alarm_walker/screens/math_alarm_screen.dart';
@@ -36,6 +37,7 @@ enum AppRoute {
   manageProfile,
   wakeAnalytics,
   settings,
+  helpFeedback,
   backupRestore,
   normal,
   mathAlarm,
@@ -60,7 +62,8 @@ GoRouter createRouterWithStream(
       final user = FirebaseAuth.instance.currentUser;
       final requiresAuth =
           state.matchedLocation == '/manageProfile' ||
-          state.matchedLocation == '/wakeAnalytics';
+          state.matchedLocation == '/wakeAnalytics' ||
+          state.matchedLocation == '/helpFeedback';
       if (requiresAuth && user == null) return '/login';
       return null;
     },
@@ -117,6 +120,11 @@ GoRouter createRouterWithStream(
         path: '/settings',
         name: AppRoute.settings.name,
         builder: (_, __) => const SettingsScreen(),
+      ),
+      GoRoute(
+        path: '/helpFeedback',
+        name: AppRoute.helpFeedback.name,
+        builder: (_, __) => const HelpFeedbackScreen(),
       ),
       GoRoute(
         path: '/backupRestore',

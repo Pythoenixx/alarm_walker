@@ -24,10 +24,13 @@ class AdminUserSummary {
 class AdminReportMetrics {
   final int totalUsers;
   final int issueLogs;
+  final int supportTickets;
   final int usersWithEmail;
   final bool issueLogsAvailable;
+  final bool supportTicketsAvailable;
   final bool usageStatsAvailable;
   final String? issueLogsError;
+  final String? supportTicketsError;
   final String? usageStatsError;
   final Map<ProfileCategory, int> categoryCounts;
   final List<AdminUserSummary> recentUsers;
@@ -51,8 +54,10 @@ class AdminReportMetrics {
   const AdminReportMetrics({
     required this.totalUsers,
     required this.issueLogs,
+    required this.supportTickets,
     required this.usersWithEmail,
     required this.issueLogsAvailable,
+    required this.supportTicketsAvailable,
     required this.usageStatsAvailable,
     required this.categoryCounts,
     required this.recentUsers,
@@ -72,6 +77,7 @@ class AdminReportMetrics {
     required this.disarmModeCounts,
     required this.failedAttemptModeCounts,
     this.issueLogsError,
+    this.supportTicketsError,
     this.usageStatsError,
   });
 
@@ -240,6 +246,24 @@ class AdminReportService {
       issueLogsError = error.toString();
     }
 
+    var supportTickets = 0;
+    var supportTicketsAvailable = true;
+    String? supportTicketsError;
+
+    try {
+      final supportSnapshot =
+          await _firestore.collection('support_tickets').limit(200).get();
+      supportTickets =
+          supportSnapshot.docs.where((doc) {
+            final data = doc.data();
+            final status = _readText(data, 'status', fallback: 'open');
+            return status != 'resolved';
+          }).length;
+    } catch (error) {
+      supportTicketsAvailable = false;
+      supportTicketsError = error.toString();
+    }
+
     var usageStatsAvailable = true;
     String? usageStatsError;
     var usersWithUsageStats = 0;
@@ -318,10 +342,13 @@ class AdminReportService {
     return AdminReportMetrics(
       totalUsers: users.length,
       issueLogs: issueLogs,
+      supportTickets: supportTickets,
       usersWithEmail: users.where((user) => user.hasEmail).length,
       issueLogsAvailable: issueLogsAvailable,
+      supportTicketsAvailable: supportTicketsAvailable,
       usageStatsAvailable: usageStatsAvailable,
       issueLogsError: issueLogsError,
+      supportTicketsError: supportTicketsError,
       usageStatsError: usageStatsError,
       categoryCounts: categoryCounts,
       recentUsers: users.take(5).toList(),

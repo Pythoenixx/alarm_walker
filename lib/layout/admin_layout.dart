@@ -1,6 +1,7 @@
 import 'package:alarm_walker/pages/analytics_page.dart';
 import 'package:alarm_walker/pages/dashboard_page.dart';
 import 'package:alarm_walker/pages/issue_logs_page.dart';
+import 'package:alarm_walker/pages/support_tickets_page.dart';
 import 'package:alarm_walker/pages/users_table.dart';
 import 'package:alarm_walker/widgets/app_sidebar.dart';
 import 'package:flutter/material.dart';
@@ -20,6 +21,7 @@ class _AdminLayoutState extends State<AdminLayout> {
     UsersTable(),
     AnalyticsPage(),
     IssueLogsPage(),
+    SupportTicketsPage(),
   ];
 
   @override

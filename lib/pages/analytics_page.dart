@@ -61,7 +61,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        'Detailed reports for user distribution, alarm usage, disarm choices, and system readiness.',
+                        'Detailed reports for user distribution, alarm usage, disarm choices, issues, and support tickets.',
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
                     ],
@@ -82,6 +82,8 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
             _CategoryReport(metrics: metrics),
             const SizedBox(height: 20),
             _IssueReadinessReport(metrics: metrics),
+            const SizedBox(height: 20),
+            _SupportTicketsReport(metrics: metrics),
           ],
         );
       },
@@ -580,6 +582,51 @@ class _IssueReadinessReport extends StatelessWidget {
           CircleAvatar(
             backgroundColor: AppColors.primary.withValues(alpha: 0.12),
             child: const Icon(Icons.report_gmailerrorred_outlined, color: AppColors.primary),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
+                const SizedBox(height: 6),
+                Text(message),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SupportTicketsReport extends StatelessWidget {
+  final AdminReportMetrics metrics;
+
+  const _SupportTicketsReport({required this.metrics});
+
+  @override
+  Widget build(BuildContext context) {
+    final title =
+        metrics.supportTicketsAvailable
+            ? 'Open Support Tickets'
+            : 'Support Tickets Not Available Yet';
+    final message =
+        metrics.supportTicketsAvailable
+            ? '${metrics.supportTickets} user-submitted support ticket(s) currently need admin follow-up.'
+            : 'The support ticket collection may not exist yet or may require Firestore permission updates.';
+
+    return _ReportPanel(
+      icon: Icons.support_agent_outlined,
+      color: AppColors.primary,
+      title: 'Support Tickets',
+      subtitle: 'User-submitted feedback and help requests that still need admin review.',
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CircleAvatar(
+            backgroundColor: AppColors.primary.withValues(alpha: 0.12),
+            child: const Icon(Icons.support_agent_outlined, color: AppColors.primary),
           ),
           const SizedBox(width: 12),
           Expanded(

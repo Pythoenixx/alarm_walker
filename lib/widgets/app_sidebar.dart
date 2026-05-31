@@ -53,6 +53,11 @@ class AppSidebar extends StatelessWidget {
             selectedIcon: Icon(Icons.report_gmailerrorred),
             label: Text('Issues'),
           ),
+          NavigationRailDestination(
+            icon: Icon(Icons.support_agent_outlined),
+            selectedIcon: Icon(Icons.support_agent),
+            label: Text('Support'),
+          ),
         ],
       ),
     );

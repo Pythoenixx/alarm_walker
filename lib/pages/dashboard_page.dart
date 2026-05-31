@@ -56,7 +56,7 @@ class _DashboardPageState extends State<DashboardPage> {
               _AdminHeader(
                 title: 'Admin Dashboard',
                 subtitle:
-                    'Quick snapshot of users, alarm activity, wake performance, and open issues.',
+                    'Quick snapshot of users, alarm activity, wake performance, open issues, and support tickets.',
                 action: IconButton.filledTonal(
                   onPressed: _refresh,
                   icon: const Icon(Icons.refresh),
@@ -148,6 +148,17 @@ class _OverviewGrid extends StatelessWidget {
                 ? 'Unresolved issue records'
                 : 'Collection unavailable',
         color: Colors.orange,
+      ),
+      AdminMetricCard(
+        icon: Icons.support_agent_outlined,
+        title: 'Open Support',
+        value:
+            metrics.supportTicketsAvailable ? metrics.supportTickets.toString() : 'N/A',
+        note:
+            metrics.supportTicketsAvailable
+                ? 'User-submitted tickets'
+                : 'Collection unavailable',
+        color: AppColors.primary,
       ),
     ];
 
@@ -362,6 +373,10 @@ class _SystemHealthCard extends StatelessWidget {
         metrics.issueLogsAvailable
             ? '${metrics.issueLogs} open issue(s) need review.'
             : 'Issue log collection is not available yet.';
+    final supportText =
+        metrics.supportTicketsAvailable
+            ? '${metrics.supportTickets} support ticket(s) need admin follow-up.'
+            : 'Support ticket collection is not available yet.';
 
     return _PanelCard(
       title: 'System Health Overview',
@@ -381,6 +396,13 @@ class _SystemHealthCard extends StatelessWidget {
             title: 'Open issue tracking',
             message: issueText,
             color: Colors.orange,
+          ),
+          const SizedBox(height: 12),
+          _HealthItem(
+            icon: Icons.support_agent_outlined,
+            title: 'Support tickets',
+            message: supportText,
+            color: AppColors.primary,
           ),
           const SizedBox(height: 12),
           _HealthItem(
