@@ -7,7 +7,14 @@ import 'package:alarm_walker/widgets/app_sidebar.dart';
 import 'package:flutter/material.dart';
 
 class AdminLayout extends StatefulWidget {
-  const AdminLayout({super.key});
+  final String adminEmail;
+  final Future<void> Function() onLogout;
+
+  const AdminLayout({
+    super.key,
+    required this.adminEmail,
+    required this.onLogout,
+  });
 
   @override
   State<AdminLayout> createState() => _AdminLayoutState();
@@ -31,6 +38,8 @@ class _AdminLayoutState extends State<AdminLayout> {
         children: [
           AppSidebar(
             selectedIndex: selectedIndex,
+            adminEmail: widget.adminEmail,
+            onLogout: widget.onLogout,
             onSelect: (index) {
               setState(() => selectedIndex = index);
             },
