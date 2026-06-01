@@ -46,8 +46,10 @@ class WeatherService {
 
   Future<_ResolvedWeatherLocation> _loadWeatherLocation() async {
     final position = await _determinePosition();
+    final lat = position.latitude.toStringAsFixed(2);
+    final lon = position.longitude.toStringAsFixed(2);
     return _ResolvedWeatherLocation(
-      name: 'Current location',
+      name: 'GPS $lat, $lon',
       latitude: position.latitude,
       longitude: position.longitude,
       isManual: false,

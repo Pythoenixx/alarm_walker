@@ -36,6 +36,8 @@ class _AddAlarmScreenState extends State<AddAlarmScreen> {
   late DismissSettings _dismissSettings;
   late bool _wakeupCheck;
   late bool _isOneTime;
+  late String _initialSignature;
+  bool _allowPop = false;
 
   @override
   void initState() {
@@ -71,6 +73,8 @@ class _AddAlarmScreenState extends State<AddAlarmScreen> {
       _wakeupCheck = false;
       _isOneTime = false;
     }
+
+    _initialSignature = _currentSignature();
   }
 
   @override
@@ -78,6 +82,56 @@ class _AddAlarmScreenState extends State<AddAlarmScreen> {
     _titleController.dispose();
     _focusNode.dispose();
     super.dispose();
+  }
+
+  String _currentSignature() {
+    final sortedDays = _selectedDays.toList()..sort();
+    return [
+      _selectedTime.hour,
+      _selectedTime.minute,
+      _titleController.text,
+      _isOneTime,
+      sortedDays.join(','),
+      _snoozeSettings.toJson(),
+      _soundSettings.toJson(),
+      _dismissSettings.toJson(),
+      _wakeupCheck,
+    ].join('|');
+  }
+
+  bool get _hasUnsavedChanges => _currentSignature() != _initialSignature;
+
+  Future<bool> _confirmDiscardChanges() async {
+    if (!_hasUnsavedChanges) return true;
+
+    return await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('Discard changes?'),
+            content: const Text(
+              'You have unsaved alarm changes. Save the alarm to keep them, or discard to leave this page.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: const Text('Stay'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, true),
+                child: const Text('Discard'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+  }
+
+  Future<void> _leaveIfSafe() async {
+    final canLeave = await _confirmDiscardChanges();
+    if (!mounted || !canLeave) return;
+
+    setState(() => _allowPop = true);
+    context.pop();
   }
 
   void _toggleDay(int day) {
@@ -116,7 +170,11 @@ class _AddAlarmScreenState extends State<AddAlarmScreen> {
       isOnce: _isOneTime,
     );
 
-    if (mounted) context.pop();
+    if (mounted) {
+      _initialSignature = _currentSignature();
+      setState(() => _allowPop = true);
+      context.pop();
+    }
   }
 
   Future<void> _deleteAlarm() async {
@@ -144,7 +202,10 @@ class _AddAlarmScreenState extends State<AddAlarmScreen> {
     if (!mounted || !confirmed) return;
 
     await context.read<AlarmCubit>().deleteAlarmModel(widget.alarmModel!);
-    if (mounted) context.pop();
+    if (mounted) {
+      setState(() => _allowPop = true);
+      context.pop();
+    }
   }
 
   Future<void> _openSoundSettings() async {
@@ -473,9 +534,15 @@ class _AddAlarmScreenState extends State<AddAlarmScreen> {
     final bool isDark = context.isDarkMode;
     final dismissMode = _dismissSettings.mode;
 
-    return GestureDetector(
-      onTap: _focusNode.unfocus,
-      child: Scaffold(
+    return PopScope(
+      canPop: _allowPop,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        _leaveIfSafe();
+      },
+      child: GestureDetector(
+        onTap: _focusNode.unfocus,
+        child: Scaffold(
         backgroundColor: isDark ? AppColors.darkBorder : Colors.white,
         appBar: AppBar(
           surfaceTintColor: Colors.transparent, // Prevents automatic tint
@@ -484,7 +551,7 @@ class _AddAlarmScreenState extends State<AddAlarmScreen> {
               isDark ? AppColors.darkScaffold1 : AppColors.lightScaffold1,
           leading: IconButton(
             tooltip: context.localization.back,
-            onPressed: () => context.pop(),
+            onPressed: _leaveIfSafe,
             style: IconButton.styleFrom(
               foregroundColor:
                   isDark
@@ -628,6 +695,7 @@ class _AddAlarmScreenState extends State<AddAlarmScreen> {
             ),
           ),
         ),
+      ),
       ),
     );
   }

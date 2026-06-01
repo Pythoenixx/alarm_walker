@@ -284,28 +284,15 @@ class _WeatherContent extends StatelessWidget {
                       ),
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  Icon(
-                    weather.isManualLocation
-                        ? Icons.place_outlined
-                        : Icons.my_location_outlined,
-                    size: 14,
-                    color: AppColors.primary,
-                  ),
                   const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      _displayLocationName(weather.locationName),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTextStyles.caption(context).copyWith(
-                        color: textColor,
-                        fontWeight: FontWeight.w600,
-                      ),
+                  Tooltip(
+                    message: _locationTooltip(weather),
+                    child: Icon(
+                      weather.isManualLocation
+                          ? Icons.place_outlined
+                          : Icons.my_location_outlined,
+                      size: 15,
+                      color: AppColors.primary.withValues(alpha: 0.72),
                     ),
                   ),
                 ],
@@ -333,12 +320,15 @@ class _WeatherContent extends StatelessWidget {
     );
   }
 
-  String _displayLocationName(String rawLocationName) {
-    final location = rawLocationName.trim();
-    if (location.isEmpty || location == 'Current location' || location.startsWith('GPS ')) {
-      return 'Nearby weather';
+  String _locationTooltip(WeatherModel weather) {
+    final location = weather.locationName.trim();
+    if (location.startsWith('GPS ')) {
+      return 'Weather source: $location';
     }
-    return location;
+    if (location.isNotEmpty && location != 'Current location') {
+      return 'Weather source: $location';
+    }
+    return 'Weather source: device location';
   }
 
   IconData _iconForCode(int code) {

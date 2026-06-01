@@ -137,13 +137,19 @@ class _AlarmGateScreenState extends State<AlarmGateScreen>
     _countdownTimer?.cancel();
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted) return;
+
+      if (_remaining.inSeconds <= 1) {
+        _countdownTimer?.cancel();
+        setState(() {
+          _snoozed = false;
+          _remaining = Duration.zero;
+          _pulseCtrl.repeat(reverse: true);
+        });
+        return;
+      }
+
       setState(() {
-        if (_remaining.inSeconds <= 1) {
-          _countdownTimer?.cancel();
-          context.pop(); // alarm package re-fires, gate will reopen
-        } else {
-          _remaining -= const Duration(seconds: 1);
-        }
+        _remaining -= const Duration(seconds: 1);
       });
     });
   }
@@ -156,11 +162,13 @@ class _AlarmGateScreenState extends State<AlarmGateScreen>
       alarmRef: _alarmRef,
     );
 
-    // The alarm package will open a fresh active alarm gate for the immediate
-    // wake-up. Close this snoozed gate first so the user only dismisses once.
-    if (mounted) {
-      context.pop();
-    }
+    if (!mounted) return;
+
+    setState(() {
+      _snoozed = false;
+      _remaining = Duration.zero;
+      _pulseCtrl.repeat(reverse: true);
+    });
   }
 
   // ── dismiss logic ──────────────────────────────────────────────────────────

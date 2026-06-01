@@ -334,7 +334,9 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
             : null;
 
     final updatedDays = isOnce ? <int>[] : days.toSet().toList();
-    final enabled = existingAlarm?.enabled ?? true;
+    // A saved one-time alarm should be ready to ring again after edits.
+    // Repeat alarms keep their previous enabled/disabled state.
+    final enabled = isOnce ? true : (existingAlarm?.enabled ?? true);
 
     if (existingAlarm != null) {
       final runtimeAlarms = await Alarm.getAlarms();
@@ -485,7 +487,9 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
     required AlarmSettings alarmSettings,
     required ActiveAlarmRef alarmRef,
   }) async {
-    await cancelSnooze(alarmRef: alarmRef);
+    // End the waiting period early, but keep the snooze count/history because
+    // the user already used one snooze. This keeps max snooze limits accurate.
+    await Alarm.stop(alarmRef.runtimeAlarmId);
 
     await Alarm.set(
       alarmSettings: alarmSettings.copyWith(
