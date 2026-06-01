@@ -48,7 +48,9 @@ class _AddAlarmScreenState extends State<AddAlarmScreen> {
       _snoozeSettings = m.snoozeSettings;
       _soundSettings = m.soundSettings;
       _dismissSettings = m.dismissSettings;
-      _wakeupCheck = m.wakeupCheck;
+      // Wakeup check is currently hidden from the UI because it is not part of
+      // the focused SRS/demo flow. Keep saved alarms on the stable default.
+      _wakeupCheck = false;
       _isOneTime = m.isOnce;
     } else {
       _selectedTime = TimeOfDay.now();
@@ -607,15 +609,6 @@ class _AddAlarmScreenState extends State<AddAlarmScreen> {
                           isDark: isDark,
                         ),
 
-                        _buildSwitchRow(
-                          icon: Icons.health_and_safety_outlined,
-                          title: 'Wakeup check', // TODO: localize
-                          subtitle: 'Confirm you\'re awake after dismissing',
-                          value: _wakeupCheck,
-                          onChanged: (v) => setState(() => _wakeupCheck = v),
-                        ),
-
-                        const SizedBox(height: 8),
 
                         // Save button
                         IconButton(

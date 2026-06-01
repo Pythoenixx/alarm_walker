@@ -470,18 +470,6 @@ class _SoundSettingsScreenState extends State<SoundSettingsScreen> {
               ),
             ], isDark),
 
-            // ── Flashlight ─────────────────────────────────────────────────
-            _buildSection('Flashlight', [
-              AppSwitchTile(
-                icon: Icons.flashlight_on_outlined,
-                title: 'Flash torch on alarm', // TODO: localize
-                subtitle: 'Blinks the rear flashlight when alarm fires',
-                value: s.flashlight,
-                onChanged:
-                    (v) =>
-                        setState(() => _settings = s.copyWith(flashlight: v)),
-              ),
-            ], isDark),
           ],
         ),
       ),

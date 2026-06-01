@@ -206,7 +206,6 @@ class _WeatherContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final textColor =
         isDark ? AppColors.darkBackgroundText : AppColors.lightBackgroundText;
-    final updatedLabel = _updatedLabel(weather.updatedAt);
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -276,18 +275,16 @@ class _WeatherContent extends StatelessWidget {
                   ),
                 ],
               ),
-              if (weather.isCached) ...[
-                const SizedBox(height: 4),
-                Text(
-                  'Saved weather · $updatedLabel',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTextStyles.caption(context).copyWith(
-                    color: Colors.orange,
-                    fontWeight: FontWeight.w600,
-                  ),
+              const SizedBox(height: 4),
+              Text(
+                weather.message,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: AppTextStyles.caption(context).copyWith(
+                  color: textColor.withValues(alpha: 0.74),
+                  height: 1.2,
                 ),
-              ],
+              ),
             ],
           ),
         ),
@@ -299,15 +296,6 @@ class _WeatherContent extends StatelessWidget {
         ),
       ],
     );
-  }
-
-  String _updatedLabel(DateTime? updatedAt) {
-    if (updatedAt == null) return 'Updated time unavailable';
-    final diff = DateTime.now().difference(updatedAt);
-    if (diff.inMinutes < 1) return 'Updated just now';
-    if (diff.inMinutes < 60) return 'Updated ${diff.inMinutes} min ago';
-    if (diff.inHours < 24) return 'Updated ${diff.inHours} hr ago';
-    return 'Updated ${diff.inDays} day${diff.inDays == 1 ? '' : 's'} ago';
   }
 
   IconData _iconForCode(int code) {
