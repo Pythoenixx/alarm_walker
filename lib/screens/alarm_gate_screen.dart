@@ -155,19 +155,11 @@ class _AlarmGateScreenState extends State<AlarmGateScreen>
       alarmSettings: widget.alarmSettings,
       alarmRef: _alarmRef,
     );
-    _pulseCtrl.repeat(reverse: true);
-    setState(() {
-      _snoozed = false;
-      _remaining = Duration.zero;
-      _snoozeCount = (_snoozeCount - 1).clamp(
-        0,
-        999,
-      ); // undo the count because the user chose to wake now
-    });
+
+    // The alarm package will open a fresh active alarm gate for the immediate
+    // wake-up. Close this snoozed gate first so the user only dismisses once.
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Snooze cancelled. Alarm ringing now.')),
-      );
+      context.pop();
     }
   }
 
@@ -650,7 +642,7 @@ class _DismissPanel extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
       child: GestureDetector(
-        onTap: onDismiss,
+        onTap: snoozed ? null : onDismiss,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 300),
           decoration: BoxDecoration(
@@ -675,24 +667,24 @@ class _DismissPanel extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
-                Icons.alarm_off_outlined,
+                snoozed ? Icons.lock_clock_rounded : Icons.alarm_off_outlined,
                 size: 18,
                 color:
                     snoozed
                         ? (isDark
-                            ? AppColors.darkBackgroundText
-                            : AppColors.lightBackgroundText)
+                            ? AppColors.darkBackgroundText.withValues(alpha: 0.55)
+                            : AppColors.lightBackgroundText.withValues(alpha: 0.55))
                         : Colors.red,
               ),
               const SizedBox(width: 8),
               Text(
-                _dismissLabel(mode),
+                snoozed ? 'Wake now to dismiss' : _dismissLabel(mode),
                 style: AppTextStyles.body(context).copyWith(
                   color:
                       snoozed
                           ? (isDark
-                              ? AppColors.darkBackgroundText
-                              : AppColors.lightBackgroundText)
+                              ? AppColors.darkBackgroundText.withValues(alpha: 0.55)
+                              : AppColors.lightBackgroundText.withValues(alpha: 0.55))
                           : Colors.red,
                   fontWeight: FontWeight.w600,
                 ),

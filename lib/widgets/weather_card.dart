@@ -33,7 +33,7 @@ class _WeatherCardState extends State<WeatherCard> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-              'Unable to refresh weather. Showing the last saved weather.',
+              'Weather refresh needs location and internet. Showing last saved weather.',
             ),
           ),
         );
@@ -56,9 +56,9 @@ class _WeatherCardState extends State<WeatherCard> {
   String _friendlyRefreshError(Object error) {
     final message = error.toString();
     if (message.toLowerCase().contains('location')) {
-      return 'Unable to refresh weather. Please enable location and internet connection, then try again.';
+      return 'Weather refresh needs location and internet. Please enable both, then try again.';
     }
-    return 'Unable to refresh weather. Please check your internet connection, then try again.';
+    return 'Weather refresh needs internet. Please check your connection, then try again.';
   }
 
   void _refreshWeather() {
@@ -335,8 +335,8 @@ class _WeatherContent extends StatelessWidget {
 
   String _displayLocationName(String rawLocationName) {
     final location = rawLocationName.trim();
-    if (location.isEmpty || location.startsWith('GPS ')) {
-      return 'Current location';
+    if (location.isEmpty || location == 'Current location' || location.startsWith('GPS ')) {
+      return 'Nearby weather';
     }
     return location;
   }

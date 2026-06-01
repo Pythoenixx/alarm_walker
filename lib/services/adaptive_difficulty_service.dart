@@ -115,14 +115,21 @@ class AdaptiveDifficultyService {
   }
 
   static AdaptiveDifficultyDecision _decide(AdaptiveDifficultyMetrics metrics) {
-    // If the user struggles to complete alarms, make future default tasks lighter.
-    if (metrics.successRate < 0.7 || metrics.averageDisarmSeconds >= 180) {
+    // If the user struggles, make future default tasks lighter.
+    // Failed attempts are included so repeated wrong math/retype answers can
+    // soften future defaults even when the final alarm result is successful.
+    if (metrics.successRate < 0.7 ||
+        metrics.averageFailedAttempts >= 2 ||
+        metrics.averageDisarmSeconds >= 150) {
       return AdaptiveDifficultyDecision.madeEasier;
     }
 
-    // If the user snoozes often or completes tasks too easily, make future defaults firmer.
-    if (metrics.averageSnoozeCount >= 2 ||
-        (metrics.successRate >= 0.85 && metrics.averageDisarmSeconds <= 45)) {
+    // If the user rarely snoozes, rarely fails, and completes tasks quickly,
+    // make future defaults a little firmer.
+    if (metrics.averageSnoozeCount == 0 &&
+        metrics.averageFailedAttempts < 0.5 &&
+        metrics.successRate >= 0.85 &&
+        metrics.averageDisarmSeconds <= 45) {
       return AdaptiveDifficultyDecision.madeHarder;
     }
 
@@ -213,11 +220,13 @@ class AdaptiveDifficultyMetrics {
   final double successRate;
   final double averageSnoozeCount;
   final double averageDisarmSeconds;
+  final double averageFailedAttempts;
 
   const AdaptiveDifficultyMetrics({
     required this.successRate,
     required this.averageSnoozeCount,
     required this.averageDisarmSeconds,
+    required this.averageFailedAttempts,
   });
 
   factory AdaptiveDifficultyMetrics.fromLogs(List<WakeLog> logs) {
@@ -228,11 +237,16 @@ class AdaptiveDifficultyMetrics {
       0,
       (sum, log) => sum + log.disarmDurationMs,
     );
+    final failedAttemptTotal = logs.fold<int>(
+      0,
+      (sum, log) => sum + log.failedAttemptCount,
+    );
 
     return AdaptiveDifficultyMetrics(
       successRate: total == 0 ? 0 : successes / total,
       averageSnoozeCount: total == 0 ? 0 : snoozeTotal / total,
       averageDisarmSeconds: total == 0 ? 0 : durationTotalMs / total / 1000,
+      averageFailedAttempts: total == 0 ? 0 : failedAttemptTotal / total,
     );
   }
 }

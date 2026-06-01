@@ -648,17 +648,23 @@ class _ProblemCard extends StatelessWidget {
                 Tooltip(
                   message: 'Skip problem',
                   child: Material(
-                    color: Colors.orange.withValues(alpha: 0.12),
+                    color: (isDark
+                            ? AppColors.darkBackgroundText
+                            : AppColors.lightBackgroundText)
+                        .withValues(alpha: 0.08),
                     shape: const CircleBorder(),
                     child: InkWell(
                       customBorder: const CircleBorder(),
                       onTap: onSkip,
-                      child: const SizedBox(
+                      child: SizedBox(
                         width: 42,
                         height: 42,
                         child: Icon(
-                          Icons.double_arrow_rounded,
-                          color: Colors.orange,
+                          Icons.autorenew_rounded,
+                          color: (isDark
+                                  ? AppColors.darkBackgroundText
+                                  : AppColors.lightBackgroundText)
+                              .withValues(alpha: 0.62),
                           size: 23,
                         ),
                       ),

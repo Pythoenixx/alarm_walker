@@ -76,6 +76,29 @@ class _WakeAnalyticsScreenState extends State<WakeAnalyticsScreen> {
     final bool isDark = context.isDarkMode;
 
     return Scaffold(
+      backgroundColor: isDark ? AppColors.darkScaffold1 : AppColors.lightScaffold1,
+      appBar: AppBar(
+        scrolledUnderElevation: 0,
+        backgroundColor: isDark ? AppColors.darkScaffold1 : AppColors.lightScaffold1,
+        leading:
+            Navigator.of(context).canPop()
+                ? IconButton(
+                  tooltip: 'Back',
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: const Icon(Icons.arrow_back),
+                )
+                : null,
+        centerTitle: true,
+        title: const Text('Wake Analytics'),
+        titleTextStyle: AppTextStyles.heading(context),
+        actions: [
+          IconButton(
+            tooltip: 'Refresh',
+            onPressed: () => unawaited(_refresh()),
+            icon: const Icon(Icons.refresh_rounded),
+          ),
+        ],
+      ),
       body: DecoratedBox(
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -88,49 +111,31 @@ class _WakeAnalyticsScreenState extends State<WakeAnalyticsScreen> {
           ),
         ),
         child: SafeArea(
+          top: false,
           child: FutureBuilder<_AnalyticsData>(
             future: _future,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return Column(
-                  children: [
-                    _AnalyticsAppBar(onRefresh: () => unawaited(_refresh())),
-                    const Expanded(child: Center(child: CircularProgressIndicator())),
-                  ],
-                );
+                return const Center(child: CircularProgressIndicator());
               }
 
               if (snapshot.hasError) {
-                return Column(
-                  children: [
-                    _AnalyticsAppBar(onRefresh: () => unawaited(_refresh())),
-                    Expanded(
-                      child: _AnalyticsErrorState(
-                        isDark: isDark,
-                        onRetry: () => unawaited(_refresh()),
-                      ),
-                    ),
-                  ],
+                return _AnalyticsErrorState(
+                  isDark: isDark,
+                  onRetry: () => unawaited(_refresh()),
                 );
               }
 
               final data = snapshot.data;
               if (data == null) {
-                return Column(
-                  children: [
-                    _AnalyticsAppBar(onRefresh: () => unawaited(_refresh())),
-                    const Expanded(child: Center(child: CircularProgressIndicator())),
-                  ],
-                );
+                return const Center(child: CircularProgressIndicator());
               }
 
               return RefreshIndicator(
                 onRefresh: _refresh,
                 child: ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
                   children: [
-                    _AnalyticsAppBar(onRefresh: () => unawaited(_refresh())),
-                    const SizedBox(height: 8),
                     _OverviewHero(data: data, isDark: isDark),
                     const SizedBox(height: 16),
                     _SectionHeader(
@@ -173,100 +178,6 @@ class _WakeAnalyticsScreenState extends State<WakeAnalyticsScreen> {
                 ),
               );
             },
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _AnalyticsAppBar extends StatelessWidget {
-  final VoidCallback onRefresh;
-
-  const _AnalyticsAppBar({required this.onRefresh});
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = context.isDarkMode;
-    final foreground =
-        isDark ? AppColors.darkBackgroundText : AppColors.lightBackgroundText;
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(0, 8, 0, 8),
-      child: Row(
-        children: [
-          _RoundIconButton(
-            icon: Icons.arrow_back_rounded,
-            tooltip: 'Back',
-            onTap: () => Navigator.pop(context),
-            isDark: isDark,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Wake Analytics',
-                  style: AppTextStyles.large(context).copyWith(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: foreground,
-                  ),
-                ),
-
-              ],
-            ),
-          ),
-          _RoundIconButton(
-            icon: Icons.refresh_rounded,
-            tooltip: 'Refresh',
-            onTap: onRefresh,
-            isDark: isDark,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _RoundIconButton extends StatelessWidget {
-  final IconData icon;
-  final String tooltip;
-  final VoidCallback onTap;
-  final bool isDark;
-
-  const _RoundIconButton({
-    required this.icon,
-    required this.tooltip,
-    required this.onTap,
-    required this.isDark,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Tooltip(
-      message: tooltip,
-      child: Material(
-        color:
-            isDark
-                ? AppColors.darkScaffold1.withValues(alpha: 0.65)
-                : Colors.white.withValues(alpha: 0.78),
-        borderRadius: BorderRadius.circular(16),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(16),
-          child: Container(
-            width: 44,
-            height: 44,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isDark ? AppColors.darkBorder : AppColors.lightBlueGrey,
-              ),
-            ),
-            child: Icon(icon, color: AppColors.primary),
           ),
         ),
       ),
