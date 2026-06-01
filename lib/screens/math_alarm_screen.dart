@@ -409,6 +409,8 @@ class _MathAlarmScreenState extends State<MathAlarmScreen>
                           timerEnabled: _timerEnabled,
                           timerSeconds: _taskSecondsLeft,
                           totalTimer: _ds.taskTimerSeconds ?? 1,
+                          canSkip: _ds.mathAllowSkip,
+                          onSkip: _skipProblem,
                           isDark: isDark,
                         ),
                       ),
@@ -426,11 +428,7 @@ class _MathAlarmScreenState extends State<MathAlarmScreen>
 
                 const SizedBox(height: 12),
 
-                _BottomActions(
-                  canSkip: _ds.mathAllowSkip,
-                  onSkip: _skipProblem,
-                  onStop: _trySubmit,
-                ),
+                _BottomActions(onStop: _trySubmit),
 
                 const SizedBox(height: 16),
               ],
@@ -523,6 +521,8 @@ class _ProblemCard extends StatelessWidget {
   final bool timerEnabled;
   final int timerSeconds;
   final int totalTimer;
+  final bool canSkip;
+  final VoidCallback onSkip;
   final bool isDark;
 
   const _ProblemCard({
@@ -533,6 +533,8 @@ class _ProblemCard extends StatelessWidget {
     required this.timerEnabled,
     required this.timerSeconds,
     required this.totalTimer,
+    required this.canSkip,
+    required this.onSkip,
     required this.isDark,
   });
 
@@ -594,42 +596,76 @@ class _ProblemCard extends StatelessWidget {
             const SizedBox(height: 20),
           ],
           Row(
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(
-                '${problem.a} ${problem.symbol} ${problem.b} =',
-                style: AppTextStyles.large(context).copyWith(fontSize: 32),
-              ),
-              const SizedBox(width: 12),
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 10,
-                ),
-                decoration: BoxDecoration(
-                  color:
-                      error != null
-                          ? Colors.red.withOpacity(0.08)
-                          : AppColors.primary.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color:
-                        error != null
-                            ? Colors.red.withOpacity(0.6)
-                            : AppColors.primary.withOpacity(0.4),
-                    width: 1.5,
+              Expanded(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '${problem.a} ${problem.symbol} ${problem.b} =',
+                        style: AppTextStyles.large(
+                          context,
+                        ).copyWith(fontSize: 32),
+                      ),
+                      const SizedBox(width: 12),
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 150),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color:
+                              error != null
+                                  ? Colors.red.withOpacity(0.08)
+                                  : AppColors.primary.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color:
+                                error != null
+                                    ? Colors.red.withOpacity(0.6)
+                                    : AppColors.primary.withOpacity(0.4),
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Text(
+                          displayInput,
+                          style: AppTextStyles.large(context).copyWith(
+                            fontSize: 32,
+                            color: error != null ? Colors.red : AppColors.primary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                child: Text(
-                  displayInput,
-                  style: AppTextStyles.large(context).copyWith(
-                    fontSize: 32,
-                    color: error != null ? Colors.red : AppColors.primary,
-                    fontWeight: FontWeight.bold,
+              ),
+              if (canSkip) ...[
+                const SizedBox(width: 10),
+                Tooltip(
+                  message: 'Skip problem',
+                  child: Material(
+                    color: Colors.orange.withValues(alpha: 0.12),
+                    shape: const CircleBorder(),
+                    child: InkWell(
+                      customBorder: const CircleBorder(),
+                      onTap: onSkip,
+                      child: const SizedBox(
+                        width: 42,
+                        height: 42,
+                        child: Icon(
+                          Icons.double_arrow_rounded,
+                          color: Colors.orange,
+                          size: 23,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
-              ),
+              ],
             ],
           ),
           AnimatedSize(
@@ -753,42 +789,14 @@ class _NumberPad extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _BottomActions extends StatelessWidget {
-  final bool canSkip;
-  final VoidCallback onSkip;
   final VoidCallback onStop;
 
-  const _BottomActions({
-    required this.canSkip,
-    required this.onSkip,
-    required this.onStop,
-  });
+  const _BottomActions({required this.onStop});
 
   @override
   Widget build(BuildContext context) {
-    if (!canSkip) {
-      return Center(
-        child: GestureDetector(onTap: onStop, child: const StopButton()),
-      );
-    }
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          TextButton.icon(
-            onPressed: onSkip,
-            icon: const Icon(Icons.skip_next_outlined, size: 18),
-            label: const Text('Skip'), // TODO: localize
-            style: TextButton.styleFrom(foregroundColor: Colors.orange),
-          ),
-
-          GestureDetector(onTap: onStop, child: const StopButton()),
-
-          // Keeps the Stop button visually centered when skip exists on the left.
-          const SizedBox(width: 80),
-        ],
-      ),
+    return Center(
+      child: GestureDetector(onTap: onStop, child: const StopButton()),
     );
   }
 }

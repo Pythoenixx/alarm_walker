@@ -481,6 +481,19 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
     }
   }
 
+  Future<void> wakeSnoozedAlarmNow({
+    required AlarmSettings alarmSettings,
+    required ActiveAlarmRef alarmRef,
+  }) async {
+    await cancelSnooze(alarmRef: alarmRef);
+
+    await Alarm.set(
+      alarmSettings: alarmSettings.copyWith(
+        dateTime: DateTime.now().add(const Duration(seconds: 1)),
+      ),
+    );
+  }
+
   Future<void> recordFailedDisarmAttempt({
     required ActiveAlarmRef alarmRef,
   }) async {

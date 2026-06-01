@@ -151,7 +151,10 @@ class _AlarmGateScreenState extends State<AlarmGateScreen>
   Future<void> _cancelSnooze() async {
     unawaited(HapticFeedback.mediumImpact());
     _countdownTimer?.cancel();
-    await context.read<AlarmCubit>().cancelSnooze(alarmRef: _alarmRef);
+    await context.read<AlarmCubit>().wakeSnoozedAlarmNow(
+      alarmSettings: widget.alarmSettings,
+      alarmRef: _alarmRef,
+    );
     _pulseCtrl.repeat(reverse: true);
     setState(() {
       _snoozed = false;
@@ -159,8 +162,13 @@ class _AlarmGateScreenState extends State<AlarmGateScreen>
       _snoozeCount = (_snoozeCount - 1).clamp(
         0,
         999,
-      ); // undo the count since it was cancelled
+      ); // undo the count because the user chose to wake now
     });
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Snooze cancelled. Alarm ringing now.')),
+      );
+    }
   }
 
   // ── dismiss logic ──────────────────────────────────────────────────────────
@@ -589,8 +597,8 @@ class _SnoozePanel extends StatelessWidget {
                       Center(
                         child: TextButton.icon(
                           onPressed: onCancelSnooze,
-                          icon: const Icon(Icons.close, size: 16),
-                          label: const Text('Cancel snooze'), // TODO: localize
+                          icon: const Icon(Icons.alarm_rounded, size: 16),
+                          label: const Text('Wake now'), // TODO: localize
                           style: TextButton.styleFrom(
                             foregroundColor: Colors.orange,
                             padding: const EdgeInsets.symmetric(

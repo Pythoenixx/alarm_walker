@@ -23,7 +23,7 @@ class ProfileCategoryPresets {
         mode: AlarmDisarmMode.math,
         mathDifficulty: 2,
         mathProblemCount: 3,
-        mathAllowSkip: false,
+        mathAllowSkip: true,
         shakeCount: 12,
         shakeIntensity: 2,
         walkSteps: 30,

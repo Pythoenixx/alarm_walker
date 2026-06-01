@@ -214,13 +214,7 @@ class _AnalyticsAppBar extends StatelessWidget {
                     color: foreground,
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  'Understand your wake-up performance',
-                  style: AppTextStyles.caption(context).copyWith(
-                    color: foreground.withValues(alpha: 0.65),
-                  ),
-                ),
+
               ],
             ),
           ),
@@ -349,8 +343,8 @@ class _OverviewHero extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       total == 0
-                          ? 'Complete an alarm to start building analytics.'
-                          : 'Based on $total recorded alarm attempt${total == 1 ? '' : 's'}.',
+                          ? 'Complete an alarm to start.'
+                          : '$success / $total successful records',
                       style: AppTextStyles.body(context).copyWith(
                         color: Colors.white.withValues(alpha: 0.82),
                       ),
@@ -468,12 +462,20 @@ class _SectionHeader extends StatelessWidget {
               ),
               const SizedBox(height: 2),
               Text(
-                subtitle,
+                'Summary',
                 style: AppTextStyles.caption(context).copyWith(
-                  color: textColor.withValues(alpha: 0.62),
+                  color: textColor.withValues(alpha: 0.48),
                 ),
               ),
             ],
+          ),
+        ),
+        Tooltip(
+          message: subtitle,
+          child: Icon(
+            Icons.info_outline_rounded,
+            size: 20,
+            color: textColor.withValues(alpha: 0.55),
           ),
         ),
       ],
@@ -678,17 +680,33 @@ class _AdaptiveDifficultyCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Text(
-            subtitle,
-            style: AppTextStyles.body(context).copyWith(
-              color:
-                  isDark
-                      ? AppColors.darkBackgroundText.withValues(alpha: 0.78)
-                      : AppColors.lightBackgroundText.withValues(alpha: 0.78),
-            ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Tooltip(
+                message: subtitle,
+                child: const Icon(
+                  Icons.info_outline_rounded,
+                  size: 18,
+                  color: AppColors.primary,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Default challenge summary',
+                  style: AppTextStyles.caption(context).copyWith(
+                    color:
+                        isDark
+                            ? AppColors.darkBackgroundText.withValues(alpha: 0.65)
+                            : AppColors.lightBackgroundText.withValues(alpha: 0.65),
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
           Wrap(
             spacing: 8,
             runSpacing: 8,

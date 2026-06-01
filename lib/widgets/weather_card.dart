@@ -26,9 +26,44 @@ class _WeatherCardState extends State<WeatherCard> {
     _weatherFuture = widget.service.getCurrentWeather();
   }
 
+  Future<WeatherModel> _loadWeather({bool showRefreshFeedback = false}) async {
+    try {
+      final weather = await widget.service.getCurrentWeather();
+      if (showRefreshFeedback && mounted && weather.isCached) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Unable to refresh weather. Showing the last saved weather.',
+            ),
+          ),
+        );
+      }
+      return weather;
+    } catch (error) {
+      if (showRefreshFeedback && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              _friendlyRefreshError(error),
+            ),
+          ),
+        );
+      }
+      rethrow;
+    }
+  }
+
+  String _friendlyRefreshError(Object error) {
+    final message = error.toString();
+    if (message.toLowerCase().contains('location')) {
+      return 'Unable to refresh weather. Please enable location and internet connection, then try again.';
+    }
+    return 'Unable to refresh weather. Please check your internet connection, then try again.';
+  }
+
   void _refreshWeather() {
     setState(() {
-      _weatherFuture = widget.service.getCurrentWeather();
+      _weatherFuture = _loadWeather(showRefreshFeedback: true);
     });
   }
 
@@ -264,7 +299,7 @@ class _WeatherContent extends StatelessWidget {
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
-                      weather.locationName,
+                      _displayLocationName(weather.locationName),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: AppTextStyles.caption(context).copyWith(
@@ -296,6 +331,14 @@ class _WeatherContent extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  String _displayLocationName(String rawLocationName) {
+    final location = rawLocationName.trim();
+    if (location.isEmpty || location.startsWith('GPS ')) {
+      return 'Current location';
+    }
+    return location;
   }
 
   IconData _iconForCode(int code) {

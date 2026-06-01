@@ -146,7 +146,6 @@ class AdaptiveDifficultyService {
         bounds.minMathProblems,
         bounds.maxMathProblems,
       ),
-      mathAllowSkip: false,
       shakeCount: _clampInt(
         current.shakeCount + 2,
         bounds.minShakeCount,
@@ -182,7 +181,6 @@ class AdaptiveDifficultyService {
         bounds.minMathProblems,
         bounds.maxMathProblems,
       ),
-      mathAllowSkip: true,
       shakeCount: _clampInt(
         current.shakeCount - 2,
         bounds.minShakeCount,
