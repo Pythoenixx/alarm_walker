@@ -126,7 +126,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       ),
                     ),
                     const SizedBox(width: 12),
-                    const Text('Account Created!'),
+                    const Expanded(
+                      child: Text(
+                        'Account Created!',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
                   ],
                 ),
                 content: const Text(
@@ -533,8 +539,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                       : AppColors.lightBlueGrey,
                             ),
                           ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
+                          child: Wrap(
+                            alignment: WrapAlignment.center,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            spacing: 8,
+                            runSpacing: 4,
                             children: [
                               Text(
                                 'Already have an account?',
@@ -548,8 +557,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                           : AppColors.lightBackgroundText
                                               .withValues(alpha: 0.7),
                                 ),
+                                textAlign: TextAlign.center,
                               ),
-                              const SizedBox(width: 8),
                               GestureDetector(
                                 onTap:
                                     () => context.goNamed(AppRoute.login.name),
