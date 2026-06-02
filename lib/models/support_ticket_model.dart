@@ -10,6 +10,9 @@ class SupportTicket {
   final String userId;
   final String userName;
   final String userEmail;
+  final String appVersion;
+  final String buildNumber;
+  final String buildLabel;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -22,6 +25,9 @@ class SupportTicket {
     required this.userId,
     required this.userName,
     required this.userEmail,
+    this.appVersion = '',
+    this.buildNumber = '',
+    this.buildLabel = '',
     this.createdAt,
     this.updatedAt,
   });
@@ -39,6 +45,9 @@ class SupportTicket {
       userId: _readText(data, 'userId', fallback: ''),
       userName: _readText(data, 'userName', fallback: 'Unknown user'),
       userEmail: _readText(data, 'userEmail', fallback: ''),
+      appVersion: _readText(data, 'appVersion', fallback: ''),
+      buildNumber: _readText(data, 'buildNumber', fallback: ''),
+      buildLabel: _readText(data, 'buildLabel', fallback: ''),
       createdAt: _readDate(data['createdAt']) ?? _readDate(data['clientCreatedAt']),
       updatedAt: _readDate(data['updatedAt']),
     );

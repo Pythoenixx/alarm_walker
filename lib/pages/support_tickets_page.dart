@@ -3,6 +3,7 @@ import 'package:alarm_walker/services/support_ticket_service.dart';
 import 'package:alarm_walker/theme/app_colors.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 class SupportTicketsPage extends StatefulWidget {
@@ -16,8 +17,10 @@ class _SupportTicketsPageState extends State<SupportTicketsPage> {
   final _service = SupportTicketService();
   final _searchController = TextEditingController();
   final _searchFocusNode = FocusNode();
+  final Set<String> _selectedTicketIds = {};
   late final Stream<QuerySnapshot<Map<String, dynamic>>> _ticketsStream;
-  String _statusFilter = 'all';
+  bool _isSelectionMode = false;
+  String _statusFilter = 'open';
   String _categoryFilter = 'all';
   String _searchQuery = '';
 
@@ -50,8 +53,14 @@ class _SupportTicketsPageState extends State<SupportTicketsPage> {
         final allTickets =
             (snapshot.data?.docs ?? []).map(SupportTicket.fromDoc).toList();
         final tickets = allTickets.where(_matchesFilters).toList();
+        final filteredIds = tickets.map((ticket) => ticket.id).toSet();
+        _selectedTicketIds.removeWhere((id) => !filteredIds.contains(id));
+
         final openCount = allTickets.where((ticket) => !ticket.isResolved).length;
         final resolvedCount = allTickets.where((ticket) => ticket.isResolved).length;
+        final selectedTickets = tickets
+            .where((ticket) => _selectedTicketIds.contains(ticket.id))
+            .toList();
 
         return ListView(
           padding: const EdgeInsets.all(24),
@@ -64,11 +73,23 @@ class _SupportTicketsPageState extends State<SupportTicketsPage> {
               searchQuery: _searchQuery,
               statusFilter: _statusFilter,
               categoryFilter: _categoryFilter,
+              isSelectionMode: _isSelectionMode,
+              selectedCount: _selectedTicketIds.length,
+              hasTickets: tickets.isNotEmpty,
+              allSelected: tickets.isNotEmpty && _selectedTicketIds.length == tickets.length,
               onStatusChanged: (value) => setState(() => _statusFilter = value),
               onCategoryChanged: (value) => setState(() => _categoryFilter = value),
               onSearchChanged: (value) {
                 setState(() => _searchQuery = value.trim().toLowerCase());
               },
+              onEnterSelectionMode: _enterSelectionMode,
+              onExitSelectionMode: _exitSelectionMode,
+              onSelectAll: () => _selectAll(tickets),
+              onClearSelection: () => setState(_selectedTicketIds.clear),
+              onCopySelected: selectedTickets.isEmpty ? null : () => _copySelectedSummaries(selectedTickets),
+              onMarkResolved: selectedTickets.isEmpty ? null : () => _bulkUpdateStatus(selectedTickets, 'resolved'),
+              onReopen: selectedTickets.isEmpty ? null : () => _bulkUpdateStatus(selectedTickets, 'open'),
+              onDelete: selectedTickets.isEmpty ? null : () => _confirmBulkDelete(selectedTickets),
             ),
             const SizedBox(height: 18),
             if (tickets.isEmpty)
@@ -78,6 +99,10 @@ class _SupportTicketsPageState extends State<SupportTicketsPage> {
                 (ticket) => _SupportTicketCard(
                   ticket: ticket,
                   service: _service,
+                  isSelectionMode: _isSelectionMode,
+                  isSelected: _isSelectionMode && _selectedTicketIds.contains(ticket.id),
+                  onSelectionChanged: (isSelected) => _toggleSelection(ticket.id, isSelected),
+                  onCopySummary: () => _copyText(_buildSupportTicketSummary(ticket), 'Support ticket summary copied.'),
                 ),
               ),
           ],
@@ -100,11 +125,140 @@ class _SupportTicketsPageState extends State<SupportTicketsPage> {
       ticket.userName,
       ticket.userEmail,
       ticket.userId,
+      ticket.appVersion,
+      ticket.buildNumber,
+      ticket.buildLabel,
     ].join(' ').toLowerCase();
     final matchesSearch =
         _searchQuery.isEmpty || searchableText.contains(_searchQuery);
 
     return matchesStatus && matchesCategory && matchesSearch;
+  }
+
+  void _enterSelectionMode() {
+    setState(() => _isSelectionMode = true);
+  }
+
+  void _exitSelectionMode() {
+    setState(() {
+      _isSelectionMode = false;
+      _selectedTicketIds.clear();
+    });
+  }
+
+  void _toggleSelection(String ticketId, bool isSelected) {
+    setState(() {
+      if (isSelected) {
+        _selectedTicketIds.add(ticketId);
+      } else {
+        _selectedTicketIds.remove(ticketId);
+      }
+    });
+  }
+
+  void _selectAll(List<SupportTicket> tickets) {
+    setState(() {
+      if (_selectedTicketIds.length == tickets.length) {
+        _selectedTicketIds.clear();
+      } else {
+        _selectedTicketIds
+          ..clear()
+          ..addAll(tickets.map((ticket) => ticket.id));
+      }
+    });
+  }
+
+  Future<void> _copySelectedSummaries(List<SupportTicket> tickets) async {
+    final text = tickets.map(_buildSupportTicketSummary).join('\n\n---\n\n');
+    await _copyText(text, '${tickets.length} support ticket summary(s) copied.');
+  }
+
+  Future<void> _copyText(String text, String message) async {
+    await Clipboard.setData(ClipboardData(text: text));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _bulkUpdateStatus(
+    List<SupportTicket> tickets,
+    String status,
+  ) async {
+    try {
+      final batch = FirebaseFirestore.instance.batch();
+      for (final ticket in tickets) {
+        batch.update(
+          FirebaseFirestore.instance
+              .collection(SupportTicketService.collectionName)
+              .doc(ticket.id),
+          {
+            'status': status,
+            'updatedAt': FieldValue.serverTimestamp(),
+            'resolvedAt': status == 'resolved' ? FieldValue.serverTimestamp() : null,
+          },
+        );
+      }
+      await batch.commit();
+      setState(() {
+        _selectedTicketIds.clear();
+        _isSelectionMode = false;
+      });
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${tickets.length} support ticket(s) updated.')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Unable to update selected tickets: $error')),
+      );
+    }
+  }
+
+  Future<void> _confirmBulkDelete(List<SupportTicket> tickets) async {
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete selected support tickets'),
+        content: Text('Delete ${tickets.length} selected support ticket(s) from Firestore?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton.tonal(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldDelete != true) return;
+
+    try {
+      final batch = FirebaseFirestore.instance.batch();
+      for (final ticket in tickets) {
+        batch.delete(
+          FirebaseFirestore.instance
+              .collection(SupportTicketService.collectionName)
+              .doc(ticket.id),
+        );
+      }
+      await batch.commit();
+      setState(() {
+        _selectedTicketIds.clear();
+        _isSelectionMode = false;
+      });
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${tickets.length} support ticket(s) deleted.')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Unable to delete selected tickets: $error')),
+      );
+    }
   }
 }
 
@@ -197,9 +351,21 @@ class _SupportFilters extends StatelessWidget {
   final String searchQuery;
   final String statusFilter;
   final String categoryFilter;
+  final bool isSelectionMode;
+  final int selectedCount;
+  final bool hasTickets;
+  final bool allSelected;
   final ValueChanged<String> onStatusChanged;
   final ValueChanged<String> onCategoryChanged;
   final ValueChanged<String> onSearchChanged;
+  final VoidCallback onEnterSelectionMode;
+  final VoidCallback onExitSelectionMode;
+  final VoidCallback onSelectAll;
+  final VoidCallback onClearSelection;
+  final VoidCallback? onCopySelected;
+  final VoidCallback? onMarkResolved;
+  final VoidCallback? onReopen;
+  final VoidCallback? onDelete;
 
   const _SupportFilters({
     required this.searchController,
@@ -207,9 +373,21 @@ class _SupportFilters extends StatelessWidget {
     required this.searchQuery,
     required this.statusFilter,
     required this.categoryFilter,
+    required this.isSelectionMode,
+    required this.selectedCount,
+    required this.hasTickets,
+    required this.allSelected,
     required this.onStatusChanged,
     required this.onCategoryChanged,
     required this.onSearchChanged,
+    required this.onEnterSelectionMode,
+    required this.onExitSelectionMode,
+    required this.onSelectAll,
+    required this.onClearSelection,
+    required this.onCopySelected,
+    required this.onMarkResolved,
+    required this.onReopen,
+    required this.onDelete,
   });
 
   @override
@@ -270,8 +448,157 @@ class _SupportFilters extends StatelessWidget {
               },
               onChanged: onCategoryChanged,
             ),
+            _SupportSelectionActions(
+              isSelectionMode: isSelectionMode,
+              selectedCount: selectedCount,
+              hasTickets: hasTickets,
+              allSelected: allSelected,
+              onEnterSelectionMode: onEnterSelectionMode,
+              onExitSelectionMode: onExitSelectionMode,
+              onSelectAll: onSelectAll,
+              onClearSelection: onClearSelection,
+              onCopySelected: onCopySelected,
+              onMarkResolved: onMarkResolved,
+              onReopen: onReopen,
+              onDelete: onDelete,
+            ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _SupportSelectionActions extends StatelessWidget {
+  final bool isSelectionMode;
+  final int selectedCount;
+  final bool hasTickets;
+  final bool allSelected;
+  final VoidCallback onEnterSelectionMode;
+  final VoidCallback onExitSelectionMode;
+  final VoidCallback onSelectAll;
+  final VoidCallback onClearSelection;
+  final VoidCallback? onCopySelected;
+  final VoidCallback? onMarkResolved;
+  final VoidCallback? onReopen;
+  final VoidCallback? onDelete;
+
+  const _SupportSelectionActions({
+    required this.isSelectionMode,
+    required this.selectedCount,
+    required this.hasTickets,
+    required this.allSelected,
+    required this.onEnterSelectionMode,
+    required this.onExitSelectionMode,
+    required this.onSelectAll,
+    required this.onClearSelection,
+    required this.onCopySelected,
+    required this.onMarkResolved,
+    required this.onReopen,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final mutedColor = Theme.of(context).colorScheme.onSurfaceVariant;
+
+    if (!isSelectionMode) {
+      return Tooltip(
+        message: hasTickets ? 'Select support tickets' : 'No tickets to select',
+        child: IconButton.filledTonal(
+          onPressed: hasTickets ? onEnterSelectionMode : null,
+          icon: const Icon(Icons.checklist_rounded),
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.16)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Text(
+              selectedCount == 0 ? 'Select' : '$selectedCount',
+              style: const TextStyle(fontWeight: FontWeight.w900),
+            ),
+          ),
+          _SelectionIconButton(
+            tooltip: allSelected ? 'Unselect all visible tickets' : 'Select all visible tickets',
+            icon: allSelected ? Icons.remove_done_outlined : Icons.done_all_outlined,
+            color: mutedColor,
+            onPressed: onSelectAll,
+          ),
+          _SelectionIconButton(
+            tooltip: 'Clear selection',
+            icon: Icons.clear_all_rounded,
+            color: mutedColor,
+            onPressed: selectedCount == 0 ? null : onClearSelection,
+          ),
+          _SelectionIconButton(
+            tooltip: 'Copy selected summaries',
+            icon: Icons.copy_rounded,
+            color: mutedColor,
+            onPressed: onCopySelected,
+          ),
+          _SelectionIconButton(
+            tooltip: 'Mark selected resolved',
+            icon: Icons.check_circle_outline,
+            color: Colors.green,
+            onPressed: onMarkResolved,
+          ),
+          _SelectionIconButton(
+            tooltip: 'Reopen selected',
+            icon: Icons.replay_outlined,
+            color: Colors.orange,
+            onPressed: onReopen,
+          ),
+          _SelectionIconButton(
+            tooltip: 'Delete selected',
+            icon: Icons.delete_outline,
+            color: Colors.redAccent,
+            onPressed: onDelete,
+          ),
+          _SelectionIconButton(
+            tooltip: 'Done selecting',
+            icon: Icons.done_rounded,
+            color: AppColors.primary,
+            onPressed: onExitSelectionMode,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SelectionIconButton extends StatelessWidget {
+  final String tooltip;
+  final IconData icon;
+  final Color color;
+  final VoidCallback? onPressed;
+
+  const _SelectionIconButton({
+    required this.tooltip,
+    required this.icon,
+    required this.color,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: IconButton(
+        visualDensity: VisualDensity.compact,
+        tooltip: tooltip,
+        icon: Icon(icon, size: 20, color: onPressed == null ? null : color),
+        onPressed: onPressed,
       ),
     );
   }
@@ -335,8 +662,19 @@ class _FilterDropdown extends StatelessWidget {
 class _SupportTicketCard extends StatelessWidget {
   final SupportTicket ticket;
   final SupportTicketService service;
+  final bool isSelectionMode;
+  final bool isSelected;
+  final ValueChanged<bool> onSelectionChanged;
+  final VoidCallback onCopySummary;
 
-  const _SupportTicketCard({required this.ticket, required this.service});
+  const _SupportTicketCard({
+    required this.ticket,
+    required this.service,
+    required this.isSelectionMode,
+    required this.isSelected,
+    required this.onSelectionChanged,
+    required this.onCopySummary,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -346,13 +684,35 @@ class _SupportTicketCard extends StatelessWidget {
     return Card(
       elevation: 0,
       margin: const EdgeInsets.only(bottom: 14),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+      color: isSelectionMode && isSelected
+          ? AppColors.primary.withValues(alpha: 0.08)
+          : Theme.of(context).cardColor,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(22),
+        side: BorderSide(
+          color: isSelectionMode && isSelected
+              ? AppColors.primary.withValues(alpha: 0.42)
+              : Colors.transparent,
+        ),
+      ),
       child: ExpansionTile(
-        tilePadding: const EdgeInsets.fromLTRB(18, 12, 18, 12),
+        tilePadding: const EdgeInsets.fromLTRB(12, 12, 18, 12),
         childrenPadding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
-        leading: CircleAvatar(
-          backgroundColor: statusColor.withValues(alpha: 0.12),
-          child: Icon(_categoryIcon(ticket.category), color: statusColor),
+        leading: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (isSelectionMode) ...[
+              Checkbox(
+                value: isSelected,
+                onChanged: (value) => onSelectionChanged(value ?? false),
+              ),
+              const SizedBox(width: 2),
+            ],
+            CircleAvatar(
+              backgroundColor: statusColor.withValues(alpha: 0.12),
+              child: Icon(_categoryIcon(ticket.category), color: statusColor),
+            ),
+          ],
         ),
         title: Text(
           ticket.message,
@@ -370,6 +730,8 @@ class _SupportTicketCard extends StatelessWidget {
               _TicketChip(label: ticket.statusLabel, color: statusColor),
               if (ticket.rating > 0)
                 _TicketChip(label: '${ticket.rating}/5 rating', color: Colors.orange),
+              if (ticket.buildLabel.trim().isNotEmpty)
+                _TicketChip(label: 'v${ticket.buildLabel}', color: Colors.blueGrey),
             ],
           ),
         ),
@@ -377,9 +739,11 @@ class _SupportTicketCard extends StatelessWidget {
         children: [
           _TicketDetailGrid(
             details: {
+              'Ticket ID': ticket.id,
               'User': ticket.userLabel,
               'Type': ticket.categoryLabel,
               'Status': ticket.statusLabel,
+              'App Build': ticket.buildLabel.trim().isEmpty ? '-' : ticket.buildLabel,
               'Created': createdAt,
             },
           ),
@@ -404,9 +768,16 @@ class _SupportTicketCard extends StatelessWidget {
             child: SelectableText(ticket.message),
           ),
           const SizedBox(height: 14),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            alignment: WrapAlignment.end,
             children: [
+              OutlinedButton.icon(
+                onPressed: onCopySummary,
+                icon: const Icon(Icons.content_copy_rounded),
+                label: const Text('Copy Summary'),
+              ),
               TextButton.icon(
                 onPressed: () => _toggleStatus(context),
                 icon: Icon(
@@ -416,7 +787,6 @@ class _SupportTicketCard extends StatelessWidget {
                 ),
                 label: Text(ticket.isResolved ? 'Reopen' : 'Mark Resolved'),
               ),
-              const SizedBox(width: 8),
               TextButton.icon(
                 onPressed: () => _confirmDelete(context),
                 icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
@@ -549,7 +919,7 @@ class _EmptySupportCard extends StatelessWidget {
             children: [
               Icon(Icons.mark_chat_read_outlined, size: 42, color: Colors.green),
               SizedBox(height: 12),
-              Text('No matching support tickets found.'),
+              Text('No matching open support tickets found.'),
             ],
           ),
         ),
@@ -600,6 +970,20 @@ IconData _categoryIcon(String category) {
     SupportTicketCategory.suggestion => Icons.lightbulb_outline,
     _ => Icons.feedback_outlined,
   };
+}
+
+String _buildSupportTicketSummary(SupportTicket ticket) {
+  return [
+    'Alarm Walker Support Ticket',
+    'Ticket ID: ${ticket.id}',
+    'Status: ${ticket.statusLabel}',
+    'Type: ${ticket.categoryLabel}',
+    if (ticket.rating > 0) 'Rating: ${ticket.rating}/5',
+    'User: ${ticket.userLabel}',
+    'App Build: ${ticket.buildLabel.trim().isEmpty ? '-' : ticket.buildLabel}',
+    'Created: ${_formatDate(ticket.createdAt)}',
+    'Message: ${ticket.message}',
+  ].join('\n');
 }
 
 String _formatDate(DateTime? value) {

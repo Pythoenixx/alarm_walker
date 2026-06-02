@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:alarm_walker/services/app_issue_log_service.dart';
 import 'package:alarm_walker/theme/app_colors.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 class IssueLogsPage extends StatefulWidget {
@@ -14,8 +17,10 @@ class IssueLogsPage extends StatefulWidget {
 class _IssueLogsPageState extends State<IssueLogsPage> {
   final _searchController = TextEditingController();
   final _searchFocusNode = FocusNode();
+  final Set<String> _selectedLogIds = {};
   late final Stream<QuerySnapshot<Map<String, dynamic>>> _issueLogsStream;
-  String _statusFilter = 'all';
+  bool _isSelectionMode = false;
+  String _statusFilter = 'open';
   String _severityFilter = 'all';
   String _searchQuery = '';
 
@@ -55,13 +60,22 @@ class _IssueLogsPageState extends State<IssueLogsPage> {
 
         final docs = snapshot.data?.docs ?? [];
         final filteredDocs = _filterDocs(docs);
+        final filteredIds = filteredDocs.map((doc) => doc.id).toSet();
+        _selectedLogIds.removeWhere((id) => !filteredIds.contains(id));
+
         final openCount = docs.where((doc) => _readText(doc.data(), 'status') != 'resolved').length;
+        final resolvedCount = docs.where((doc) => _readText(doc.data(), 'status') == 'resolved').length;
         final crashCount = docs.where((doc) => _readText(doc.data(), 'severity') == 'crash').length;
+        final selectedDocs = filteredDocs.where((doc) => _selectedLogIds.contains(doc.id)).toList();
 
         return ListView(
           padding: const EdgeInsets.all(24),
           children: [
-            _IssueLogsHeader(openCount: openCount, crashCount: crashCount),
+            _IssueLogsHeader(
+              openCount: openCount,
+              resolvedCount: resolvedCount,
+              crashCount: crashCount,
+            ),
             const SizedBox(height: 18),
             _IssueLogFilters(
               searchController: _searchController,
@@ -69,17 +83,38 @@ class _IssueLogsPageState extends State<IssueLogsPage> {
               searchQuery: _searchQuery,
               statusFilter: _statusFilter,
               severityFilter: _severityFilter,
+              isSelectionMode: _isSelectionMode,
+              selectedCount: _selectedLogIds.length,
+              hasLogs: filteredDocs.isNotEmpty,
+              allSelected: filteredDocs.isNotEmpty && _selectedLogIds.length == filteredDocs.length,
               onStatusChanged: (value) => setState(() => _statusFilter = value),
               onSeverityChanged: (value) => setState(() => _severityFilter = value),
               onSearchChanged: (value) {
                 setState(() => _searchQuery = value.trim().toLowerCase());
               },
+              onEnterSelectionMode: _enterSelectionMode,
+              onExitSelectionMode: _exitSelectionMode,
+              onSelectAll: () => _selectAll(filteredDocs),
+              onClearSelection: () => setState(_selectedLogIds.clear),
+              onCopySelected: selectedDocs.isEmpty ? null : () => _copySelectedSummaries(selectedDocs),
+              onMarkResolved: selectedDocs.isEmpty ? null : () => _bulkUpdateStatus(selectedDocs, 'resolved'),
+              onReopen: selectedDocs.isEmpty ? null : () => _bulkUpdateStatus(selectedDocs, 'open'),
+              onDelete: selectedDocs.isEmpty ? null : () => _confirmBulkDelete(selectedDocs),
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 14),
             if (filteredDocs.isEmpty)
               const _EmptyIssueLogsCard()
             else
-              ...filteredDocs.map((doc) => _IssueLogCard(doc: doc)),
+              ...filteredDocs.map(
+                (doc) => _IssueLogCard(
+                  doc: doc,
+                  isSelectionMode: _isSelectionMode,
+                  isSelected: _isSelectionMode && _selectedLogIds.contains(doc.id),
+                  onSelectionChanged: (isSelected) => _toggleSelection(doc.id, isSelected),
+                  onCopySummary: () => _copyText(_buildIssueSummary(doc), 'Issue summary copied.'),
+                  onCopyFullDebug: () => _copyText(_buildFullDebugReport(doc), 'Full debug report copied.'),
+                ),
+              ),
           ],
         );
       },
@@ -102,6 +137,12 @@ class _IssueLogsPageState extends State<IssueLogsPage> {
         _readText(data, 'userEmail'),
         _readText(data, 'userId'),
         _readText(data, 'platform'),
+        _readText(data, 'appVersion'),
+        _readText(data, 'buildNumber'),
+        _readText(data, 'buildLabel'),
+        _readDetail(data, 'possibleSourceLocation'),
+        _readDetail(data, 'relevantWidget'),
+        _readDetail(data, 'flutterContext'),
       ].join(' ').toLowerCase();
 
       final matchesStatus = _statusFilter == 'all' || status == _statusFilter;
@@ -111,13 +152,136 @@ class _IssueLogsPageState extends State<IssueLogsPage> {
       return matchesStatus && matchesSeverity && matchesSearch;
     }).toList();
   }
+
+  void _enterSelectionMode() {
+    setState(() => _isSelectionMode = true);
+  }
+
+  void _exitSelectionMode() {
+    setState(() {
+      _isSelectionMode = false;
+      _selectedLogIds.clear();
+    });
+  }
+
+  void _toggleSelection(String docId, bool isSelected) {
+    setState(() {
+      if (isSelected) {
+        _selectedLogIds.add(docId);
+      } else {
+        _selectedLogIds.remove(docId);
+      }
+    });
+  }
+
+  void _selectAll(List<QueryDocumentSnapshot<Map<String, dynamic>>> docs) {
+    setState(() {
+      if (_selectedLogIds.length == docs.length) {
+        _selectedLogIds.clear();
+      } else {
+        _selectedLogIds
+          ..clear()
+          ..addAll(docs.map((doc) => doc.id));
+      }
+    });
+  }
+
+  Future<void> _bulkUpdateStatus(
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
+    String status,
+  ) async {
+    try {
+      final batch = FirebaseFirestore.instance.batch();
+      for (final doc in docs) {
+        batch.update(doc.reference, {
+          'status': status,
+          'resolvedAt': status == 'resolved' ? FieldValue.serverTimestamp() : null,
+        });
+      }
+      await batch.commit();
+      setState(() {
+        _selectedLogIds.clear();
+        _isSelectionMode = false;
+      });
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${docs.length} issue log(s) updated.')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Unable to update selected logs: $error')),
+      );
+    }
+  }
+
+  Future<void> _confirmBulkDelete(
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
+  ) async {
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete selected issue logs'),
+        content: Text('Delete ${docs.length} selected issue log(s) from Firestore?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton.tonal(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldDelete != true) return;
+
+    try {
+      final batch = FirebaseFirestore.instance.batch();
+      for (final doc in docs) {
+        batch.delete(doc.reference);
+      }
+      await batch.commit();
+      setState(() {
+        _selectedLogIds.clear();
+        _isSelectionMode = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Unable to delete selected logs: $error')),
+      );
+    }
+  }
+
+  Future<void> _copySelectedSummaries(
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
+  ) async {
+    final text = docs.map(_buildIssueSummary).join('\n\n---\n\n');
+    await _copyText(text, '${docs.length} issue summary/summaries copied.');
+  }
+
+  Future<void> _copyText(String value, String successMessage) async {
+    await Clipboard.setData(ClipboardData(text: value));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(successMessage)),
+    );
+  }
 }
 
 class _IssueLogsHeader extends StatelessWidget {
   final int openCount;
+  final int resolvedCount;
   final int crashCount;
 
-  const _IssueLogsHeader({required this.openCount, required this.crashCount});
+  const _IssueLogsHeader({
+    required this.openCount,
+    required this.resolvedCount,
+    required this.crashCount,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -135,7 +299,7 @@ class _IssueLogsHeader extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               Text(
-                'Monitor Flutter errors, app crashes, and unexpected problems reported by the user app and admin panel.',
+                'Review app issues, copy debug summaries, and resolve repeated logs faster.',
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
             ],
@@ -146,6 +310,13 @@ class _IssueLogsHeader extends StatelessWidget {
           label: 'Open',
           value: openCount.toString(),
           color: Colors.orange,
+        ),
+        const SizedBox(width: 12),
+        _HeaderCounter(
+          icon: Icons.check_circle_outline,
+          label: 'Resolved',
+          value: resolvedCount.toString(),
+          color: Colors.green,
         ),
         const SizedBox(width: 12),
         _HeaderCounter(
@@ -202,9 +373,21 @@ class _IssueLogFilters extends StatelessWidget {
   final String searchQuery;
   final String statusFilter;
   final String severityFilter;
+  final bool isSelectionMode;
+  final int selectedCount;
+  final bool hasLogs;
+  final bool allSelected;
   final ValueChanged<String> onStatusChanged;
   final ValueChanged<String> onSeverityChanged;
   final ValueChanged<String> onSearchChanged;
+  final VoidCallback onEnterSelectionMode;
+  final VoidCallback onExitSelectionMode;
+  final VoidCallback onSelectAll;
+  final VoidCallback onClearSelection;
+  final VoidCallback? onCopySelected;
+  final VoidCallback? onMarkResolved;
+  final VoidCallback? onReopen;
+  final VoidCallback? onDelete;
 
   const _IssueLogFilters({
     required this.searchController,
@@ -212,9 +395,21 @@ class _IssueLogFilters extends StatelessWidget {
     required this.searchQuery,
     required this.statusFilter,
     required this.severityFilter,
+    required this.isSelectionMode,
+    required this.selectedCount,
+    required this.hasLogs,
+    required this.allSelected,
     required this.onStatusChanged,
     required this.onSeverityChanged,
     required this.onSearchChanged,
+    required this.onEnterSelectionMode,
+    required this.onExitSelectionMode,
+    required this.onSelectAll,
+    required this.onClearSelection,
+    required this.onCopySelected,
+    required this.onMarkResolved,
+    required this.onReopen,
+    required this.onDelete,
   });
 
   @override
@@ -275,8 +470,158 @@ class _IssueLogFilters extends StatelessWidget {
               },
               onChanged: onSeverityChanged,
             ),
+            _IssueSelectionActions(
+              isSelectionMode: isSelectionMode,
+              selectedCount: selectedCount,
+              hasLogs: hasLogs,
+              allSelected: allSelected,
+              onEnterSelectionMode: onEnterSelectionMode,
+              onExitSelectionMode: onExitSelectionMode,
+              onSelectAll: onSelectAll,
+              onClearSelection: onClearSelection,
+              onCopySelected: onCopySelected,
+              onMarkResolved: onMarkResolved,
+              onReopen: onReopen,
+              onDelete: onDelete,
+            ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+
+class _IssueSelectionActions extends StatelessWidget {
+  final bool isSelectionMode;
+  final int selectedCount;
+  final bool hasLogs;
+  final bool allSelected;
+  final VoidCallback onEnterSelectionMode;
+  final VoidCallback onExitSelectionMode;
+  final VoidCallback onSelectAll;
+  final VoidCallback onClearSelection;
+  final VoidCallback? onCopySelected;
+  final VoidCallback? onMarkResolved;
+  final VoidCallback? onReopen;
+  final VoidCallback? onDelete;
+
+  const _IssueSelectionActions({
+    required this.isSelectionMode,
+    required this.selectedCount,
+    required this.hasLogs,
+    required this.allSelected,
+    required this.onEnterSelectionMode,
+    required this.onExitSelectionMode,
+    required this.onSelectAll,
+    required this.onClearSelection,
+    required this.onCopySelected,
+    required this.onMarkResolved,
+    required this.onReopen,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final mutedColor = Theme.of(context).colorScheme.onSurfaceVariant;
+
+    if (!isSelectionMode) {
+      return Tooltip(
+        message: hasLogs ? 'Select issue logs' : 'No logs to select',
+        child: IconButton.filledTonal(
+          onPressed: hasLogs ? onEnterSelectionMode : null,
+          icon: const Icon(Icons.checklist_rounded),
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.16)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Text(
+              selectedCount == 0 ? 'Select' : '$selectedCount',
+              style: const TextStyle(fontWeight: FontWeight.w900),
+            ),
+          ),
+          _SelectionIconButton(
+            tooltip: allSelected ? 'Unselect all visible logs' : 'Select all visible logs',
+            icon: allSelected ? Icons.remove_done_outlined : Icons.done_all_outlined,
+            color: mutedColor,
+            onPressed: onSelectAll,
+          ),
+          _SelectionIconButton(
+            tooltip: 'Clear selection',
+            icon: Icons.clear_all_rounded,
+            color: mutedColor,
+            onPressed: selectedCount == 0 ? null : onClearSelection,
+          ),
+          _SelectionIconButton(
+            tooltip: 'Copy selected summaries',
+            icon: Icons.copy_rounded,
+            color: mutedColor,
+            onPressed: onCopySelected,
+          ),
+          _SelectionIconButton(
+            tooltip: 'Mark selected resolved',
+            icon: Icons.check_circle_outline,
+            color: Colors.green,
+            onPressed: onMarkResolved,
+          ),
+          _SelectionIconButton(
+            tooltip: 'Reopen selected',
+            icon: Icons.replay_outlined,
+            color: Colors.orange,
+            onPressed: onReopen,
+          ),
+          _SelectionIconButton(
+            tooltip: 'Delete selected',
+            icon: Icons.delete_outline,
+            color: Colors.redAccent,
+            onPressed: onDelete,
+          ),
+          _SelectionIconButton(
+            tooltip: 'Done selecting',
+            icon: Icons.done_rounded,
+            color: AppColors.primary,
+            onPressed: onExitSelectionMode,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SelectionIconButton extends StatelessWidget {
+  final String tooltip;
+  final IconData icon;
+  final Color color;
+  final VoidCallback? onPressed;
+
+  const _SelectionIconButton({
+    required this.tooltip,
+    required this.icon,
+    required this.color,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: IconButton(
+        visualDensity: VisualDensity.compact,
+        tooltip: tooltip,
+        icon: Icon(icon, size: 20, color: onPressed == null ? null : color),
+        onPressed: onPressed,
       ),
     );
   }
@@ -337,14 +682,63 @@ class _FilterDropdown extends StatelessWidget {
   }
 }
 
-class _IssueLogCard extends StatelessWidget {
+class _IssueLogCard extends StatefulWidget {
   final QueryDocumentSnapshot<Map<String, dynamic>> doc;
+  final bool isSelectionMode;
+  final bool isSelected;
+  final ValueChanged<bool> onSelectionChanged;
+  final VoidCallback onCopySummary;
+  final VoidCallback onCopyFullDebug;
 
-  const _IssueLogCard({required this.doc});
+  const _IssueLogCard({
+    required this.doc,
+    required this.isSelectionMode,
+    required this.isSelected,
+    required this.onSelectionChanged,
+    required this.onCopySummary,
+    required this.onCopyFullDebug,
+  });
+
+  @override
+  State<_IssueLogCard> createState() => _IssueLogCardState();
+}
+
+class _IssueLogCardState extends State<_IssueLogCard> {
+  bool _showStackTrace = false;
+  bool _isExpanded = false;
+  bool _detailsReady = false;
+  Timer? _detailsTimer;
+
+  @override
+  void dispose() {
+    _detailsTimer?.cancel();
+    super.dispose();
+  }
+
+  void _handleExpansionChanged(bool expanded) {
+    _detailsTimer?.cancel();
+    if (!expanded) {
+      setState(() {
+        _isExpanded = false;
+        _detailsReady = false;
+        _showStackTrace = false;
+      });
+      return;
+    }
+
+    setState(() {
+      _isExpanded = true;
+      _detailsReady = false;
+    });
+    _detailsTimer = Timer(const Duration(milliseconds: 90), () {
+      if (!mounted || !_isExpanded) return;
+      setState(() => _detailsReady = true);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    final data = doc.data();
+    final data = widget.doc.data();
     final status = _readText(data, 'status', fallback: 'open');
     final severity = _readText(data, 'severity', fallback: 'problem');
     final message = _readText(data, 'message', fallback: 'No message provided');
@@ -354,25 +748,52 @@ class _IssueLogCard extends StatelessWidget {
     final screen = _readText(data, 'screen', fallback: '');
     final userLabel = _userLabel(data);
     final stackTrace = _readText(data, 'stackTrace', fallback: 'No stack trace saved.');
+    final sourceLocation = _readDetail(data, 'possibleSourceLocation');
+    final relevantWidget = _readDetail(data, 'relevantWidget');
     final createdAt = _formatCreatedAt(data);
+    final buildLabel = _readText(data, 'buildLabel', fallback: '');
     final isResolved = status == 'resolved';
     final severityColor = severity == 'crash' ? Colors.redAccent : Colors.orange;
 
     return Card(
       elevation: 0,
       margin: const EdgeInsets.only(bottom: 14),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+      color: widget.isSelectionMode && widget.isSelected
+          ? AppColors.primary.withValues(alpha: 0.08)
+          : Theme.of(context).cardColor,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(22),
+        side: BorderSide(
+          color: widget.isSelectionMode && widget.isSelected
+              ? AppColors.primary.withValues(alpha: 0.42)
+              : Colors.transparent,
+        ),
+      ),
       child: ExpansionTile(
-        tilePadding: const EdgeInsets.fromLTRB(18, 12, 18, 12),
+        maintainState: true,
+        onExpansionChanged: _handleExpansionChanged,
+        tilePadding: const EdgeInsets.fromLTRB(12, 12, 18, 12),
         childrenPadding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
-        leading: CircleAvatar(
-          backgroundColor: severityColor.withValues(alpha: 0.12),
-          child: Icon(
-            severity == 'crash'
-                ? Icons.warning_amber_rounded
-                : Icons.report_problem_outlined,
-            color: severityColor,
-          ),
+        leading: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (widget.isSelectionMode) ...[
+              Checkbox(
+                value: widget.isSelected,
+                onChanged: (value) => widget.onSelectionChanged(value ?? false),
+              ),
+              const SizedBox(width: 2),
+            ],
+            CircleAvatar(
+              backgroundColor: severityColor.withValues(alpha: 0.12),
+              child: Icon(
+                severity == 'crash'
+                    ? Icons.warning_amber_rounded
+                    : Icons.report_problem_outlined,
+                color: severityColor,
+              ),
+            ),
+          ],
         ),
         title: Text(
           message,
@@ -393,56 +814,95 @@ class _IssueLogCard extends StatelessWidget {
               ),
               _LogChip(label: appArea, color: Colors.blueGrey),
               _LogChip(label: platform, color: Colors.indigo),
+              if (buildLabel.trim().isNotEmpty)
+                _LogChip(label: 'v$buildLabel', color: Colors.blueGrey),
+              if (sourceLocation.isNotEmpty)
+                _LogChip(label: 'SOURCE HINT', color: Colors.deepPurple),
             ],
           ),
         ),
         trailing: Text(createdAt, style: Theme.of(context).textTheme.bodySmall),
         children: [
-          _IssueDetailGrid(
-            details: {
-              'Source': source,
-              'Screen': screen.isEmpty ? '-' : screen,
-              'User': userLabel,
-              'Created': createdAt,
-            },
-          ),
-          const SizedBox(height: 14),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              'Stack Trace',
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
-            ),
-            child: SelectableText(
-              stackTrace,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(fontFamily: 'monospace'),
-            ),
-          ),
-          const SizedBox(height: 14),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              TextButton.icon(
-                onPressed: () => _toggleStatus(context, isResolved),
-                icon: Icon(isResolved ? Icons.replay_outlined : Icons.check_circle_outline),
-                label: Text(isResolved ? 'Reopen' : 'Mark Resolved'),
-              ),
-              const SizedBox(width: 8),
-              TextButton.icon(
-                onPressed: () => _confirmDelete(context),
-                icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-                label: const Text('Delete'),
-              ),
-            ],
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 180),
+            child: !_detailsReady
+                ? const _IssueDetailsLoading()
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _IssueDetailGrid(
+                        details: {
+                          'Issue ID': widget.doc.id,
+                          'Source': source,
+                          'Screen': screen.isEmpty ? '-' : screen,
+                          'Possible File / Line': sourceLocation.isEmpty ? '-' : sourceLocation,
+                          'Relevant Widget': relevantWidget.isEmpty ? '-' : relevantWidget,
+                          'User': userLabel,
+                          'App Build': buildLabel.trim().isEmpty ? '-' : buildLabel,
+                          'Created': createdAt,
+                        },
+                      ),
+                      const SizedBox(height: 14),
+                      Wrap(
+                        spacing: 10,
+                        runSpacing: 10,
+                        alignment: WrapAlignment.end,
+                        children: [
+                          OutlinedButton.icon(
+                            onPressed: widget.onCopySummary,
+                            icon: const Icon(Icons.content_copy_rounded),
+                            label: const Text('Copy Summary'),
+                          ),
+                          OutlinedButton.icon(
+                            onPressed: widget.onCopyFullDebug,
+                            icon: const Icon(Icons.bug_report_outlined),
+                            label: const Text('Copy Full Debug'),
+                          ),
+                          TextButton.icon(
+                            onPressed: () => setState(() => _showStackTrace = !_showStackTrace),
+                            icon: Icon(_showStackTrace ? Icons.visibility_off_outlined : Icons.visibility_outlined),
+                            label: Text(_showStackTrace ? 'Hide Stack Trace' : 'Show Stack Trace'),
+                          ),
+                          TextButton.icon(
+                            onPressed: () => _toggleStatus(context, isResolved),
+                            icon: Icon(isResolved ? Icons.replay_outlined : Icons.check_circle_outline),
+                            label: Text(isResolved ? 'Reopen' : 'Mark Resolved'),
+                          ),
+                          TextButton.icon(
+                            onPressed: () => _confirmDelete(context),
+                            icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                            label: const Text('Delete'),
+                          ),
+                        ],
+                      ),
+                      if (_showStackTrace) ...[
+                        const SizedBox(height: 14),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            'Stack Trace',
+                            style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          width: double.infinity,
+                          constraints: const BoxConstraints(maxHeight: 360),
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                            color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
+                          ),
+                          child: SingleChildScrollView(
+                            child: SelectableText(
+                              stackTrace,
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(fontFamily: 'monospace'),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
           ),
         ],
       ),
@@ -451,7 +911,7 @@ class _IssueLogCard extends StatelessWidget {
 
   Future<void> _toggleStatus(BuildContext context, bool isResolved) async {
     try {
-      await doc.reference.update({
+      await widget.doc.reference.update({
         'status': isResolved ? 'open' : 'resolved',
         'resolvedAt': isResolved ? null : FieldValue.serverTimestamp(),
       });
@@ -486,13 +946,43 @@ class _IssueLogCard extends StatelessWidget {
     if (shouldDelete != true) return;
 
     try {
-      await doc.reference.delete();
+      await widget.doc.reference.delete();
     } catch (error) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Unable to delete issue log: $error')),
       );
     }
+  }
+}
+
+
+class _IssueDetailsLoading extends StatelessWidget {
+  const _IssueDetailsLoading();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      key: const ValueKey('issue-details-loading'),
+      padding: const EdgeInsets.symmetric(vertical: 18),
+      child: Row(
+        children: [
+          SizedBox(
+            height: 18,
+            width: 18,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: AppColors.primary.withValues(alpha: 0.82),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            'Preparing issue details...',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -566,7 +1056,7 @@ class _EmptyIssueLogsCard extends StatelessWidget {
             children: [
               Icon(Icons.verified_outlined, size: 42, color: Colors.green),
               SizedBox(height: 12),
-              Text('No matching issue logs found.'),
+              Text('No matching open issue logs found.'),
             ],
           ),
         ),
@@ -605,6 +1095,116 @@ class _IssueLogErrorState extends StatelessWidget {
       ),
     );
   }
+}
+
+String _buildIssueSummary(QueryDocumentSnapshot<Map<String, dynamic>> doc) {
+  final data = doc.data();
+  final message = _readText(data, 'message', fallback: 'No message provided');
+  final severity = _readText(data, 'severity', fallback: 'problem');
+  final source = _readText(data, 'source', fallback: 'unknown');
+  final screen = _readText(data, 'screen', fallback: '-');
+  final platform = _readText(data, 'platform', fallback: 'unknown');
+  final appArea = _readText(data, 'appArea', fallback: 'unknown');
+  final status = _readText(data, 'status', fallback: 'open');
+  final buildLabel = _readText(data, 'buildLabel', fallback: '');
+  final sourceLocation = _readDetail(data, 'possibleSourceLocation');
+  final relevantWidget = _readDetail(data, 'relevantWidget');
+  final user = _userLabel(data);
+  final created = _formatCreatedAt(data);
+  final hint = _issueHint(message, screen, source, sourceLocation, relevantWidget);
+
+  return [
+    'Alarm Walker Issue Log',
+    'Issue ID: ${doc.id}',
+    'Severity: $severity',
+    'Status: $status',
+    'Source: $source',
+    'Screen/Context: $screen',
+    if (sourceLocation.isNotEmpty) 'Possible Source: $sourceLocation',
+    if (relevantWidget.isNotEmpty) 'Relevant Widget: $relevantWidget',
+    'Platform: $platform',
+    if (buildLabel.trim().isNotEmpty) 'App Build: $buildLabel',
+    'App Area: $appArea',
+    'User: $user',
+    'Created: $created',
+    'Message: $message',
+    if (hint.isNotEmpty) 'Possible Hint: $hint',
+  ].join('\n');
+}
+
+String _buildFullDebugReport(QueryDocumentSnapshot<Map<String, dynamic>> doc) {
+  final data = doc.data();
+  final error = _readText(data, 'error', fallback: '-');
+  final stackTrace = _readText(data, 'stackTrace', fallback: 'No stack trace saved.');
+  final diagnostics = _readDetail(data, 'flutterDiagnostics', fallback: '-');
+  final details = _detailsText(data['details']);
+
+  return [
+    _buildIssueSummary(doc),
+    '',
+    'Error:',
+    error,
+    '',
+    'Details:',
+    details,
+    '',
+    'Flutter Diagnostics:',
+    diagnostics,
+    '',
+    'Stack Trace:',
+    stackTrace,
+  ].join('\n');
+}
+
+String _issueHint(
+  String message,
+  String screen,
+  String source,
+  String sourceLocation,
+  String relevantWidget,
+) {
+  final lower = '$message $screen $source $sourceLocation $relevantWidget'.toLowerCase();
+  if (sourceLocation.isNotEmpty) {
+    return 'Start by checking $sourceLocation. Use the relevant widget/context above, then test on small screens and large font sizes.';
+  }
+  if (lower.contains('renderflex overflowed')) {
+    return 'Flutter layout overflow. Check small-screen height, large font scale, Row/Column spacing, or missing scroll/flexible widget.';
+  }
+  if (lower.contains('permission')) {
+    return 'Permission-related failure. Check location, notification, storage, or sensor permission flow.';
+  }
+  if (lower.contains('network') || lower.contains('socket') || lower.contains('timeout')) {
+    return 'Network/API failure. Check internet connection, weather API, or Firestore availability.';
+  }
+  if (lower.contains('sound') || lower.contains('audio') || lower.contains('file')) {
+    return 'Audio/file failure. Check custom sound path, deleted files, or asset availability.';
+  }
+  return '';
+}
+
+
+String _readDetail(
+  Map<String, dynamic> data,
+  String key, {
+  String fallback = '',
+}) {
+  final details = data['details'];
+  if (details is Map) {
+    final value = details[key];
+    if (value == null) return fallback;
+    final text = value.toString().trim();
+    return text.isEmpty ? fallback : text;
+  }
+  return fallback;
+}
+
+String _detailsText(Object? details) {
+  if (details == null) return '-';
+  if (details is Map) {
+    if (details.isEmpty) return '-';
+    return details.entries.map((entry) => '${entry.key}: ${entry.value}').join('\n');
+  }
+  return details.toString();
 }
 
 String _readText(

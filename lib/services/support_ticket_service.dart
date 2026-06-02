@@ -30,6 +30,7 @@ class SupportTicketService {
     final user = FirebaseAuth.instance.currentUser;
 
     try {
+      final buildInfo = await AppIssueLogService.buildInfoFields();
       await _firestore.collection(collectionName).add({
         'category': category,
         'message': cleanMessage,
@@ -39,6 +40,7 @@ class SupportTicketService {
         'userId': user?.uid ?? '',
         'userEmail': user?.email ?? '',
         'userName': userName.trim(),
+        ...buildInfo,
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
         'clientCreatedAt': DateTime.now().toIso8601String(),
