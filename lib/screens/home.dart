@@ -7,6 +7,7 @@ import 'package:alarm_walker/app_router.dart';
 import 'package:alarm_walker/extensions/context_extensions.dart';
 import 'package:alarm_walker/models/alarm_model.dart';
 import 'package:alarm_walker/services/alarm_cubit.dart';
+import 'package:alarm_walker/services/alarm_gate_route_guard.dart';
 import 'package:alarm_walker/services/alarm_permissions.dart';
 import 'package:alarm_walker/services/settings_cubit.dart';
 import 'package:alarm_walker/services/reminder_notification_service.dart';
@@ -108,9 +109,21 @@ class _HomeState extends State<Home> {
       return;
     }
 
+    if (AlarmGateRouteGuard.isActiveForDbAlarm(dbAlarmId)) {
+      debugPrint(
+        '⏰ Alarm gate already active for DB alarm $dbAlarmId. Skipping duplicate route push.',
+      );
+      return;
+    }
+
     final alarmRef = ActiveAlarmRef.from(
       alarmSettings: alarmRinging,
       alarmModel: alarmModel,
+    );
+
+    AlarmGateRouteGuard.markActive(
+      dbAlarmId: dbAlarmId,
+      runtimeAlarmId: alarmRinging.id,
     );
 
     await alarmCubit.startWakeSession(

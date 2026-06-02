@@ -7,6 +7,7 @@ import 'package:alarm_walker/extensions/context_extensions.dart';
 import 'package:alarm_walker/models/alarm_model.dart';
 import 'package:alarm_walker/services/alarm_cubit.dart';
 import 'package:alarm_walker/services/alarm_dismiss_helper.dart';
+import 'package:alarm_walker/services/alarm_gate_route_guard.dart';
 import 'package:alarm_walker/services/settings_cubit.dart';
 import 'package:alarm_walker/services/shared_prefs_with_cache.dart';
 import 'package:alarm_walker/theme/app_colors.dart';
@@ -71,6 +72,13 @@ class _AlarmGateScreenState extends State<AlarmGateScreen>
   @override
   void initState() {
     super.initState();
+    final dbAlarmId = _m.alarmId;
+    if (dbAlarmId != null) {
+      AlarmGateRouteGuard.markActive(
+        dbAlarmId: dbAlarmId,
+        runtimeAlarmId: widget.alarmSettings.id,
+      );
+    }
     _snoozeDuration = _m.snoozeSettings.durationMinutes;
     _snoozeCount =
         SharedPreferencesWithCache.instance.get<int>(
