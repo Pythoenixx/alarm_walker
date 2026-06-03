@@ -115,6 +115,13 @@ class _ShakeAlarmScreenState extends State<ShakeAlarmScreen> {
   @override
   Widget build(BuildContext context) {
     final bool isDark = context.isDarkMode;
+    final screenHeight = MediaQuery.sizeOf(context).height;
+    final textScale = MediaQuery.textScalerOf(context).scale(1);
+    final compactLayout = screenHeight < 720 || textScale > 1.15;
+    final pagePadding = compactLayout ? 16.0 : 24.0;
+    final animationSize = compactLayout ? 190.0 : 250.0;
+    final gap = compactLayout ? 14.0 : 20.0;
+
     return PopScope(
       canPop: false,
       child: Scaffold(
@@ -129,53 +136,88 @@ class _ShakeAlarmScreenState extends State<ShakeAlarmScreen> {
                       : [AppColors.lightScaffold1, AppColors.lightScaffold2],
             ),
           ),
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Spacer(),
-                Lottie.asset("assets/lottie/phone_vibrate.json"),
-                const SizedBox(height: 20),
-                Text(
-                  widget.alarmSettings.notificationSettings.body,
-                  style: AppTextStyles.large(context),
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  context.localization.shakePhone,
-                  style: AppTextStyles.large(context),
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  context.localization.shakesCount(
-                    _shakeCount,
-                    _requiredShakes,
-                  ),
-                  style: AppTextStyles.large(context),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  _intensityLabel,
-                  style: AppTextStyles.caption(context).copyWith(
-                    color:
-                        isDark
-                            ? AppColors.darkBackgroundText.withValues(
-                              alpha: 0.7,
-                            )
-                            : AppColors.lightBackgroundText.withValues(
-                              alpha: 0.7,
+          child: SafeArea(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  padding: EdgeInsets.all(pagePadding),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: constraints.maxHeight - (pagePadding * 2),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SizedBox(
+                          height: animationSize,
+                          child: Lottie.asset(
+                            'assets/lottie/phone_vibrate.json',
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                        SizedBox(height: gap),
+                        Text(
+                          widget.alarmSettings.notificationSettings.body,
+                          style: AppTextStyles.large(context).copyWith(
+                            fontSize: compactLayout ? 18 : null,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        SizedBox(height: gap),
+                        Text(
+                          context.localization.shakePhone,
+                          style: AppTextStyles.large(context).copyWith(
+                            fontSize: compactLayout ? 18 : null,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        SizedBox(height: gap),
+                        Text(
+                          context.localization.shakesCount(
+                            _shakeCount,
+                            _requiredShakes,
+                          ),
+                          style: AppTextStyles.large(context).copyWith(
+                            fontSize: compactLayout ? 18 : null,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          _intensityLabel,
+                          style: AppTextStyles.caption(context).copyWith(
+                            color:
+                                isDark
+                                    ? AppColors.darkBackgroundText.withValues(
+                                      alpha: 0.7,
+                                    )
+                                    : AppColors.lightBackgroundText.withValues(
+                                      alpha: 0.7,
+                                    ),
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        SizedBox(height: gap),
+                        Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: compactLayout ? 12 : 40,
+                          ),
+                          child: GradientLinearProgressIndicator(
+                            value: (_shakeCount / _requiredShakes).clamp(
+                              0.0,
+                              1.0,
                             ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 20),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 40),
-                  child: GradientLinearProgressIndicator(
-                    value: (_shakeCount / _requiredShakes).clamp(0.0, 1.0),
-                  ),
-                ),
-                const Spacer(),
-              ],
+                );
+              },
             ),
           ),
         ),

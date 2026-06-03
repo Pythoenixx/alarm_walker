@@ -270,18 +270,18 @@ class _LoginScreenState extends State<LoginScreen> {
 
   String? _validateEmail(String? value) {
     if (value == null || value.isEmpty) {
-      return 'Please enter your email';
+      return context.tr('Please enter your email');
     }
     final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
     if (!emailRegex.hasMatch(value)) {
-      return 'Please enter a valid email';
+      return context.tr('Please enter a valid email');
     }
     return null;
   }
 
   String? _validatePassword(String? value) {
     if (value == null || value.isEmpty) {
-      return 'Please enter your password';
+      return context.tr('Please enter your password');
     }
     return null;
   }
@@ -314,7 +314,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   Icon(Icons.login_rounded, size: 80, color: textColor),
                   const SizedBox(height: 24),
                   Text(
-                    'Log In',
+                    context.tr('Log In'),
                     style: AppTextStyles.large(
                       context,
                     ).copyWith(fontWeight: FontWeight.bold),
@@ -322,7 +322,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Log in to sync and track your progress',
+                    context.tr('Log in to sync and track your progress'),
                     style: AppTextStyles.caption(context),
                     textAlign: TextAlign.center,
                   ),
@@ -338,8 +338,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         children: [
                           _InputField(
                             controller: _emailController,
-                            label: 'Email',
-                            hint: 'Enter your email',
+                            label: context.tr('Email'),
+                            hint: context.tr('Enter your email'),
                             prefixIcon: Icons.email_outlined,
                             keyboardType: TextInputType.emailAddress,
                             validator: _validateEmail,
@@ -348,8 +348,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           const SizedBox(height: 16),
                           _InputField(
                             controller: _passwordController,
-                            label: 'Password',
-                            hint: 'Enter your password',
+                            label: context.tr('Password'),
+                            hint: context.tr('Enter your password'),
                             prefixIcon: Icons.lock_outline,
                             obscureText: _obscurePassword,
                             validator: _validatePassword,
@@ -395,14 +395,14 @@ class _LoginScreenState extends State<LoginScreen> {
                                 onPressed:
                                     () => context.goNamed(AppRoute.signUp.name),
                                 child: Text(
-                                  'Not yet Sign Up?',
+                                  context.tr('Not yet Sign Up?'),
                                   style: AppTextStyles.caption(context),
                                 ),
                               ),
                               TextButton(
                                 onPressed: _resetPassword,
                                 child: Text(
-                                  'Forgot password?',
+                                  context.tr('Forgot password?'),
                                   style: AppTextStyles.caption(context),
                                 ),
                               ),
@@ -474,8 +474,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                               ),
                                         ),
                                       )
-                                      : const Text(
-                                        'Log in',
+                                      : Text(
+                                        context.tr('Log in'),
                                         style: TextStyle(
                                           color: Colors.white,
                                           fontWeight: FontWeight.bold,
@@ -497,7 +497,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         child: Text(
-                          'OR',
+                          context.tr('OR'),
                           style: AppTextStyles.caption(context),
                         ),
                       ),
@@ -509,18 +509,18 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   /// GUEST CARD (IMPORTANT CHANGE)
                   _AuthCard(
-                    title: 'Continue without an account',
+                    title: context.tr('Continue without an account'),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Text(
-                          'Use the app without signing in.\nYour data stays on this device.',
+                          context.tr('Use the app without signing in.\nYour data stays on this device.'),
                           style: AppTextStyles.caption(context),
                         ),
                         const SizedBox(height: 16),
                         OutlinedButton(
                           onPressed: () => context.goNamed(AppRoute.home.name),
-                          child: const Text('Continue as guest'),
+                          child: Text(context.tr('Continue as guest')),
                         ),
                       ],
                     ),

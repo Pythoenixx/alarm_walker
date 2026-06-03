@@ -126,17 +126,17 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       ),
                     ),
                     const SizedBox(width: 12),
-                    const Expanded(
+                    Expanded(
                       child: Text(
-                        'Account Created!',
+                        context.tr('Account Created!'),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
                 ),
-                content: const Text(
-                  'Your account has been successfully created. Welcome aboard!',
+                content: Text(
+                  context.tr('Your account has been successfully created. Welcome aboard!'),
                 ),
                 actions: [
                   TextButton(
@@ -155,7 +155,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    child: const Text('Get Started'),
+                    child: Text(context.tr('Get Started')),
                   ),
                 ],
               );
@@ -209,27 +209,27 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   // Validators remain the same...
   String? _validateEmail(String? value) {
-    if (value == null || value.isEmpty) return 'Please enter your email';
+    if (value == null || value.isEmpty) return context.tr('Please enter your email');
     final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-    if (!emailRegex.hasMatch(value)) return 'Please enter a valid email';
+    if (!emailRegex.hasMatch(value)) return context.tr('Please enter a valid email');
     return null;
   }
 
   String? _validatePassword(String? value) {
-    if (value == null || value.isEmpty) return 'Please enter a password';
-    if (value.length < 6) return 'Password must be at least 6 characters';
+    if (value == null || value.isEmpty) return context.tr('Please enter a password');
+    if (value.length < 6) return context.tr('Password must be at least 6 characters');
     return null;
   }
 
   String? _validateConfirmPassword(String? value) {
-    if (value == null || value.isEmpty) return 'Please confirm your password';
-    if (value != _passwordController.text) return 'Passwords do not match';
+    if (value == null || value.isEmpty) return context.tr('Please confirm your password');
+    if (value != _passwordController.text) return context.tr('Passwords do not match');
     return null;
   }
 
   String? _validateName(String? value) {
-    if (value == null || value.isEmpty) return 'Please enter your name';
-    if (value.length < 2) return 'Name must be at least 2 characters';
+    if (value == null || value.isEmpty) return context.tr('Please enter your name');
+    if (value.length < 2) return context.tr('Name must be at least 2 characters');
     return null;
   }
 
@@ -305,7 +305,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         ),
                         const SizedBox(height: 24),
                         Text(
-                          'Create Account',
+                          context.tr('Create Account'),
                           style: AppTextStyles.large(
                             context,
                           ).copyWith(fontSize: 32, fontWeight: FontWeight.bold),
@@ -313,7 +313,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Sign up to sync your alarms across devices',
+                          context.tr('Sign up to sync your alarms across devices'),
                           style: TextStyle(
                             fontSize: 14,
                             color:
@@ -331,8 +331,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         const SizedBox(height: 32),
                         _InputField(
                           controller: _nameController,
-                          label: 'Full Name',
-                          hint: 'Enter your name',
+                          label: context.tr('Full Name'),
+                          hint: context.tr('Enter your name'),
                           prefixIcon: Icons.person_outline,
                           validator: _validateName,
                           isDark: isDark,
@@ -349,8 +349,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         const SizedBox(height: 16),
                         _InputField(
                           controller: _emailController,
-                          label: 'Email',
-                          hint: 'Enter your email',
+                          label: context.tr('Email'),
+                          hint: context.tr('Enter your email'),
                           prefixIcon: Icons.email_outlined,
                           keyboardType: TextInputType.emailAddress,
                           validator: _validateEmail,
@@ -360,8 +360,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         const SizedBox(height: 16),
                         _InputField(
                           controller: _passwordController,
-                          label: 'Password',
-                          hint: 'Enter your password',
+                          label: context.tr('Password'),
+                          hint: context.tr('Enter your password'),
                           prefixIcon: Icons.lock_outline,
                           obscureText: _obscurePassword,
                           validator: _validatePassword,
@@ -382,8 +382,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         const SizedBox(height: 16),
                         _InputField(
                           controller: _confirmPasswordController,
-                          label: 'Confirm Password',
-                          hint: 'Re-enter your password',
+                          label: context.tr('Confirm Password'),
+                          hint: context.tr('Re-enter your password'),
                           prefixIcon: Icons.lock_outline,
                           obscureText: _obscureConfirmPassword,
                           validator: _validateConfirmPassword,
@@ -458,19 +458,19 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                             ),
                                       ),
                                     )
-                                    : const Row(
+                                    : Row(
                                       mainAxisAlignment:
                                           MainAxisAlignment.center,
                                       children: [
-                                        Icon(
+                                        const Icon(
                                           Icons.person_add,
                                           size: 20,
                                           color: Colors.white,
                                         ),
-                                        SizedBox(width: 8),
+                                        const SizedBox(width: 8),
                                         Text(
-                                          'Create Account',
-                                          style: TextStyle(
+                                          context.tr('Create Account'),
+                                          style: const TextStyle(
                                             fontWeight: FontWeight.bold,
                                             color: Colors.white,
                                           ),
@@ -495,7 +495,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                 horizontal: 16,
                               ),
                               child: Text(
-                                'OR',
+                                context.tr('OR'),
                                 style: TextStyle(
                                   fontSize: 12,
                                   // UPDATED: withValues
@@ -546,7 +546,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             runSpacing: 4,
                             children: [
                               Text(
-                                'Already have an account?',
+                                context.tr('Already have an account?'),
                                 style: TextStyle(
                                   fontSize: 14,
                                   // UPDATED: withValues
@@ -563,7 +563,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                 onTap:
                                     () => context.goNamed(AppRoute.login.name),
                                 child: Text(
-                                  'Log In',
+                                  context.tr('Log In'),
                                   style: AppTextStyles.large(context).copyWith(
                                     fontSize: 14,
                                     fontWeight: FontWeight.bold,
@@ -605,7 +605,7 @@ class _ProfileCategorySelector extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Profile Category',
+          context.tr('Profile Category'),
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
@@ -617,7 +617,7 @@ class _ProfileCategorySelector extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         Text(
-          'Choose a category to apply suitable default alarm difficulty.',
+          context.tr('Choose a category to apply suitable default alarm difficulty.'),
           style: TextStyle(
             fontSize: 12,
             color:
@@ -667,11 +667,11 @@ class _ProfileCategoryChip extends StatelessWidget {
     };
   }
 
-  String get _description {
+  String _description(BuildContext context) {
     return switch (category) {
-      ProfileCategory.child => 'Easy tasks',
-      ProfileCategory.adult => 'Balanced tasks',
-      ProfileCategory.senior => 'Light tasks',
+      ProfileCategory.child => context.tr('Easy tasks'),
+      ProfileCategory.adult => context.tr('Balanced tasks'),
+      ProfileCategory.senior => context.tr('Light tasks'),
     };
   }
 
@@ -739,7 +739,7 @@ class _ProfileCategoryChip extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    _description,
+                    _description(context),
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: foreground.withValues(alpha: 0.8),

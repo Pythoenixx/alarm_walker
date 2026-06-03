@@ -62,7 +62,7 @@ class _HelpFeedbackScreenState extends State<HelpFeedbackScreen> {
       if (!mounted) return;
       setState(() {
         _isSubmitting = false;
-        _submitError = 'Unable to submit feedback right now. Please try again.';
+        _submitError = context.tr('Unable to submit feedback right now. Please try again.');
       });
     }
   }
@@ -83,7 +83,7 @@ class _HelpFeedbackScreenState extends State<HelpFeedbackScreen> {
           icon: const Icon(Icons.arrow_back),
         ),
         centerTitle: true,
-        title: const Text('Help & Feedback'),
+        title: Text(context.tr('Help & Feedback')),
         titleTextStyle: AppTextStyles.heading(context),
       ),
       body: DecoratedBox(
@@ -122,7 +122,7 @@ class _HelpFeedbackScreenState extends State<HelpFeedbackScreen> {
               ),
               const SizedBox(height: 12),
               Text(
-                'Submitted feedback is saved as a support ticket for admin review. Please avoid sharing passwords or private security details.',
+                context.tr('Submitted feedback is saved as a support ticket for admin review. Please avoid sharing passwords or private security details.'),
                 style: AppTextStyles.caption(context).copyWith(
                   color:
                       isDark
@@ -179,14 +179,14 @@ class _IntroCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Need help with Alarm Walker?',
+                  context.tr('Need help with Alarm Walker?'),
                   style: AppTextStyles.heading(context).copyWith(
                     fontWeight: FontWeight.w800,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Report alarm problems, account issues, backup trouble, or send improvement ideas to the admin.',
+                  context.tr('Report alarm problems, account issues, backup trouble, or send improvement ideas to the admin.'),
                   style: AppTextStyles.caption(context),
                 ),
               ],
@@ -235,7 +235,7 @@ class _FeedbackFormCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Submit feedback',
+              context.tr('Submit feedback'),
               style: AppTextStyles.heading(context).copyWith(
                 fontWeight: FontWeight.w800,
               ),
@@ -244,7 +244,7 @@ class _FeedbackFormCard extends StatelessWidget {
             DropdownButtonFormField<String>(
               value: category,
               decoration: InputDecoration(
-                labelText: 'Feedback type',
+                labelText: context.tr('Feedback type'),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
@@ -253,7 +253,7 @@ class _FeedbackFormCard extends StatelessWidget {
                   SupportTicketCategory.values.map((value) {
                     return DropdownMenuItem(
                       value: value,
-                      child: Text(SupportTicketCategory.labelFor(value)),
+                      child: Text(context.tr(SupportTicketCategory.labelFor(value))),
                     );
                   }).toList(),
               onChanged: isSubmitting ? null : onCategoryChanged,
@@ -266,23 +266,23 @@ class _FeedbackFormCard extends StatelessWidget {
               maxLines: 8,
               textInputAction: TextInputAction.newline,
               decoration: InputDecoration(
-                labelText: 'Describe the problem or idea',
+                labelText: context.tr('Describe the problem or idea'),
                 alignLabelWithHint: true,
-                hintText: 'Example: My alarm did not ring after I restored my backup.',
+                hintText: context.tr('Example: My alarm did not ring after I restored my backup.'),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
               ),
               validator: (value) {
                 final text = value?.trim() ?? '';
-                if (text.isEmpty) return 'Please enter your feedback.';
-                if (text.length < 8) return 'Please describe it a bit more.';
+                if (text.isEmpty) return context.tr('Please enter your feedback.');
+                if (text.length < 8) return context.tr('Please describe it a bit more.');
                 return null;
               },
             ),
             const SizedBox(height: 14),
             Text(
-              'Optional experience rating',
+              context.tr('Optional experience rating'),
               style: AppTextStyles.body(context).copyWith(
                 fontWeight: FontWeight.w700,
               ),
@@ -312,9 +312,9 @@ class _FeedbackFormCard extends StatelessWidget {
             ],
             if (submitted) ...[
               const SizedBox(height: 14),
-              const _InlineMessage(
+              _InlineMessage(
                 icon: Icons.check_circle_outline,
-                text: 'Feedback submitted. The admin can now review it.',
+                text: context.tr('Feedback submitted. The admin can now review it.'),
                 color: Colors.green,
               ),
             ],
@@ -336,7 +336,7 @@ class _FeedbackFormCard extends StatelessWidget {
                           ),
                         )
                         : const Icon(Icons.send_outlined),
-                label: Text(isSubmitting ? 'Submitting...' : 'Submit Feedback'),
+                label: Text(isSubmitting ? context.tr('Submitting...') : context.tr('Submit Feedback')),
               ),
             ),
           ],

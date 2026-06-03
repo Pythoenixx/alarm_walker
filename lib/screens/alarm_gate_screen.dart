@@ -360,78 +360,135 @@ class _TopInfo extends StatelessWidget {
     final muted =
         isDark ? AppColors.darkBackgroundText : AppColors.lightBackgroundText;
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // Clock icon with pulse when not snoozed
-          ScaleTransition(
-            scale: snoozed ? const AlwaysStoppedAnimation(1.0) : pulseAnim,
-            child: ScaleTransition(
-              scale:
-                  snoozeConfirmAnim.status == AnimationStatus.dismissed
-                      ? const AlwaysStoppedAnimation(1.0)
-                      : Tween<double>(
-                        begin: 1.0,
-                        end: 1.3,
-                      ).animate(snoozeConfirmAnim),
-              child: Icon(
-                snoozed ? Icons.snooze : Icons.alarm,
-                size: 52,
-                color: snoozed ? Colors.orange : AppColors.primary,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isCompactHeight = constraints.maxHeight < 180;
+        final horizontalPadding = isCompactHeight ? 16.0 : 24.0;
+        final topPadding = isCompactHeight ? 8.0 : 24.0;
+        final iconSize = isCompactHeight ? 40.0 : 52.0;
+        final titleStyle = AppTextStyles.large(context).copyWith(
+          fontSize: isCompactHeight ? 18 : null,
+        );
+        final timeStyle = AppTextStyles.heading(context).copyWith(
+          color: muted,
+          fontSize: isCompactHeight ? 24 : null,
+        );
+        final contentWidth =
+            constraints.maxWidth > horizontalPadding * 2
+                ? constraints.maxWidth - (horizontalPadding * 2)
+                : constraints.maxWidth;
+
+        return Padding(
+          padding: EdgeInsets.fromLTRB(
+            horizontalPadding,
+            topPadding,
+            horizontalPadding,
+            0,
+          ),
+          child: Center(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.center,
+              child: SizedBox(
+                width: contentWidth,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Clock icon with pulse when not snoozed
+                    ScaleTransition(
+                      scale:
+                          snoozed
+                              ? const AlwaysStoppedAnimation(1.0)
+                              : pulseAnim,
+                      child: ScaleTransition(
+                        scale:
+                            snoozeConfirmAnim.status == AnimationStatus.dismissed
+                                ? const AlwaysStoppedAnimation(1.0)
+                                : Tween<double>(
+                                  begin: 1.0,
+                                  end: 1.3,
+                                ).animate(snoozeConfirmAnim),
+                        child: Icon(
+                          snoozed ? Icons.snooze : Icons.alarm,
+                          size: iconSize,
+                          color: snoozed ? Colors.orange : AppColors.primary,
+                        ),
+                      ),
+                    ),
+
+                    SizedBox(height: isCompactHeight ? 8 : 12),
+
+                    // Alarm title
+                    Text(
+                      alarmSettings.notificationSettings.body,
+                      style: titleStyle,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+
+                    const SizedBox(height: 4),
+
+                    // Current time
+                    Text(timeStr, style: timeStyle),
+
+                    // Snooze badge
+                    if (snoozeCount > 0) ...[
+                      SizedBox(height: isCompactHeight ? 6 : 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: Colors.orange.withOpacity(0.4),
+                          ),
+                        ),
+                        child: Text(
+                          maxCount == 0
+                              ? context.tr(
+                                'Snoozed {count}×',
+                                {'count': snoozeCount},
+                              )
+                              : context.tr(
+                                'Snoozed {count} / {max}×',
+                                {'count': snoozeCount, 'max': maxCount},
+                              ),
+                          style: AppTextStyles.caption(context).copyWith(
+                            color: Colors.orange,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+
+                    // Next ring time when snoozed
+                    if (nextRingTime != null) ...[
+                      SizedBox(height: isCompactHeight ? 6 : 8),
+                      Text(
+                        context.tr(
+                          'Ringing again at {time}',
+                          {'time': DateFormat.jm().format(nextRingTime!)},
+                        ),
+                        style: AppTextStyles.caption(context).copyWith(
+                          color: muted,
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ],
+                ),
               ),
             ),
           ),
-
-          const SizedBox(height: 12),
-
-          // Alarm title
-          Text(
-            alarmSettings.notificationSettings.body,
-            style: AppTextStyles.large(context),
-            textAlign: TextAlign.center,
-          ),
-
-          const SizedBox(height: 4),
-
-          // Current time
-          Text(
-            timeStr,
-            style: AppTextStyles.heading(context).copyWith(color: muted),
-          ),
-
-          // Snooze badge
-          if (snoozeCount > 0) ...[
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.orange.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.orange.withOpacity(0.4)),
-              ),
-              child: Text(
-                maxCount == 0
-                    ? 'Snoozed $snoozeCount×' // TODO: localize
-                    : 'Snoozed $snoozeCount / $maxCount×',
-                style: AppTextStyles.caption(
-                  context,
-                ).copyWith(color: Colors.orange, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-
-          // Next ring time when snoozed
-          if (nextRingTime != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              'Ringing again at ${DateFormat.jm().format(nextRingTime!)}', // TODO: localize
-              style: AppTextStyles.caption(context).copyWith(color: muted),
-            ),
-          ],
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -569,7 +626,7 @@ class _SnoozePanel extends StatelessWidget {
                             Padding(
                               padding: const EdgeInsets.only(top: 8),
                               child: Text(
-                                'min', // TODO: localize
+                                context.tr('min'),
                                 style: AppTextStyles.body(
                                   context,
                                 ).copyWith(color: AppColors.primary),
@@ -581,7 +638,7 @@ class _SnoozePanel extends StatelessWidget {
                       const SizedBox(height: 4),
                       Center(
                         child: Text(
-                          'Tap to snooze · drag to adjust', // TODO: localize
+                          context.tr('Tap to snooze · drag to adjust'),
                           style: AppTextStyles.caption(
                             context,
                           ).copyWith(color: AppColors.primary.withOpacity(0.6)),
@@ -606,7 +663,7 @@ class _SnoozePanel extends StatelessWidget {
                         child: TextButton.icon(
                           onPressed: onCancelSnooze,
                           icon: const Icon(Icons.alarm_rounded, size: 16),
-                          label: const Text('Wake now'), // TODO: localize
+                          label: Text(context.tr('Wake now')),
                           style: TextButton.styleFrom(
                             foregroundColor: Colors.orange,
                             padding: const EdgeInsets.symmetric(
@@ -645,13 +702,14 @@ class _DismissPanel extends StatelessWidget {
     required this.isDark,
   });
 
-  String _dismissLabel(AlarmDisarmMode mode) => switch (mode) {
-    AlarmDisarmMode.normal => 'Dismiss', // TODO: localize all
-    AlarmDisarmMode.walk => 'Dismiss — Walk',
-    AlarmDisarmMode.math => 'Dismiss — Math',
-    AlarmDisarmMode.shake => 'Dismiss — Shake',
-    AlarmDisarmMode.retype => 'Dismiss — Retype',
-  };
+  String _dismissLabel(BuildContext context, AlarmDisarmMode mode) =>
+      switch (mode) {
+        AlarmDisarmMode.normal => context.tr('Dismiss'),
+        AlarmDisarmMode.walk => context.tr('Dismiss — Walk'),
+        AlarmDisarmMode.math => context.tr('Dismiss — Math'),
+        AlarmDisarmMode.shake => context.tr('Dismiss — Shake'),
+        AlarmDisarmMode.retype => context.tr('Dismiss — Retype'),
+      };
 
   @override
   Widget build(BuildContext context) {
@@ -694,7 +752,9 @@ class _DismissPanel extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Text(
-                snoozed ? 'Wake now to dismiss' : _dismissLabel(mode),
+                snoozed
+                    ? context.tr('Wake now to dismiss')
+                    : _dismissLabel(context, mode),
                 style: AppTextStyles.body(context).copyWith(
                   color:
                       snoozed

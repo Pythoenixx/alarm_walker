@@ -104,10 +104,18 @@ class _RetypeAlarmScreenState extends State<RetypeAlarmScreen> {
   @override
   Widget build(BuildContext context) {
     final bool isDark = context.isDarkMode;
+    final screenHeight = MediaQuery.sizeOf(context).height;
+    final textScale = MediaQuery.textScalerOf(context).scale(1);
+    final compactLayout = screenHeight < 720 || textScale > 1.15;
+    final pagePadding = compactLayout ? 16.0 : 24.0;
+    final largeGap = compactLayout ? 20.0 : 36.0;
+    final mediumGap = compactLayout ? 14.0 : 22.0;
+    final inputMaxLines = compactLayout ? 2 : 3;
 
     return PopScope(
       canPop: false,
       child: Scaffold(
+        resizeToAvoidBottomInset: true,
         body: DecoratedBox(
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -120,139 +128,167 @@ class _RetypeAlarmScreenState extends State<RetypeAlarmScreen> {
             ),
           ),
           child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                children: [
-                  const Spacer(),
-                  Text(
-                    widget.alarmSettings.notificationSettings.body,
-                    style: AppTextStyles.large(context),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 40),
-                  Text(
-                    'Type this sentence to dismiss:',
-                    style: AppTextStyles.large(
-                      context,
-                    ).copyWith(fontSize: 16, fontWeight: FontWeight.w500),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color:
-                          isDark
-                              ? AppColors.darkScaffold1.withValues(alpha: 0.5)
-                              : AppColors.lightContainer1,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color:
-                            isDark
-                                ? AppColors.darkBorder
-                                : AppColors.lightBlueGrey,
-                      ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  padding: EdgeInsets.all(pagePadding),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: constraints.maxHeight - (pagePadding * 2),
                     ),
-                    child: Text(
-                      _targetSentence,
-                      style: AppTextStyles.large(context).copyWith(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.5,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  TextField(
-                    controller: _controller,
-                    autofocus: true,
-                    maxLines: 3,
-                    style: AppTextStyles.large(context).copyWith(fontSize: 16),
-                    decoration: InputDecoration(
-                      hintText: 'Type here...',
-                      filled: true,
-                      fillColor:
-                          isDark ? AppColors.darkScaffold1 : Colors.white,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(
-                          color:
-                              isDark
-                                  ? AppColors.darkBorder
-                                  : AppColors.lightBlueGrey,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          widget.alarmSettings.notificationSettings.body,
+                          style: AppTextStyles.large(context).copyWith(
+                            fontSize: compactLayout ? 18 : null,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(
-                          color:
-                              isDark
-                                  ? AppColors.darkBorder
-                                  : AppColors.lightBlueGrey,
+                        SizedBox(height: largeGap),
+                        Text(
+                          'Type this sentence to dismiss:',
+                          style: AppTextStyles.large(context).copyWith(
+                            fontSize: compactLayout ? 15 : 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          textAlign: TextAlign.center,
                         ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(
-                          color: _isCorrect ? Colors.green : Colors.blue,
-                          width: 2,
-                        ),
-                      ),
-                      errorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(
-                          color: Colors.red,
-                          width: 2,
-                        ),
-                      ),
-                    ),
-                  ),
-                  if (_error != null) ...[
-                    const SizedBox(height: 12),
-                    Text(
-                      _error!,
-                      style: const TextStyle(
-                        color: Colors.red,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                  if (_isCorrect) ...[
-                    const SizedBox(height: 12),
-                    const Text(
-                      '✓ Correct!',
-                      style: TextStyle(
-                        color: Colors.green,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 24),
-                  GestureDetector(onTap: _tryStop, child: const StopButton()),
-                  const Spacer(),
-                  Text(
-                    'Match capitalization and punctuation exactly',
-                    style: TextStyle(
-                      color:
-                          isDark
-                              ? AppColors.darkBackgroundText.withValues(
-                                alpha: 0.6,
-                              )
-                              : AppColors.lightBackgroundText.withValues(
-                                alpha: 0.6,
+                        SizedBox(height: mediumGap),
+                        Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.all(compactLayout ? 14 : 16),
+                          decoration: BoxDecoration(
+                            color:
+                                isDark
+                                    ? AppColors.darkScaffold1.withValues(
+                                      alpha: 0.5,
+                                    )
+                                    : AppColors.lightContainer1,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color:
+                                  isDark
+                                      ? AppColors.darkBorder
+                                      : AppColors.lightBlueGrey,
+                            ),
+                          ),
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              _targetSentence,
+                              style: AppTextStyles.large(context).copyWith(
+                                fontSize: compactLayout ? 16 : 18,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.5,
                               ),
-                      fontSize: 12,
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: mediumGap),
+                        TextField(
+                          controller: _controller,
+                          autofocus: true,
+                          minLines: 1,
+                          maxLines: inputMaxLines,
+                          style: AppTextStyles.large(
+                            context,
+                          ).copyWith(fontSize: compactLayout ? 15 : 16),
+                          decoration: InputDecoration(
+                            hintText: 'Type here...',
+                            filled: true,
+                            fillColor:
+                                isDark ? AppColors.darkScaffold1 : Colors.white,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color:
+                                    isDark
+                                        ? AppColors.darkBorder
+                                        : AppColors.lightBlueGrey,
+                              ),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color:
+                                    isDark
+                                        ? AppColors.darkBorder
+                                        : AppColors.lightBlueGrey,
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: _isCorrect ? Colors.green : AppColors.primary,
+                                width: 2,
+                              ),
+                            ),
+                            errorBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(
+                                color: Colors.red,
+                                width: 2,
+                              ),
+                            ),
+                          ),
+                        ),
+                        if (_error != null) ...[
+                          const SizedBox(height: 12),
+                          Text(
+                            _error!,
+                            style: const TextStyle(
+                              color: Colors.red,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                        if (_isCorrect) ...[
+                          const SizedBox(height: 12),
+                          const Text(
+                            '✓ Correct!',
+                            style: TextStyle(
+                              color: Colors.green,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                        SizedBox(height: mediumGap),
+                        GestureDetector(
+                          onTap: _tryStop,
+                          child: const StopButton(),
+                        ),
+                        SizedBox(height: compactLayout ? 16 : 28),
+                        Text(
+                          'Match capitalization and punctuation exactly',
+                          style: TextStyle(
+                            color:
+                                isDark
+                                    ? AppColors.darkBackgroundText.withValues(
+                                      alpha: 0.6,
+                                    )
+                                    : AppColors.lightBackgroundText.withValues(
+                                      alpha: 0.6,
+                                    ),
+                            fontSize: 12,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
                     ),
-                    textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 8),
-                ],
-              ),
+                );
+              },
             ),
           ),
         ),

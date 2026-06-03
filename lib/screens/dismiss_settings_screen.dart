@@ -74,7 +74,7 @@ class _DismissSettingsScreenState extends State<DismissSettingsScreen> {
       appBar: AppBar(
         backgroundColor:
             isDark ? AppColors.darkScaffold1 : AppColors.lightScaffold1,
-        title: const Text('Dismiss'), // TODO: localize
+        title: Text(context.tr('Dismiss')),
         titleTextStyle: AppTextStyles.heading(context),
         centerTitle: true,
         leading: IconButton(
@@ -85,8 +85,8 @@ class _DismissSettingsScreenState extends State<DismissSettingsScreen> {
           TextButton(
             onPressed: _save,
             child: Text(
-              'Save',
-              style: TextStyle(color: AppColors.primary),
+              context.tr('Save'),
+              style: const TextStyle(color: AppColors.primary),
             ), // TODO: localize
           ),
         ],
@@ -160,7 +160,7 @@ class _DismissSettingsScreenState extends State<DismissSettingsScreen> {
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                info.label,
+                                context.tr(info.label),
                                 style: AppTextStyles.caption(context).copyWith(
                                   color:
                                       isSelected
@@ -188,7 +188,7 @@ class _DismissSettingsScreenState extends State<DismissSettingsScreen> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Text(
-                  _modeInfo[selected]!.description,
+                  context.tr(_modeInfo[selected]!.description),
                   style: AppTextStyles.caption(context),
                   textAlign: TextAlign.center,
                 ),
@@ -207,7 +207,7 @@ class _DismissSettingsScreenState extends State<DismissSettingsScreen> {
                         child: OutlinedButton.icon(
                           onPressed: _configure,
                           icon: const Icon(Icons.tune),
-                          label: const Text('Configure'), // TODO: localize
+                          label: Text(context.tr('Configure')),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: AppColors.primary,
                             side: const BorderSide(color: AppColors.primary),
