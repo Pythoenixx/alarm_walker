@@ -30,10 +30,10 @@ class BackupRestoreScreen extends StatefulWidget {
 class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
   bool _busy = false;
 
-  String get _ownerLabel {
+  String _ownerLabel(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return 'Local device profile';
-    return user.email ?? 'Signed-in Firebase account';
+    if (user == null) return context.tr('Local device profile');
+    return user.email ?? context.tr('Signed-in Firebase account');
   }
 
   BackupRestoreService _service() {
@@ -67,18 +67,18 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
       context: context,
       builder:
           (context) => AlertDialog(
-            title: const Text('Restore backup'), // TODO: localize
-            content: const Text(
-              'This will replace alarms, settings, profile data, and wake-up logs for the current profile only. Other local/Firebase profiles are not changed.',
-            ), // TODO: localize
+            title: Text(context.tr('Restore backup')),
+            content: Text(
+              context.tr('This will replace alarms, settings, profile data, and wake-up logs for the current profile only. Other local/Firebase profiles are not changed.'),
+            ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('Cancel'), // TODO: localize
+                child: Text(context.tr('Cancel')),
               ),
               FilledButton(
                 onPressed: () => Navigator.of(context).pop(true),
-                child: const Text('Choose backup'), // TODO: localize
+                child: Text(context.tr('Choose backup')),
               ),
             ],
           ),
@@ -125,7 +125,7 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
           icon: const Icon(Icons.arrow_back),
         ),
         centerTitle: true,
-        title: const Text('Backup & Restore'), // TODO: localize
+        title: Text(context.tr('Backup & Restore')),
         titleTextStyle: AppTextStyles.heading(context),
       ),
       body: DecoratedBox(
@@ -147,15 +147,15 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
             12 + MediaQuery.viewPaddingOf(context).bottom,
           ),
           children: [
-            _HeroCard(ownerLabel: _ownerLabel, isDark: isDark),
+            _HeroCard(ownerLabel: _ownerLabel(context), isDark: isDark),
             const SizedBox(height: 16),
             SettingsTile(
               onTap: _busy ? null : _exportBackup,
               child: _ActionRow(
                 icon: Icons.file_upload_outlined,
-                label: 'Back up data', // TODO: localize
+                label: context.tr('Back up data'),
                 subtitle:
-                    'Export current profile alarms, settings, and wake logs to JSON.',
+                    context.tr('Export current profile alarms, settings, and wake logs to JSON.'),
                 isDark: isDark,
               ),
             ),
@@ -164,9 +164,9 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
               onTap: _busy ? null : _restoreBackup,
               child: _ActionRow(
                 icon: Icons.restore_outlined,
-                label: 'Restore data', // TODO: localize
+                label: context.tr('Restore data'),
                 subtitle:
-                    'Import a previous Alarm Walker JSON backup for this profile.',
+                    context.tr('Import a previous Alarm Walker JSON backup for this profile.'),
                 isDark: isDark,
               ),
             ),
@@ -231,7 +231,7 @@ class _HeroCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Protect your alarm data', // TODO: localize
+                  context.tr('Protect your alarm data'),
                   style: AppTextStyles.large(context).copyWith(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
@@ -330,7 +330,7 @@ class _NoteCard extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              'Backups are local JSON files. Restore only backups that you trust. The restore action replaces data for the current profile only.',
+              context.tr('Backups are local JSON files. Restore only backups that you trust. The restore action replaces data for the current profile only.'),
               style: AppTextStyles.caption(context).copyWith(color: muted),
             ),
           ),

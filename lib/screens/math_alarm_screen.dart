@@ -242,7 +242,7 @@ class _MathAlarmScreenState extends State<MathAlarmScreen>
     );
 
     setState(() {
-      _error = 'Time\'s up!'; // TODO: localize
+      _error = context.tr('Time\'s up!');
     });
 
     Future.delayed(const Duration(milliseconds: 600), () {
@@ -677,7 +677,7 @@ class _ProblemCard extends StatelessWidget {
               if (canSkip) ...[
                 SizedBox(width: compactLayout ? 8 : 10),
                 Tooltip(
-                  message: 'Skip problem',
+                  message: context.tr('Skip problem'),
                   child: Material(
                     color: (isDark
                             ? AppColors.darkBackgroundText

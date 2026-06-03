@@ -86,14 +86,15 @@ class _WalkAlarmScreenState extends State<WalkAlarmScreen>
       } else {
         setState(() {
           _permissionDenied = true;
-          _error =
-              'Activity recognition permission is required to use this feature.';
+          _error = context.tr(
+            'Activity recognition permission is required to use this feature.',
+          );
         });
       }
     } else if (status.isPermanentlyDenied) {
       setState(() {
         _permissionDenied = true;
-        _error = 'Permission permanently denied. Please enable it in settings.';
+        _error = context.tr('Permission permanently denied. Please enable it in settings.');
       });
     }
   }
@@ -202,7 +203,7 @@ class _WalkAlarmScreenState extends State<WalkAlarmScreen>
 
   void _onStepCountError(Object error) {
     setState(() {
-      _error = 'Step counter error: $error';
+      _error = context.tr('Step counter error: {error}', {'error': error});
     });
   }
 
@@ -239,20 +240,21 @@ class _WalkAlarmScreenState extends State<WalkAlarmScreen>
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          title: const Text('Dismiss Alarm?'),
-          content: const Text(
-            "You haven't completed the walking goal. "
-            'Are you sure you want to dismiss the alarm?',
+          title: Text(context.tr('Dismiss Alarm?')),
+          content: Text(
+            context.tr(
+              "You haven't completed the walking goal. Are you sure you want to dismiss the alarm?",
+            ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel'),
+              child: Text(context.tr('Cancel')),
             ),
             TextButton(
               onPressed: () => Navigator.pop(context, true),
               style: TextButton.styleFrom(foregroundColor: Colors.red),
-              child: const Text('Dismiss Anyway'),
+              child: Text(context.tr('Dismiss Anyway')),
             ),
           ],
         );
@@ -378,7 +380,7 @@ class _WalkAlarmScreenState extends State<WalkAlarmScreen>
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'of $_requiredSteps steps',
+                            context.tr('of {count} steps', {'count': _requiredSteps}),
                             style: TextStyle(
                               fontSize: compactLayout ? 16 : 18,
                               color:
@@ -434,7 +436,7 @@ class _WalkAlarmScreenState extends State<WalkAlarmScreen>
                                   color: Colors.orange.withValues(alpha: 0.5),
                                 ),
                               ),
-                              child: const Row(
+                              child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Icon(
@@ -445,7 +447,7 @@ class _WalkAlarmScreenState extends State<WalkAlarmScreen>
                                   SizedBox(width: 6),
                                   Flexible(
                                     child: Text(
-                                      'Walk naturally for best results',
+                                      context.tr('Walk naturally for best results'),
                                       style: TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.w500,
@@ -500,10 +502,10 @@ class _WalkAlarmScreenState extends State<WalkAlarmScreen>
                                 const SizedBox(width: 6),
                                 Text(
                                   _status == 'walking'
-                                      ? 'Walking detected'
+                                      ? context.tr('Walking detected')
                                       : _status == 'stopped'
-                                      ? 'Start walking!'
-                                      : 'Unknown status',
+                                      ? context.tr('Start walking!')
+                                      : context.tr('Unknown status'),
                                   style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w600,
@@ -550,8 +552,8 @@ class _WalkAlarmScreenState extends State<WalkAlarmScreen>
                           // Instruction text
                           Text(
                             progress >= 1.0
-                                ? '✓ Goal reached! Tap below to dismiss'
-                                : 'Walk naturally until you reach $_requiredSteps steps',
+                                ? context.tr('✓ Goal reached! Tap below to dismiss')
+                                : context.tr('Walk naturally until you reach {count} steps', {'count': _requiredSteps}),
                             style: TextStyle(
                               fontSize: compactLayout ? 15 : 16,
                               fontWeight: FontWeight.w500,
@@ -617,7 +619,7 @@ class _PermissionDeniedWidget extends StatelessWidget {
         ),
         const SizedBox(height: 24),
         Text(
-          'Permission Required',
+          context.tr('Permission Required'),
           style: AppTextStyles.large(
             context,
           ).copyWith(fontSize: 24, fontWeight: FontWeight.bold),
@@ -636,7 +638,7 @@ class _PermissionDeniedWidget extends StatelessWidget {
               const Icon(Icons.info_outline, color: Colors.orange, size: 32),
               const SizedBox(height: 12),
               Text(
-                error ?? 'Activity recognition permission is needed',
+                error ?? context.tr('Activity recognition permission is needed'),
                 style: const TextStyle(color: Colors.orange, fontSize: 14),
                 textAlign: TextAlign.center,
               ),
@@ -650,7 +652,7 @@ class _PermissionDeniedWidget extends StatelessWidget {
           child: ElevatedButton.icon(
             onPressed: onOpenSettings,
             icon: const Icon(Icons.settings),
-            label: const Text('Open Settings'),
+            label: Text(context.tr('Open Settings')),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.blue,
               foregroundColor: Colors.white,
@@ -664,7 +666,7 @@ class _PermissionDeniedWidget extends StatelessWidget {
         TextButton(
           onPressed: onDismiss,
           child: Text(
-            'Dismiss Anyway',
+            context.tr('Dismiss Anyway'),
             style: TextStyle(
               color:
                   isDark

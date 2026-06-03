@@ -55,11 +55,11 @@ class _ShakeAlarmScreenState extends State<ShakeAlarmScreen> {
     };
   }
 
-  String get _intensityLabel {
+  String _intensityLabel(BuildContext context) {
     return switch (_shakeIntensity) {
-      1 => 'Gentle sensitivity',
-      2 => 'Balanced sensitivity',
-      _ => 'Strong shake needed',
+      1 => context.tr('Gentle sensitivity'),
+      2 => context.tr('Balanced sensitivity'),
+      _ => context.tr('Strong shake needed'),
     };
   }
 
@@ -188,7 +188,7 @@ class _ShakeAlarmScreenState extends State<ShakeAlarmScreen> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          _intensityLabel,
+                          _intensityLabel(context),
                           style: AppTextStyles.caption(context).copyWith(
                             color:
                                 isDark

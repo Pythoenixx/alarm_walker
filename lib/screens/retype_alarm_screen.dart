@@ -95,7 +95,9 @@ class _RetypeAlarmScreenState extends State<RetypeAlarmScreen> {
       );
 
       setState(() {
-        _error = 'Incorrect! Please type the sentence exactly as shown.';
+        _error = context.tr(
+          'Incorrect! Please type the sentence exactly as shown.',
+        );
         _isCorrect = false;
       });
     }
@@ -153,7 +155,7 @@ class _RetypeAlarmScreenState extends State<RetypeAlarmScreen> {
                         ),
                         SizedBox(height: largeGap),
                         Text(
-                          'Type this sentence to dismiss:',
+                          context.tr('Type this sentence to dismiss:'),
                           style: AppTextStyles.large(context).copyWith(
                             fontSize: compactLayout ? 15 : 16,
                             fontWeight: FontWeight.w500,
@@ -202,7 +204,7 @@ class _RetypeAlarmScreenState extends State<RetypeAlarmScreen> {
                             context,
                           ).copyWith(fontSize: compactLayout ? 15 : 16),
                           decoration: InputDecoration(
-                            hintText: 'Type here...',
+                            hintText: context.tr('Type here...'),
                             filled: true,
                             fillColor:
                                 isDark ? AppColors.darkScaffold1 : Colors.white,
@@ -227,7 +229,10 @@ class _RetypeAlarmScreenState extends State<RetypeAlarmScreen> {
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide(
-                                color: _isCorrect ? Colors.green : AppColors.primary,
+                                color:
+                                    _isCorrect
+                                        ? Colors.green
+                                        : AppColors.primary,
                                 width: 2,
                               ),
                             ),
@@ -254,8 +259,8 @@ class _RetypeAlarmScreenState extends State<RetypeAlarmScreen> {
                         ],
                         if (_isCorrect) ...[
                           const SizedBox(height: 12),
-                          const Text(
-                            '✓ Correct!',
+                          Text(
+                            context.tr('✓ Correct!'),
                             style: TextStyle(
                               color: Colors.green,
                               fontSize: 14,
@@ -270,7 +275,9 @@ class _RetypeAlarmScreenState extends State<RetypeAlarmScreen> {
                         ),
                         SizedBox(height: compactLayout ? 16 : 28),
                         Text(
-                          'Match capitalization and punctuation exactly',
+                          context.tr(
+                            'Match capitalization and punctuation exactly',
+                          ),
                           style: TextStyle(
                             color:
                                 isDark

@@ -96,7 +96,7 @@ class _SoundSettingsScreenState extends State<SoundSettingsScreen> {
       if (!mounted) return;
       setState(() => _isPreviewing = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Unable to preview this sound.')),
+        SnackBar(content: Text(context.tr('Unable to preview this sound.'))),
       );
     }
   }
@@ -129,7 +129,7 @@ class _SoundSettingsScreenState extends State<SoundSettingsScreen> {
     final sourceFile = File(sourcePath);
 
     if (!await sourceFile.exists()) {
-      throw const FileSystemException('Selected audio file does not exist.');
+      throw FileSystemException(context.tr('Selected audio file does not exist.'));
     }
 
     final appDir = await getApplicationDocumentsDirectory();
@@ -163,8 +163,8 @@ class _SoundSettingsScreenState extends State<SoundSettingsScreen> {
 
     if (sourcePath == null || sourcePath.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Unable to read the selected audio file path.'),
+        SnackBar(
+          content: Text(context.tr('Unable to read the selected audio file path.')),
         ),
       );
       return;
@@ -172,8 +172,8 @@ class _SoundSettingsScreenState extends State<SoundSettingsScreen> {
 
     if (!_isSupportedAudioFile(file.name)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select an MP3, WAV, M4A, AAC, or OGG file.'),
+        SnackBar(
+          content: Text(context.tr('Please select an MP3, WAV, M4A, AAC, or OGG file.')),
         ),
       );
       return;
@@ -198,14 +198,14 @@ class _SoundSettingsScreenState extends State<SoundSettingsScreen> {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Selected ${file.name}')),
+        SnackBar(content: Text(context.tr('Selected {file}', {'file': file.name}))),
       );
     } catch (_) {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Unable to save the selected audio file.'),
+        SnackBar(
+          content: Text(context.tr('Unable to save the selected audio file.')),
         ),
       );
     }
@@ -226,7 +226,7 @@ class _SoundSettingsScreenState extends State<SoundSettingsScreen> {
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 20, 16, 6),
           child: Text(
-            title.toUpperCase(),
+            context.tr(title).toUpperCase(),
             style: AppTextStyles.caption(context).copyWith(
               color: AppColors.primary,
               fontWeight: FontWeight.bold,
@@ -262,7 +262,7 @@ class _SoundSettingsScreenState extends State<SoundSettingsScreen> {
       appBar: AppBar(
         backgroundColor:
             isDark ? AppColors.darkScaffold1 : AppColors.lightScaffold1,
-        title: const Text('Sound'), // TODO: localize
+        title: Text(context.tr('Sound')),
         titleTextStyle: AppTextStyles.heading(context),
         centerTitle: true,
         leading: IconButton(
@@ -273,7 +273,7 @@ class _SoundSettingsScreenState extends State<SoundSettingsScreen> {
           TextButton(
             onPressed: () => _save(),
             child: Text(
-              'Save', // TODO: localize
+              context.tr('Save'),
               style: TextStyle(color: AppColors.primary),
             ),
           ),
@@ -297,19 +297,19 @@ class _SoundSettingsScreenState extends State<SoundSettingsScreen> {
             _buildSection('Sound', [
               ListTile(
                 leading: const Icon(Icons.music_note),
-                title: Text(s.soundName ?? 'Default'),
+                title: Text(context.tr(s.soundName ?? 'Default')),
                 subtitle: Text(
                   s.soundPath == null
-                      ? 'System default sound'
+                      ? context.tr('System default sound')
                       : isCustomSound
-                          ? 'Saved custom audio from device'
-                          : 'Bundled alarm sound',
+                          ? context.tr('Saved custom audio from device')
+                          : context.tr('Bundled alarm sound'),
                 ),
                 trailing:
                     isCustomSound
                         ? IconButton(
                           icon: const Icon(Icons.close),
-                          tooltip: 'Remove custom sound',
+                          tooltip: context.tr('Remove custom sound'),
                           onPressed: () => _clearCustomSound(),
                         )
                         : null,
@@ -323,13 +323,13 @@ class _SoundSettingsScreenState extends State<SoundSettingsScreen> {
                         ? Icons.stop_circle_outlined
                         : Icons.play_circle_outline,
                   ),
-                  label: Text(_isPreviewing ? 'Stop preview' : 'Preview sound'),
+                  label: Text(context.tr(_isPreviewing ? 'Stop preview' : 'Preview sound')),
                 ),
               ),
               const Divider(height: 1, indent: 16),
               ..._presets.entries.map(
                 (e) => RadioListTile<String?>(
-                  title: Text(e.key),
+                  title: Text(context.tr(e.key)),
                   value: e.value,
                   groupValue: s.soundPath,
                   activeColor: AppColors.primary,
@@ -340,8 +340,8 @@ class _SoundSettingsScreenState extends State<SoundSettingsScreen> {
               const Divider(height: 1, indent: 16),
               ListTile(
                 leading: const Icon(Icons.folder_open),
-                title: const Text('From device…'), // TODO: localize
-                subtitle: const Text('Choose MP3, WAV, M4A, AAC, or OGG'),
+                title: Text(context.tr('From device…')),
+                subtitle: Text(context.tr('Choose MP3, WAV, M4A, AAC, or OGG')),
                 onTap: _pickFromDevice,
               ),
             ], isDark),
@@ -350,8 +350,8 @@ class _SoundSettingsScreenState extends State<SoundSettingsScreen> {
             _buildSection('Volume', [
               AppSwitchTile(
                 icon: Icons.volume_up_outlined,
-                title: 'Override phone volume', // TODO: localize
-                subtitle: 'Alarm uses its own volume level',
+                title: context.tr('Override phone volume'),
+                subtitle: context.tr('Alarm uses its own volume level'),
                 value: s.overrideVolume,
                 onChanged:
                     (v) => setState(
@@ -397,8 +397,8 @@ class _SoundSettingsScreenState extends State<SoundSettingsScreen> {
               const Divider(height: 1, indent: 16),
               AppSwitchTile(
                 icon: Icons.tune_outlined,
-                title: 'Allow volume changes mid-alarm', // TODO: localize
-                subtitle: 'Let hardware buttons adjust alarm volume',
+                title: context.tr('Allow volume changes mid-alarm'),
+                subtitle: context.tr('Let hardware buttons adjust alarm volume'),
                 value: s.allowMidAlarmVolumeChange,
                 onChanged:
                     (v) => setState(
@@ -412,8 +412,8 @@ class _SoundSettingsScreenState extends State<SoundSettingsScreen> {
             _buildSection('Fade in', [
               AppSwitchTile(
                 icon: Icons.trending_up_outlined,
-                title: 'Gradually increase volume', // TODO: localize
-                subtitle: 'Starts quiet and builds up over time',
+                title: context.tr('Gradually increase volume'),
+                subtitle: context.tr('Starts quiet and builds up over time'),
                 value: s.gradualVolumeIncrease,
                 onChanged:
                     (v) => setState(
@@ -432,7 +432,7 @@ class _SoundSettingsScreenState extends State<SoundSettingsScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Increase over ${s.gradualIncreaseDurationSeconds}s',
+                                context.tr('Increase over {seconds}s', {'seconds': s.gradualIncreaseDurationSeconds}),
                                 style: AppTextStyles.caption(context),
                               ),
                               Slider(
@@ -463,7 +463,7 @@ class _SoundSettingsScreenState extends State<SoundSettingsScreen> {
             _buildSection('Haptics', [
               AppSwitchTile(
                 icon: Icons.vibration,
-                title: 'Vibrate', // TODO: localize
+                title: context.tr('Vibrate'),
                 value: s.vibrate,
                 onChanged:
                     (v) => setState(() => _settings = s.copyWith(vibrate: v)),

@@ -100,7 +100,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Edit name', style: AppTextStyles.heading(context)),
+                Text(context.tr('Edit name'), style: AppTextStyles.heading(context)),
                 const SizedBox(height: 12),
                 TextField(
                   controller: controller,
@@ -114,7 +114,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   children: [
                     TextButton(
                       onPressed: () => Navigator.pop(context),
-                      child: const Text('Cancel'),
+                      child: Text(context.tr('Cancel')),
                     ),
                     const Spacer(),
                     ElevatedButton(
@@ -123,7 +123,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                       onPressed:
                           () => Navigator.pop(context, controller.text.trim()),
-                      child: const Text('Save'),
+                      child: Text(context.tr('Save')),
                     ),
                   ],
                 ),
@@ -170,12 +170,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Profile category',
+                      context.tr('Profile category'),
                       style: AppTextStyles.heading(context),
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Choose the category that best fits the user. The app will apply recommended default difficulty for new alarms.',
+                      context.tr('Choose the category that best fits the user. The app will apply recommended default difficulty for new alarms.'),
                       style: AppTextStyles.caption(context),
                     ),
                     const SizedBox(height: 12),
@@ -189,8 +189,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           setDialogState(() => selected = value);
                         },
                         secondary: Icon(_iconForCategory(category)),
-                        title: Text(category.label),
-                        subtitle: Text(_descriptionForCategory(category)),
+                        title: Text(context.tr(category.label)),
+                        subtitle: Text(_descriptionForCategory(context, category)),
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -204,7 +204,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ),
                       child: Text(
-                        'Recommended defaults will be applied for new alarms only. Existing alarms will not be changed automatically.',
+                        context.tr('Recommended defaults will be applied for new alarms only. Existing alarms will not be changed automatically.'),
                         style: AppTextStyles.caption(context),
                       ),
                     ),
@@ -214,7 +214,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       children: [
                         TextButton(
                           onPressed: () => Navigator.pop(dialogContext),
-                          child: const Text('Cancel'),
+                          child: Text(context.tr('Cancel')),
                         ),
                         const SizedBox(width: 8),
                         ElevatedButton(
@@ -222,7 +222,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             backgroundColor: AppColors.primary,
                           ),
                           onPressed: () => Navigator.pop(dialogContext, selected),
-                          child: const Text('Apply Category'),
+                          child: Text(context.tr('Apply Category')),
                         ),
                       ],
                     ),
@@ -256,8 +256,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       SnackBar(
         content: Text(
           syncedToCloud
-              ? '${selectedCategory.label} category saved. Recommended defaults applied for new alarms.'
-              : '${selectedCategory.label} category saved locally. Cloud sync will retry when you update it again.',
+              ? context.tr('{category} category saved. Recommended defaults applied for new alarms.', {'category': context.tr(selectedCategory.label)})
+              : context.tr('{category} category saved locally. Cloud sync will retry when you update it again.', {'category': context.tr(selectedCategory.label)}),
         ),
       ),
     );
@@ -277,13 +277,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
         leading:
             Navigator.of(context).canPop()
                 ? IconButton(
-                  tooltip: 'Back',
+                  tooltip: context.tr('Back'),
                   onPressed: () => context.pop(),
                   icon: const Icon(Icons.arrow_back),
                 )
                 : null,
         centerTitle: true,
-        title: const Text('Profile'),
+        title: Text(context.tr('Profile')),
         titleTextStyle: AppTextStyles.heading(context),
       ),
       body: DecoratedBox(
@@ -315,14 +315,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                 ListTile(
                   leading: const Icon(Icons.edit),
-                  title: const Text('Edit name'),
+                  title: Text(context.tr('Edit name')),
                   onTap: () => _editName(context),
                 ),
                 ListTile(
                   leading: Icon(_iconForCategory(currentCategory)),
-                  title: const Text('Profile category'),
+                  title: Text(context.tr('Profile category')),
                   subtitle: Text(
-                    '${currentCategory.label} · Used for recommended new-alarm difficulty',
+                    '${context.tr(currentCategory.label)} · ${context.tr('Used for recommended new-alarm difficulty')}',
                   ),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => _editProfileCategory(context),
@@ -389,14 +389,14 @@ class _ProfileCard extends StatelessWidget {
               children: [
                 Text(
                   user?.isAnonymous == true
-                      ? 'Guest User'
-                      : (profile?.name ?? 'User'),
+                      ? context.tr('Guest User')
+                      : (profile?.name ?? context.tr('User')),
                   style: AppTextStyles.heading(context),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   user?.isAnonymous == true
-                      ? 'Not signed in'
+                      ? context.tr('Not signed in')
                       : (user?.email ?? ''),
                   style: AppTextStyles.caption(context),
                 ),
@@ -411,7 +411,7 @@ class _ProfileCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(99),
                   ),
                   child: Text(
-                    category.label,
+                    context.tr(category.label),
                     style: AppTextStyles.caption(context).copyWith(
                       color: AppColors.primary,
                       fontWeight: FontWeight.w700,
@@ -444,9 +444,9 @@ class _AccountActionSection extends StatelessWidget {
           ),
         ),
         onPressed: () => context.goNamed(AppRoute.login.name),
-        child: const Text(
-          'Sign in to sync & backup',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        child: Text(
+          context.tr('Sign in to sync & backup'),
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
       );
     }
@@ -471,9 +471,9 @@ class _AccountActionSection extends StatelessWidget {
         context.goNamed(AppRoute.login.name);
       },
 
-      child: const Text(
-        'Sign out',
-        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+      child: Text(
+        context.tr('Sign out'),
+        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
       ),
     );
   }
@@ -487,10 +487,11 @@ IconData _iconForCategory(ProfileCategory category) {
   };
 }
 
-String _descriptionForCategory(ProfileCategory category) {
-  return switch (category) {
+String _descriptionForCategory(BuildContext context, ProfileCategory category) {
+  final text = switch (category) {
     ProfileCategory.child => 'Gentler defaults for younger users.',
     ProfileCategory.adult => 'Balanced defaults for regular use.',
     ProfileCategory.senior => 'Lighter defaults for safer wake-up tasks.',
   };
+  return context.tr(text);
 }

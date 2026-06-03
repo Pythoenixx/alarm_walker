@@ -31,7 +31,7 @@ class _SnoozeSettingsScreenState extends State<SnoozeSettingsScreen> {
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 20, 16, 6),
           child: Text(
-            title.toUpperCase(),
+            context.tr(title).toUpperCase(),
             style: AppTextStyles.caption(context).copyWith(
               color: AppColors.primary,
               fontWeight: FontWeight.bold,
@@ -94,7 +94,7 @@ class _SnoozeSettingsScreenState extends State<SnoozeSettingsScreen> {
       appBar: AppBar(
         backgroundColor:
             isDark ? AppColors.darkScaffold1 : AppColors.lightScaffold1,
-        title: const Text('Snooze'), // TODO: localize
+        title: Text(context.tr('Snooze')),
         titleTextStyle: AppTextStyles.heading(context),
         centerTitle: true,
         leading: IconButton(
@@ -105,7 +105,7 @@ class _SnoozeSettingsScreenState extends State<SnoozeSettingsScreen> {
           TextButton(
             onPressed: _save,
             child: Text(
-              'Save', // TODO: localize
+              context.tr('Save'),
               style: TextStyle(color: AppColors.primary),
             ),
           ),
@@ -127,10 +127,9 @@ class _SnoozeSettingsScreenState extends State<SnoozeSettingsScreen> {
           children: [
             // ── Enable toggle ──────────────────────────────────────────────
             _buildSection('Snooze', [
-              // TODO: localize
               AppSwitchTile(
                 icon: Icons.snooze,
-                title: 'Enable snooze', // TODO: localize
+                title: context.tr('Enable snooze'),
                 value: s.enabled,
                 onChanged:
                     (v) => setState(() => _settings = s.copyWith(enabled: v)),
@@ -149,11 +148,10 @@ class _SnoozeSettingsScreenState extends State<SnoozeSettingsScreen> {
                         children: [
                           // Duration
                           _buildSection('Duration', [
-                            // TODO: localize
                             Padding(
                               padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
                               child: Text(
-                                'How long each snooze lasts', // TODO: localize
+                                context.tr('How long each snooze lasts'),
                                 style: AppTextStyles.caption(context),
                               ),
                             ),
@@ -173,11 +171,10 @@ class _SnoozeSettingsScreenState extends State<SnoozeSettingsScreen> {
 
                           // Max count
                           _buildSection('Max snoozes', [
-                            // TODO: localize
                             Padding(
                               padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
                               child: Text(
-                                'How many times the alarm can be snoozed', // TODO: localize
+                                context.tr('How many times the alarm can be snoozed'),
                                 style: AppTextStyles.caption(context),
                               ),
                             ),
