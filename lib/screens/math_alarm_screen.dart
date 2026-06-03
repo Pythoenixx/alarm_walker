@@ -353,6 +353,11 @@ class _MathAlarmScreenState extends State<MathAlarmScreen>
   Widget build(BuildContext context) {
     final isDark = context.isDarkMode;
     final progressFraction = _total > 0 ? _solved / _total : 0.0;
+    final screenHeight = MediaQuery.sizeOf(context).height;
+    final textScale = MediaQuery.textScalerOf(context).scale(1);
+    final compactLayout = screenHeight < 740 || textScale > 1.15;
+    final pagePadding = compactLayout ? 12.0 : 16.0;
+    final gap = compactLayout ? 14.0 : 22.0;
 
     return PopScope(
       canPop: false,
@@ -369,69 +374,76 @@ class _MathAlarmScreenState extends State<MathAlarmScreen>
             ),
           ),
           child: SafeArea(
-            child: Column(
-              children: [
-                _Header(
-                  title: widget.alarmSettings.notificationSettings.body,
-                  solved: _solved,
-                  total: _total,
-                  progressFraction: progressFraction,
-                  isDark: isDark,
-                ),
-
-                const Spacer(),
-
-                SlideTransition(
-                  position: _problemSlide,
-                  child: FadeTransition(
-                    opacity: _problemFade,
-                    child: AnimatedBuilder(
-                      animation: _shakeAnim,
-                      builder: (_, child) {
-                        return Transform.translate(
-                          offset: Offset(_shakeAnim.value, 0),
-                          child: child,
-                        );
-                      },
-                      child: AnimatedBuilder(
-                        animation: _successAnim,
-                        builder: (_, child) {
-                          return Transform.scale(
-                            scale: 1.0 + _successAnim.value * 0.04,
-                            child: child,
-                          );
-                        },
-                        child: _ProblemCard(
-                          problem: _current,
-                          input: _input,
-                          negative: _negative,
-                          error: _error,
-                          timerEnabled: _timerEnabled,
-                          timerSeconds: _taskSecondsLeft,
-                          totalTimer: _ds.taskTimerSeconds ?? 1,
-                          canSkip: _ds.mathAllowSkip,
-                          onSkip: _skipProblem,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  padding: EdgeInsets.only(bottom: pagePadding),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _Header(
+                          title: widget.alarmSettings.notificationSettings.body,
+                          solved: _solved,
+                          total: _total,
+                          progressFraction: progressFraction,
                           isDark: isDark,
+                          compactLayout: compactLayout,
                         ),
-                      ),
+                        SizedBox(height: gap),
+                        SlideTransition(
+                          position: _problemSlide,
+                          child: FadeTransition(
+                            opacity: _problemFade,
+                            child: AnimatedBuilder(
+                              animation: _shakeAnim,
+                              builder: (_, child) {
+                                return Transform.translate(
+                                  offset: Offset(_shakeAnim.value, 0),
+                                  child: child,
+                                );
+                              },
+                              child: AnimatedBuilder(
+                                animation: _successAnim,
+                                builder: (_, child) {
+                                  return Transform.scale(
+                                    scale: 1.0 + _successAnim.value * 0.04,
+                                    child: child,
+                                  );
+                                },
+                                child: _ProblemCard(
+                                  problem: _current,
+                                  input: _input,
+                                  negative: _negative,
+                                  error: _error,
+                                  timerEnabled: _timerEnabled,
+                                  timerSeconds: _taskSecondsLeft,
+                                  totalTimer: _ds.taskTimerSeconds ?? 1,
+                                  canSkip: _ds.mathAllowSkip,
+                                  onSkip: _skipProblem,
+                                  isDark: isDark,
+                                  compactLayout: compactLayout,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: gap),
+                        _NumberPad(
+                          onKeyTap: _onKey,
+                          onSubmit: _trySubmit,
+                          isDark: isDark,
+                          compactLayout: compactLayout,
+                        ),
+                        SizedBox(height: compactLayout ? 8 : 12),
+                        _BottomActions(onStop: _trySubmit),
+                        SizedBox(height: compactLayout ? 8 : 16),
+                      ],
                     ),
                   ),
-                ),
-
-                const Spacer(),
-
-                _NumberPad(
-                  onKeyTap: _onKey,
-                  onSubmit: _trySubmit,
-                  isDark: isDark,
-                ),
-
-                const SizedBox(height: 12),
-
-                _BottomActions(onStop: _trySubmit),
-
-                const SizedBox(height: 16),
-              ],
+                );
+              },
             ),
           ),
         ),
@@ -450,6 +462,7 @@ class _Header extends StatelessWidget {
   final int total;
   final double progressFraction;
   final bool isDark;
+  final bool compactLayout;
 
   const _Header({
     required this.title,
@@ -457,16 +470,29 @@ class _Header extends StatelessWidget {
     required this.total,
     required this.progressFraction,
     required this.isDark,
+    required this.compactLayout,
   });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+      padding: EdgeInsets.fromLTRB(
+        compactLayout ? 16 : 24,
+        compactLayout ? 12 : 16,
+        compactLayout ? 16 : 24,
+        0,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: AppTextStyles.large(context)),
+          Text(
+            title,
+            style: AppTextStyles.large(context).copyWith(
+              fontSize: compactLayout ? 18 : null,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
           const SizedBox(height: 12),
           Row(
             children: [
@@ -524,6 +550,7 @@ class _ProblemCard extends StatelessWidget {
   final bool canSkip;
   final VoidCallback onSkip;
   final bool isDark;
+  final bool compactLayout;
 
   const _ProblemCard({
     required this.problem,
@@ -536,6 +563,7 @@ class _ProblemCard extends StatelessWidget {
     required this.canSkip,
     required this.onSkip,
     required this.isDark,
+    required this.compactLayout,
   });
 
   @override
@@ -543,8 +571,11 @@ class _ProblemCard extends StatelessWidget {
     final displayInput = input.isEmpty ? '?' : '${negative ? '−' : ''}$input';
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 24),
-      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 28),
+      margin: EdgeInsets.symmetric(horizontal: compactLayout ? 16 : 24),
+      padding: EdgeInsets.symmetric(
+        horizontal: compactLayout ? 18 : 28,
+        vertical: compactLayout ? 20 : 28,
+      ),
       decoration: BoxDecoration(
         color:
             isDark
@@ -593,7 +624,7 @@ class _ProblemCard extends StatelessWidget {
               ),
               child: Text('${timerSeconds}s'),
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: compactLayout ? 14 : 20),
           ],
           Row(
             children: [
@@ -607,14 +638,14 @@ class _ProblemCard extends StatelessWidget {
                         '${problem.a} ${problem.symbol} ${problem.b} =',
                         style: AppTextStyles.large(
                           context,
-                        ).copyWith(fontSize: 32),
+                        ).copyWith(fontSize: compactLayout ? 28 : 32),
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: compactLayout ? 8 : 12),
                       AnimatedContainer(
                         duration: const Duration(milliseconds: 150),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 10,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: compactLayout ? 12 : 16,
+                          vertical: compactLayout ? 8 : 10,
                         ),
                         decoration: BoxDecoration(
                           color:
@@ -633,7 +664,7 @@ class _ProblemCard extends StatelessWidget {
                         child: Text(
                           displayInput,
                           style: AppTextStyles.large(context).copyWith(
-                            fontSize: 32,
+                            fontSize: compactLayout ? 28 : 32,
                             color: error != null ? Colors.red : AppColors.primary,
                             fontWeight: FontWeight.bold,
                           ),
@@ -644,7 +675,7 @@ class _ProblemCard extends StatelessWidget {
                 ),
               ),
               if (canSkip) ...[
-                const SizedBox(width: 10),
+                SizedBox(width: compactLayout ? 8 : 10),
                 Tooltip(
                   message: 'Skip problem',
                   child: Material(
@@ -657,15 +688,15 @@ class _ProblemCard extends StatelessWidget {
                       customBorder: const CircleBorder(),
                       onTap: onSkip,
                       child: SizedBox(
-                        width: 42,
-                        height: 42,
+                        width: compactLayout ? 38 : 42,
+                        height: compactLayout ? 38 : 42,
                         child: Icon(
                           Icons.autorenew_rounded,
                           color: (isDark
                                   ? AppColors.darkBackgroundText
                                   : AppColors.lightBackgroundText)
                               .withValues(alpha: 0.62),
-                          size: 23,
+                          size: compactLayout ? 21 : 23,
                         ),
                       ),
                     ),
@@ -704,11 +735,13 @@ class _NumberPad extends StatelessWidget {
   final void Function(String) onKeyTap;
   final VoidCallback onSubmit;
   final bool isDark;
+  final bool compactLayout;
 
   const _NumberPad({
     required this.onKeyTap,
     required this.onSubmit,
     required this.isDark,
+    required this.compactLayout,
   });
 
   @override
@@ -733,7 +766,7 @@ class _NumberPad extends StatelessWidget {
                 onKeyTap(label);
               },
               child: Container(
-                height: 64,
+                height: compactLayout ? 52 : 64,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(14),
                   border:
@@ -750,7 +783,7 @@ class _NumberPad extends StatelessWidget {
                 child: Text(
                   label == 'DEL' ? '⌫' : label,
                   style: AppTextStyles.large(context).copyWith(
-                    fontSize: 22,
+                    fontSize: compactLayout ? 20 : 22,
                     color:
                         fg ??
                         (isDark
@@ -767,7 +800,7 @@ class _NumberPad extends StatelessWidget {
     }
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: EdgeInsets.symmetric(horizontal: compactLayout ? 12 : 20),
       child: Column(
         children: [
           Row(children: [key('1'), key('2'), key('3')]),

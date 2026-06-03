@@ -1,29 +1,73 @@
 {
   "@@locale": "ms",
-  "appTitle": "Terjaga- jam penggera",
-  "addAlarm": "Tambah penggera",
-  "editAlarm": "Edit penggera",
-  "noAlarms": "Belum ada penggera yang ditambah",
+  "appTitle": "Alarm Walker",
+  "@appTitle": {
+    "description": "The main title of the app"
+  },
+  "addAlarm": "Tambah Penggera",
+  "@addAlarm": {
+    "description": "Title of the screen to add a new alarm"
+  },
+  "editAlarm": "Edit Penggera",
+  "@editAlarm": {
+    "description": "Title of the screen to edit an existing alarm"
+  },
+  "noAlarms": "Belum Ada Penggera",
+  "@noAlarms": {
+    "description": "Message shown when there are no alarms in the list"
+  },
   "alarms": "Penggera",
+  "@alarms": {
+    "description": "Title Text on the alarms list screen"
+  },
   "settings": "Tetapan",
+  "@settings": {
+    "description": "Label for the settings screen"
+  },
   "back": "Kembali",
+  "@back": {
+    "description": "Back navigation button label"
+  },
   "delete": "Padam",
-  "deleteAlarm": "Padam penggera",
-  "deleteAlarmPrompt": "Adakah anda pasti mahu memadamkan penggera ini?",
-  "cancel": "Batalkan",
+  "@delete": {
+    "description": "Button label to delete an item"
+  },
+  "deleteAlarm": "Padam Penggera",
+  "@deleteAlarm": {
+    "description": "Tooltip text for deleting an alarm"
+  },
+  "deleteAlarmPrompt": "Adakah anda pasti mahu memadam penggera ini?",
+  "@deleteAlarmPrompt": {
+    "description": "Confirmation prompt for deleting an alarm"
+  },
+  "cancel": "Batal",
+  "@cancel": {
+    "description": "Label for cancel button in dialogs or actions"
+  },
   "titleLabel": "Tajuk",
-  "wrongAnswer": "Jawapan yang salah",
-  "alarmSnoozed": "Penggera ditutup selama {minutes} minit",
+  "@titleLabel": {
+    "description": "Label for the alarm title input field"
+  },
+  "wrongAnswer": "Jawapan salah",
+  "@wrongAnswer": {
+    "description": "Message shown when the user gives a wrong answer in a challenge"
+  },
+  "alarmSnoozed": "Penggera ditunda selama {minutes} minit",
   "@alarmSnoozed": {
+    "description": "A message to show the number of minutes the alarm was snoozed",
     "placeholders": {
       "minutes": {
         "type": "num"
       }
     }
   },
-  "tapScreen": "Ketik skrin!",
-  "tapsCount": "TAPS: {count} / {required}",
-  "@tapsCount": {
+  "shakePhone": "Goncang telefon!",
+  "@shakePhone": {
+    "description": "Instruction to shake the phone as part of the challenge"
+  },
+  "shakesCount": "Goncangan: {count} / {required}",
+  "@shakesCount": {
+    "description": "To show the number of shakes remaining to stop the alarm",
     "placeholders": {
       "count": {
         "type": "num"
@@ -33,36 +77,70 @@
       }
     }
   },
-  "fileSaved": "Fail disimpan ke {path}",
-  "@fileSaved": {
-    "placeholders": {
-      "path": {
-        "type": "String"
-      }
-    }
+  "cameraPermissionRequired": "Kebenaran kamera diperlukan untuk imbas kod QR",
+  "@cameraPermissionRequired": {
+    "description": "Message shown when camera permission is needed for scanning QR codes"
   },
-  "cameraPermissionRequired": "Kebenaran kamera diperlukan untuk imbasan kod QR",
   "vibration": "Getaran",
-  "fadeIn": "Secara beransur -ansur pudar",
-  "alarmScreen": "Skrin penggera",
+  "@vibration": {
+    "description": "Toggle or setting for vibration option in alarm"
+  },
+  "fadeIn": "Naik perlahan",
+  "@fadeIn": {
+    "description": "Toggle or setting for alarm sound fade-in effect"
+  },
+  "alarmScreen": "Skrin Penggera",
+  "@alarmScreen": {
+    "description": "Label for the active alarm screen"
+  },
   "defaultOption": "Lalai",
+  "@defaultOption": {
+    "description": "Label to indicate default settings or options"
+  },
   "mathChallenge": "Cabaran Matematik",
-  "shakeToStop": "Goncang untuk berhenti",
-  "tapChallenge": "Ketuk Cabaran",
-  "alarmSound": "Bunyi penggera",
-  "addSound": "Tambah bunyi",
-  "clearCustomSounds": "Bunyi tersuai yang jelas",
-  "format24h": "Format 24-jam",
-  "snoozeLabel": "Snooze: {minutes} min",
+  "@mathChallenge": {
+    "description": "Label for the math problem alarm challenge"
+  },
+  "shakeToStop": "Goncang untuk Henti",
+  "@shakeToStop": {
+    "description": "Label for shake-to-stop alarm challenge"
+  },
+  "retypeToStop": "Taip Semula untuk Henti",
+  "@retypeToStop": {
+    "description": "Label for retype-to-stop alarm challenge"
+  },
+  "walkToStop": "Berjalan untuk Henti",
+  "@walkToStop": {
+    "description": "Label for walk-to-stop alarm challenge"
+  },
+  "alarmSound": "Bunyi Penggera",
+  "@alarmSound": {
+    "description": "Label for alarm sound settings"
+  },
+  "addSound": "Tambah Bunyi",
+  "@addSound": {
+    "description": "Button label to add a new custom sound"
+  },
+  "clearCustomSounds": "Kosongkan Bunyi Tersuai",
+  "@clearCustomSounds": {
+    "description": "Button label to remove all custom alarm sounds"
+  },
+  "format24h": "Format 24 Jam",
+  "@format24h": {
+    "description": "Toggle to switch between 12-hour and 24-hour time format"
+  },
+  "snoozeLabel": "Tunda: {minutes} min",
   "@snoozeLabel": {
+    "description": "A message to show the number of minutes for snoozing the alarm",
     "placeholders": {
       "minutes": {
         "type": "num"
       }
     }
   },
-  "solve": "Menyelesaikan: {a} {symbol} {b} =",
+  "solve": "Selesaikan: {a} {symbol} {b} = ",
   "@solve": {
+    "description": "To show the math challenge equation",
     "placeholders": {
       "a": {
         "type": "num"
@@ -77,6 +155,7 @@
   },
   "numberLabel": "Nombor {label}",
   "@numberLabel": {
+    "description": "A tooltip message for the number label in the math challenge number keyboard",
     "placeholders": {
       "label": {
         "type": "String"
@@ -84,11 +163,47 @@
     }
   },
   "deleteLabel": "Padam",
+  "@deleteLabel": {
+    "description": "Label for the delete button on the math challenge keyboard"
+  },
   "monday": "Isnin",
+  "@monday": {
+    "description": "Day of the week"
+  },
   "tuesday": "Selasa",
+  "@tuesday": {
+    "description": "Day of the week"
+  },
   "wednesday": "Rabu",
+  "@wednesday": {
+    "description": "Day of the week"
+  },
   "thursday": "Khamis",
+  "@thursday": {
+    "description": "Day of the week"
+  },
   "friday": "Jumaat",
+  "@friday": {
+    "description": "Day of the week"
+  },
   "saturday": "Sabtu",
-  "sunday": "Ahad"
+  "@saturday": {
+    "description": "Day of the week"
+  },
+  "sunday": "Ahad",
+  "@sunday": {
+    "description": "Day of the week"
+  },
+  "database": "Pangkalan Data (debug)",
+  "@database": {
+    "description": "Base of data"
+  },
+  "manageProfile": "Urus Profil",
+  "@manageProfile": {
+    "description": "To manage profile"
+  },
+  "wakeAnalytics": "Analitik Bangun",
+  "@wakeAnalytics": {
+    "description": "View wake up analytics"
+  }
 }

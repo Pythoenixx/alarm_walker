@@ -4,6 +4,7 @@ import 'package:alarm_walker/extensions/context_extensions.dart';
 import 'package:alarm_walker/models/alarm_model.dart';
 import 'package:alarm_walker/models/dismiss_settings.dart';
 import 'package:alarm_walker/models/profile_category.dart';
+import 'package:alarm_walker/models/user_profile_model.dart';
 import 'package:alarm_walker/models/wake_log_model.dart';
 import 'package:alarm_walker/models/wake_log_repository.dart';
 import 'package:alarm_walker/services/adaptive_difficulty_service.dart';
@@ -112,72 +113,91 @@ class _WakeAnalyticsScreenState extends State<WakeAnalyticsScreen> {
         ),
         child: SafeArea(
           top: false,
-          child: FutureBuilder<_AnalyticsData>(
-            future: _future,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
+          child: MultiBlocListener(
+            listeners: [
+              BlocListener<ProfileCubit, UserProfile?>(
+                listenWhen:
+                    (previous, current) =>
+                        previous?.profileCategory != current?.profileCategory,
+                listener: (_, __) => unawaited(_refresh()),
+              ),
+              BlocListener<SettingsCubit, SettingsState>(
+                listenWhen:
+                    (previous, current) =>
+                        previous.adaptiveDifficultyEnabled !=
+                            current.adaptiveDifficultyEnabled ||
+                        previous.defaultDismissSettings !=
+                            current.defaultDismissSettings,
+                listener: (_, __) => unawaited(_refresh()),
+              ),
+            ],
+            child: FutureBuilder<_AnalyticsData>(
+              future: _future,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
 
-              if (snapshot.hasError) {
-                return _AnalyticsErrorState(
-                  isDark: isDark,
-                  onRetry: () => unawaited(_refresh()),
+                if (snapshot.hasError) {
+                  return _AnalyticsErrorState(
+                    isDark: isDark,
+                    onRetry: () => unawaited(_refresh()),
+                  );
+                }
+
+                final data = snapshot.data;
+                if (data == null) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                return RefreshIndicator(
+                  onRefresh: _refresh,
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                    children: [
+                      _OverviewHero(data: data, isDark: isDark),
+                      const SizedBox(height: 16),
+                      _SectionHeader(
+                        icon: Icons.insights_outlined,
+                        title: 'Performance Summary',
+                        subtitle: 'Quick view of your latest wake-up behavior.',
+                        isDark: isDark,
+                      ),
+                      const SizedBox(height: 12),
+                      _SummaryCards(
+                        summary: data.summary,
+                        logs: data.logs,
+                        isDark: isDark,
+                      ),
+                      const SizedBox(height: 20),
+                      _SectionHeader(
+                        icon: Icons.auto_awesome_outlined,
+                        title: 'Adaptive Difficulty',
+                        subtitle: 'Recommendation for future alarm defaults.',
+                        isDark: isDark,
+                      ),
+                      const SizedBox(height: 12),
+                      _AdaptiveDifficultyCard(
+                        result: data.adaptiveResult,
+                        profileCategory: data.profileCategory,
+                        enabled: data.adaptiveDifficultyEnabled,
+                        defaultDismissSettings: data.defaultDismissSettings,
+                        isDark: isDark,
+                      ),
+                      const SizedBox(height: 20),
+                      _SectionHeader(
+                        icon: Icons.history_rounded,
+                        title: 'Wake History',
+                        subtitle: 'Recent alarm attempts and disarm results.',
+                        isDark: isDark,
+                      ),
+                      const SizedBox(height: 12),
+                      _WakeHistoryList(logs: data.logs, isDark: isDark),
+                    ],
+                  ),
                 );
-              }
-
-              final data = snapshot.data;
-              if (data == null) {
-                return const Center(child: CircularProgressIndicator());
-              }
-
-              return RefreshIndicator(
-                onRefresh: _refresh,
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-                  children: [
-                    _OverviewHero(data: data, isDark: isDark),
-                    const SizedBox(height: 16),
-                    _SectionHeader(
-                      icon: Icons.insights_outlined,
-                      title: 'Performance Summary',
-                      subtitle: 'Quick view of your latest wake-up behavior.',
-                      isDark: isDark,
-                    ),
-                    const SizedBox(height: 12),
-                    _SummaryCards(
-                      summary: data.summary,
-                      logs: data.logs,
-                      isDark: isDark,
-                    ),
-                    const SizedBox(height: 20),
-                    _SectionHeader(
-                      icon: Icons.auto_awesome_outlined,
-                      title: 'Adaptive Difficulty',
-                      subtitle: 'Recommendation for future alarm defaults.',
-                      isDark: isDark,
-                    ),
-                    const SizedBox(height: 12),
-                    _AdaptiveDifficultyCard(
-                      result: data.adaptiveResult,
-                      profileCategory: data.profileCategory,
-                      enabled: data.adaptiveDifficultyEnabled,
-                      defaultDismissSettings: data.defaultDismissSettings,
-                      isDark: isDark,
-                    ),
-                    const SizedBox(height: 20),
-                    _SectionHeader(
-                      icon: Icons.history_rounded,
-                      title: 'Wake History',
-                      subtitle: 'Recent alarm attempts and disarm results.',
-                      isDark: isDark,
-                    ),
-                    const SizedBox(height: 12),
-                    _WakeHistoryList(logs: data.logs, isDark: isDark),
-                  ],
-                ),
-              );
-            },
+              },
+            ),
           ),
         ),
       ),

@@ -171,7 +171,7 @@ class _HomeState extends State<Home> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Vacation mode is on',
+                      context.tr('Vacation mode is on'),
                       style: AppTextStyles.body(context).copyWith(
                         color: Colors.orange.shade700,
                         fontWeight: FontWeight.w700,
@@ -179,7 +179,7 @@ class _HomeState extends State<Home> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Your scheduled alarms are paused until you turn this off.',
+                      context.tr('Your scheduled alarms are paused until you turn this off.'),
                       style: AppTextStyles.caption(context).copyWith(
                         color: isDark
                             ? AppColors.darkBackgroundText
@@ -197,7 +197,7 @@ class _HomeState extends State<Home> {
                   await context.read<AlarmCubit>().reloadForCurrentOwner();
                   await _syncReminderNotifications();
                 },
-                child: const Text('Turn off'),
+                child: Text(context.tr('Turn off')),
               ),
             ],
           ),

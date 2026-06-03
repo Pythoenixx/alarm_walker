@@ -94,7 +94,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder:
           (context) => AlertDialog(
-            title: const Text('Language'), // TODO: localize
+            title: Text(context.tr('Language')),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children:
@@ -104,8 +104,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           value: language,
                           groupValue: state.appLanguage,
                           onChanged: (value) => Navigator.of(context).pop(value),
-                          title: Text(language.label),
-                          subtitle: Text(language.description),
+                          title: Text(context.tr(language.label)),
+                          subtitle: Text(context.tr(language.description)),
                         ),
                       )
                       .toList(),
@@ -203,18 +203,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder:
           (context) => AlertDialog(
-            title: const Text('Replay onboarding'), // TODO: localize
-            content: const Text(
-              'This will show the introduction screens again. Your alarms, settings, and wake-up logs will not be deleted.',
-            ), // TODO: localize
+            title: Text(context.tr('Replay onboarding')),
+            content: Text(
+              context.tr('This will show the introduction screens again. Your alarms, settings, and wake-up logs will not be deleted.'),
+            ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('Cancel'), // TODO: localize
+                child: Text(context.tr('Cancel')),
               ),
               FilledButton(
                 onPressed: () => Navigator.of(context).pop(true),
-                child: const Text('Replay'), // TODO: localize
+                child: Text(context.tr('Replay')),
               ),
             ],
           ),
@@ -277,7 +277,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: [
                 // ── Appearance ───────────────────────────────────────────
                 _SectionHeader(
-                  label: 'Appearance',
+                  label: context.tr('Appearance'),
                   isDark: isDark,
                 ), // TODO: localize
                 ThemeListTile(
@@ -289,8 +289,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   onTap: () => _openLanguagePicker(cubit, state),
                   child: _NavRow(
                     icon: Icons.translate_outlined,
-                    label: 'Language', // TODO: localize
-                    subtitle: state.appLanguage.label,
+                    label: context.tr('Language'),
+                    subtitle: context.tr(state.appLanguage.label),
                     isDark: isDark,
                   ),
                 ),
@@ -307,7 +307,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                 // ── Weather-aware wake-up ────────────────────────────────
                 _SectionHeader(
-                  label: 'Weather-aware wake-up',
+                  label: context.tr('Weather-aware wake-up'),
                   isDark: isDark,
                 ), // TODO: localize
                 SettingsTile(
@@ -316,7 +316,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         !state.weatherAwareEnabled,
                       ),
                   child: _SwitchRow(
-                    label: 'Show weather messages', // TODO: localize
+                    label: context.tr('Show weather messages'),
                     value: state.weatherAwareEnabled,
                     onChanged: cubit.setWeatherAwareEnabled,
                     isDark: isDark,
@@ -324,7 +324,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 // ── Adaptive difficulty ──────────────────────────────
                 _SectionHeader(
-                  label: 'Adaptive difficulty',
+                  label: context.tr('Adaptive difficulty'),
                   isDark: isDark,
                 ), // TODO: localize
                 SettingsTile(
@@ -333,7 +333,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         !state.adaptiveDifficultyEnabled,
                       ),
                   child: _SwitchRow(
-                    label: 'Adjust future alarm defaults', // TODO: localize
+                    label: context.tr('Adjust future alarm defaults'),
                     value: state.adaptiveDifficultyEnabled,
                     onChanged: cubit.setAdaptiveDifficultyEnabled,
                     isDark: isDark,
@@ -342,7 +342,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                 // ── Reminder options ─────────────────────────────────────
                 _SectionHeader(
-                  label: 'Reminder options',
+                  label: context.tr('Reminder options'),
                   isDark: isDark,
                 ), // TODO: localize
                 SettingsTile(
@@ -352,8 +352,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         !state.bedtimeAlertEnabled,
                       ),
                   child: _SwitchRow(
-                    label: 'Bedtime alert', // TODO: localize
-                    subtitle: 'Remind me to prepare for sleep and check alarms.',
+                    label: context.tr('Bedtime alert'),
+                    subtitle: context.tr('Remind me to prepare for sleep and check alarms.'),
                     value: state.bedtimeAlertEnabled,
                     onChanged: (value) => _setBedtimeAlertEnabled(cubit, value),
                     isDark: isDark,
@@ -365,7 +365,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     onTap: () => _openBedtimePicker(cubit, state),
                     child: _NavRow(
                       icon: Icons.bedtime_outlined,
-                      label: 'Bedtime reminder time', // TODO: localize
+                      label: context.tr('Bedtime reminder time'),
                       subtitle: _formatTime(state.bedtimeAlertTime, state),
                       isDark: isDark,
                     ),
@@ -379,8 +379,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         !state.weekendReminderEnabled,
                       ),
                   child: _SwitchRow(
-                    label: 'Weekend reminder', // TODO: localize
-                    subtitle: 'Warn me on weekends if no weekday alarm is set.',
+                    label: context.tr('Weekend reminder'),
+                    subtitle: context.tr('Warn me on weekends if no weekday alarm is set.'),
                     value: state.weekendReminderEnabled,
                     onChanged:
                         (value) => _setWeekendReminderEnabled(cubit, value),
@@ -395,11 +395,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         !state.vacationModeEnabled,
                       ),
                   child: _SwitchRow(
-                    label: 'Vacation mode', // TODO: localize
+                    label: context.tr('Vacation mode'),
                     subtitle:
                         state.vacationModeEnabled
-                            ? 'ON: scheduled alarms are paused until disabled.'
-                            : 'Pause scheduled alarms without deleting them.',
+                            ? context.tr('ON: scheduled alarms are paused until disabled.')
+                            : context.tr('Pause scheduled alarms without deleting them.'),
                     value: state.vacationModeEnabled,
                     onChanged: (value) => _setVacationModeEnabled(cubit, value),
                     isDark: isDark,
@@ -413,8 +413,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         !state.stickyAlarmTimeEnabled,
                       ),
                   child: _SwitchRow(
-                    label: 'Sticky alarm notification', // TODO: localize
-                    subtitle: 'Show a persistent notification for the next alarm.',
+                    label: context.tr('Sticky alarm notification'),
+                    subtitle: context.tr('Show a persistent notification for the next alarm.'),
                     value: state.stickyAlarmTimeEnabled,
                     onChanged:
                         (value) =>
@@ -425,15 +425,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                 // ── Alarm defaults ───────────────────────────────────────
                 _SectionHeader(
-                  label: 'New alarm defaults',
+                  label: context.tr('New alarm defaults'),
                   isDark: isDark,
                 ), // TODO: localize
                 SettingsTile(
                   onTap: () => _openSoundDefaults(cubit, state),
                   child: _NavRow(
                     icon: Icons.music_note_outlined,
-                    label: 'Sound', // TODO: localize
-                    subtitle: state.defaultSoundSettings.soundName ?? 'Default',
+                    label: context.tr('Sound'),
+                    subtitle: state.defaultSoundSettings.soundName ?? context.tr('Default'),
                     isDark: isDark,
                   ),
                 ),
@@ -442,7 +442,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   onTap: () => _openDismissDefaults(cubit, state),
                   child: _NavRow(
                     icon: _dismissIcon(state.defaultDismissSettings.mode),
-                    label: 'Dismiss', // TODO: localize
+                    label: context.tr('Dismiss'),
                     subtitle: _dismissSubtitle(state.defaultDismissSettings),
                     isDark: isDark,
                   ),
@@ -452,34 +452,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   onTap: () => _openSnoozeDefaults(cubit, state),
                   child: _NavRow(
                     icon: Icons.snooze,
-                    label: 'Snooze', // TODO: localize
+                    label: context.tr('Snooze'),
                     subtitle:
                         state.defaultSnoozeSettings.enabled
                             ? '${state.defaultSnoozeSettings.durationMinutes} min · '
                                 'max ${state.defaultSnoozeSettings.maxCount == 0 ? '∞' : '${state.defaultSnoozeSettings.maxCount}×'}'
-                            : 'Off',
+                            : context.tr('Off'),
                     isDark: isDark,
                   ),
                 ),
 
                 // ── Help & feedback ─────────────────────────────────────
                 _SectionHeader(
-                  label: 'Help & Feedback',
+                  label: context.tr('Help & Feedback'),
                   isDark: isDark,
                 ), // TODO: localize
                 SettingsTile(
                   onTap: () => context.pushNamed(AppRoute.helpFeedback.name),
                   child: _NavRow(
                     icon: Icons.support_agent_outlined,
-                    label: 'Report a problem', // TODO: localize
-                    subtitle: 'Send feedback or request help from admin',
+                    label: context.tr('Report a problem'),
+                    subtitle: context.tr('Send feedback or request help from admin'),
                     isDark: isDark,
                   ),
                 ),
 
                 // ── System ───────────────────────────────────────────────
                 _SectionHeader(
-                  label: 'System',
+                  label: context.tr('System'),
                   isDark: isDark,
                 ), // TODO: localize
                 SettingsTile(
@@ -495,7 +495,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   onTap: _showPermissionsSheet,
                   child: _NavRow(
                     icon: Icons.security_outlined,
-                    label: 'Permissions', // TODO: localize
+                    label: context.tr('Permissions'),
                     isDark: isDark,
                   ),
                 ),
@@ -504,22 +504,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   onTap: () => context.pushNamed(AppRoute.backupRestore.name),
                   child: _NavRow(
                     icon: Icons.backup_outlined,
-                    label: 'Backup & Restore', // TODO: localize
-                    subtitle: 'Export or restore alarms, settings, and logs',
+                    label: context.tr('Backup & Restore'),
+                    subtitle: context.tr('Export or restore alarms, settings, and logs'),
                     isDark: isDark,
                   ),
                 ),
 
                 // ── About ────────────────────────────────────────────────
                 _SectionHeader(
-                  label: 'About',
+                  label: context.tr('About'),
                   isDark: isDark,
                 ), // TODO: localize
                 SettingsTile(
                   onTap: _showAboutDialog,
                   child: _NavRow(
                     icon: Icons.info_outline,
-                    label: 'About Alarm Walker', // TODO: localize
+                    label: context.tr('About Alarm Walker'),
                     subtitle: _version,
                     isDark: isDark,
                   ),
@@ -529,8 +529,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   onTap: _replayOnboarding,
                   child: _NavRow(
                     icon: Icons.play_circle_outline,
-                    label: 'Replay onboarding', // TODO: localize
-                    subtitle: 'View the introduction and category guide again',
+                    label: context.tr('Replay onboarding'),
+                    subtitle: context.tr('View the introduction and category guide again'),
                     isDark: isDark,
                   ),
                 ),
@@ -562,12 +562,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
   };
 
   String _dismissSubtitle(DismissSettings s) => switch (s.mode) {
-    AlarmDisarmMode.normal => 'Normal', // TODO: localize
-    AlarmDisarmMode.walk => 'Walk ${s.walkSteps} steps',
+    AlarmDisarmMode.normal => context.tr('Normal'),
+    AlarmDisarmMode.walk => "${context.tr('Walk')} ${s.walkSteps} ${context.tr('steps')}",
     AlarmDisarmMode.math =>
-      'Math · ${['Easy', 'Medium', 'Hard'][s.mathDifficulty - 1]}',
-    AlarmDisarmMode.shake => 'Shake ${s.shakeCount}×',
-    AlarmDisarmMode.retype => 'Retype phrase',
+      "${context.tr('Math')} · ${context.tr(['Easy', 'Medium', 'Hard'][s.mathDifficulty - 1])}",
+    AlarmDisarmMode.shake => "${context.tr('Shake')} ${s.shakeCount}×",
+    AlarmDisarmMode.retype => context.tr('Retype phrase'),
   };
 }
 

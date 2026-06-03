@@ -107,18 +107,18 @@ class _AddAlarmScreenState extends State<AddAlarmScreen> {
     return await showDialog<bool>(
           context: context,
           builder: (dialogContext) => AlertDialog(
-            title: const Text('Discard changes?'),
-            content: const Text(
-              'You have unsaved alarm changes. Save the alarm to keep them, or discard to leave this page.',
+            title: Text(context.tr('Discard changes?')),
+            content: Text(
+              context.tr('You have unsaved alarm changes. Save the alarm to keep them, or discard to leave this page.'),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(dialogContext, false),
-                child: const Text('Stay'),
+                child: Text(context.tr('Stay')),
               ),
               TextButton(
                 onPressed: () => Navigator.pop(dialogContext, true),
-                child: const Text('Discard'),
+                child: Text(context.tr('Discard')),
               ),
             ],
           ),
@@ -151,8 +151,8 @@ class _AddAlarmScreenState extends State<AddAlarmScreen> {
 
     if (!_isOneTime && days.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select at least one repeat day.'),
+        SnackBar(
+          content: Text(context.tr('Please select at least one repeat day.')),
         ),
       );
       return;
@@ -324,7 +324,7 @@ class _AddAlarmScreenState extends State<AddAlarmScreen> {
             Expanded(
               child: _alarmTypeButton(
                 icon: Icons.repeat_rounded,
-                label: 'Repeat',
+                label: context.tr('Repeat'),
                 selected: !_isOneTime,
                 onTap: () {
                   setState(() {
@@ -346,7 +346,7 @@ class _AddAlarmScreenState extends State<AddAlarmScreen> {
             Expanded(
               child: _alarmTypeButton(
                 icon: Icons.looks_one_outlined,
-                label: 'One-time',
+                label: context.tr('One-time'),
                 selected: _isOneTime,
                 onTap: () {
                   setState(() {
@@ -422,7 +422,7 @@ class _AddAlarmScreenState extends State<AddAlarmScreen> {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                'This alarm will ring once at the next matching time and then disable itself after successful dismiss.',
+                context.tr('This alarm will ring once at the next matching time and then disable itself after successful dismiss.'),
                 style: AppTextStyles.caption(context).copyWith(
                   color:
                       isDark
@@ -645,32 +645,32 @@ class _AddAlarmScreenState extends State<AddAlarmScreen> {
 
                         // ── Settings ──────────────────────────────────────
                         _buildSectionHeader(
-                          'Settings',
+                          context.tr('Settings'),
                           isDark,
                         ), // TODO: localize
 
                         _buildNavRow(
                           icon: Icons.snooze,
-                          title: 'Snooze', // TODO: localize
+                          title: context.tr('Snooze'),
                           subtitle:
                               _snoozeSettings.enabled
                                   ? '${_snoozeSettings.durationMinutes} min · max ${_snoozeSettings.maxCount == 0 ? '∞' : '${_snoozeSettings.maxCount}×'}'
-                                  : 'Off',
+                                  : context.tr('Off'),
                           onTap: _openSnoozeSettings,
                           isDark: isDark,
                         ),
 
                         _buildNavRow(
                           icon: Icons.music_note_outlined,
-                          title: 'Sound', // TODO: localize
-                          subtitle: _soundSettings.soundName ?? 'Default',
+                          title: context.tr('Sound'),
+                          subtitle: _soundSettings.soundName ?? context.tr('Default'),
                           onTap: _openSoundSettings,
                           isDark: isDark,
                         ),
 
                         _buildNavRow(
                           icon: _dismissModeIcon(dismissMode),
-                          title: 'Dismiss', // TODO: localize
+                          title: context.tr('Dismiss'),
                           subtitle: _dismissModeLabel(dismissMode),
                           onTap: _openDismissSettings,
                           isDark: isDark,
@@ -712,12 +712,12 @@ class _AddAlarmScreenState extends State<AddAlarmScreen> {
 
   String _dismissModeLabel(AlarmDisarmMode mode) {
     return switch (mode) {
-      AlarmDisarmMode.normal => 'Normal', // TODO: localize all
-      AlarmDisarmMode.walk => 'Walk ${_dismissSettings.walkSteps} steps',
+      AlarmDisarmMode.normal => context.tr('Normal'),
+      AlarmDisarmMode.walk => "${context.tr('Walk')} ${_dismissSettings.walkSteps} ${context.tr('steps')}",
       AlarmDisarmMode.math =>
-        'Math · ${['Easy', 'Medium', 'Hard'][_dismissSettings.mathDifficulty - 1]}',
-      AlarmDisarmMode.shake => 'Shake ${_dismissSettings.shakeCount}×',
-      AlarmDisarmMode.retype => 'Retype phrase',
+        "${context.tr('Math')} · ${context.tr(['Easy', 'Medium', 'Hard'][_dismissSettings.mathDifficulty - 1])}",
+      AlarmDisarmMode.shake => "${context.tr('Shake')} ${_dismissSettings.shakeCount}×",
+      AlarmDisarmMode.retype => context.tr('Retype phrase'),
     };
   }
 }
