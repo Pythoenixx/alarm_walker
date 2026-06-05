@@ -18,7 +18,7 @@ class DismissSettings {
   final int? taskTimerSeconds; // null = no timer per problem
 
   const DismissSettings({
-    this.mode = AlarmDisarmMode.normal,
+    this.mode = AlarmDisarmMode.shake,
     this.walkSteps = 20,
     this.mathDifficulty = 1,
     this.mathProblemCount = 1,
@@ -73,7 +73,7 @@ class DismissSettings {
       DismissSettings(
         mode: AlarmDisarmMode.values.firstWhere(
           (e) => e.name == json['mode'],
-          orElse: () => AlarmDisarmMode.normal,
+          orElse: () => AlarmDisarmMode.shake,
         ),
         walkSteps: json['walkSteps'] as int? ?? 20,
         mathDifficulty: json['mathDifficulty'] as int? ?? 1,

@@ -235,27 +235,29 @@ class ReminderNotificationService {
 
   static DateTime _nextOccurrence(AlarmModel alarm) {
     final now = DateTime.now();
+    final todayTime = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      alarm.time.hour,
+      alarm.time.minute,
+    );
+
+    if (alarm.isOnce || alarm.days.isEmpty) {
+      return todayTime.isAfter(now)
+          ? todayTime
+          : todayTime.add(const Duration(days: 1));
+    }
+
     for (int i = 0; i < 7; i++) {
-      final candidate = DateTime(
-        now.year,
-        now.month,
-        now.day,
-        alarm.time.hour,
-        alarm.time.minute,
-      ).add(Duration(days: i));
+      final candidate = todayTime.add(Duration(days: i));
 
       if (!alarm.days.contains(candidate.weekday)) continue;
       if (candidate.isBefore(now)) continue;
       return candidate;
     }
 
-    return DateTime(
-      now.year,
-      now.month,
-      now.day,
-      alarm.time.hour,
-      alarm.time.minute,
-    ).add(const Duration(days: 1));
+    return todayTime.add(const Duration(days: 7));
   }
 
   static String _nextAlarmDescription(

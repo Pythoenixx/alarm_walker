@@ -246,7 +246,7 @@ class SettingsCubit extends Cubit<SettingsState> {
       defaultFlashlight: (p.get<int>(_K.defaultFlashlight) ?? 0) == 1,
       defaultAlarmDisarmMode: AlarmDisarmMode.values.firstWhere(
         (e) => e.name == p.get<String>(_K.defaultDisarmMode),
-        orElse: () => AlarmDisarmMode.normal,
+        orElse: () => AlarmDisarmMode.shake,
       ),
       defaultSoundSettings: SoundSettings.fromJson(
         jsonDecode(p.get<String>(_K.defaultSoundSettings) ?? '{}')
@@ -399,7 +399,7 @@ class SettingsCubit extends Cubit<SettingsState> {
     );
     final defaultAlarmDisarmMode = AlarmDisarmMode.values.firstWhere(
       (mode) => mode.name == json['defaultAlarmDisarmMode'],
-      orElse: () => AlarmDisarmMode.normal,
+      orElse: () => AlarmDisarmMode.shake,
     );
 
     final defaultSoundSettings = SoundSettings.fromJson(

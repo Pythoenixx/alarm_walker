@@ -125,6 +125,12 @@ const Map<String, String> _msTranslations = {
   'View the introduction and category guide again':
       'Lihat semula pengenalan dan panduan kategori',
   'Replay': 'Ulang',
+  'Version': 'Versi',
+  'Build': 'Binaan',
+  'App version': 'Versi aplikasi',
+  'App version copied': 'Versi aplikasi disalin',
+  'Loading version': 'Memuatkan versi',
+  'Tap to copy': 'Ketik untuk salin',
   'This will show the introduction screens again. Your alarms, settings, and wake-up logs will not be deleted.':
       'Ini akan memaparkan skrin pengenalan semula. Penggera, tetapan dan log bangun tidak akan dipadam.',
   // Home

@@ -8,6 +8,7 @@ import 'package:alarm_walker/models/alarm_model.dart';
 import 'package:alarm_walker/services/alarm_cubit.dart';
 import 'package:alarm_walker/services/alarm_dismiss_helper.dart';
 import 'package:alarm_walker/services/alarm_gate_route_guard.dart';
+import 'package:alarm_walker/services/alarm_ringtone_recovery_service.dart';
 import 'package:alarm_walker/services/settings_cubit.dart';
 import 'package:alarm_walker/services/shared_prefs_with_cache.dart';
 import 'package:alarm_walker/theme/app_colors.dart';
@@ -40,7 +41,10 @@ class _AlarmGateScreenState extends State<AlarmGateScreen>
   int _snoozeCount = 0;
   late int _snoozeDuration; // minutes, adjusted by drag
   Timer? _countdownTimer;
+  Timer? _alarmWatchdogTimer;
   Duration _remaining = Duration.zero;
+  bool _isStartingBackupRingtone = false;
+  bool _isFinishingSnooze = false;
 
   ActiveAlarmRef get _alarmRef => ActiveAlarmRef.from(
     alarmSettings: widget.alarmSettings,
@@ -86,6 +90,8 @@ class _AlarmGateScreenState extends State<AlarmGateScreen>
         ) ??
         0;
 
+    _startAlarmWatchdog();
+
     _pulseCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1200),
@@ -108,9 +114,54 @@ class _AlarmGateScreenState extends State<AlarmGateScreen>
   @override
   void dispose() {
     _countdownTimer?.cancel();
+    _alarmWatchdogTimer?.cancel();
     _pulseCtrl.dispose();
     _snoozeConfirmCtrl.dispose();
     super.dispose();
+  }
+
+  // ── active alarm sound protection ─────────────────────────────────────────
+
+  void _startAlarmWatchdog() {
+    _alarmWatchdogTimer?.cancel();
+    _alarmWatchdogTimer = Timer.periodic(
+      const Duration(seconds: 5),
+      (_) => _restoreSoundIfNotificationWasDismissed(),
+    );
+  }
+
+  Future<void> _restoreSoundIfNotificationWasDismissed() async {
+    if (
+      !mounted ||
+      _snoozed ||
+      _isProcessingDismiss ||
+      _isStartingBackupRingtone
+    ) {
+      return;
+    }
+
+    final alarms = await Alarm.getAlarms();
+    final stillScheduledOrRinging = alarms.any(
+      (alarm) => alarm.id == widget.alarmSettings.id,
+    );
+
+    if (stillScheduledOrRinging || !mounted || _snoozed || _isProcessingDismiss) {
+      return;
+    }
+
+    _isStartingBackupRingtone = true;
+    debugPrint(
+      '⚠️ Alarm notification/audio stopped while AlarmGate is open. Starting backup ringtone.',
+    );
+
+    try {
+      await AlarmRingtoneRecoveryService.instance.startBackupRingtone(
+        alarmModel: widget.alarmModel,
+        reason: 'notification_dismissed',
+      );
+    } finally {
+      _isStartingBackupRingtone = false;
+    }
   }
 
   // ── snooze logic ───────────────────────────────────────────────────────────
@@ -118,6 +169,9 @@ class _AlarmGateScreenState extends State<AlarmGateScreen>
   Future<void> _snooze() async {
     if (!_canSnooze) return;
     unawaited(HapticFeedback.mediumImpact());
+    await AlarmRingtoneRecoveryService.instance.stopBackupRingtone();
+    if (!mounted) return;
+
     await context.read<AlarmCubit>().snoozeAlarm(
       alarmSettings: widget.alarmSettings,
       alarmRef: _alarmRef,
@@ -147,12 +201,7 @@ class _AlarmGateScreenState extends State<AlarmGateScreen>
       if (!mounted) return;
 
       if (_remaining.inSeconds <= 1) {
-        _countdownTimer?.cancel();
-        setState(() {
-          _snoozed = false;
-          _remaining = Duration.zero;
-          _pulseCtrl.repeat(reverse: true);
-        });
+        unawaited(_finishSnoozeCountdown());
         return;
       }
 
@@ -162,12 +211,43 @@ class _AlarmGateScreenState extends State<AlarmGateScreen>
     });
   }
 
+  Future<void> _finishSnoozeCountdown() async {
+    if (_isFinishingSnooze) return;
+    _isFinishingSnooze = true;
+    _countdownTimer?.cancel();
+
+    await context.read<AlarmCubit>().wakeSnoozedAlarmNow(
+      alarmSettings: widget.alarmSettings,
+      alarmRef: _alarmRef,
+    );
+
+    await AlarmRingtoneRecoveryService.instance.startBackupRingtone(
+      alarmModel: widget.alarmModel,
+      reason: 'snooze_finished',
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      _snoozed = false;
+      _remaining = Duration.zero;
+      _pulseCtrl.repeat(reverse: true);
+    });
+
+    _isFinishingSnooze = false;
+  }
+
   Future<void> _cancelSnooze() async {
     unawaited(HapticFeedback.mediumImpact());
     _countdownTimer?.cancel();
     await context.read<AlarmCubit>().wakeSnoozedAlarmNow(
       alarmSettings: widget.alarmSettings,
       alarmRef: _alarmRef,
+    );
+
+    await AlarmRingtoneRecoveryService.instance.startBackupRingtone(
+      alarmModel: widget.alarmModel,
+      reason: 'wake_now',
     );
 
     if (!mounted) return;

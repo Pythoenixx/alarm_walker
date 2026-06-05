@@ -17,6 +17,7 @@ import 'package:alarm_walker/widgets/gradient_switch.dart';
 import 'package:alarm_walker/widgets/settings_tile.dart';
 import 'package:alarm_walker/widgets/theme_list_tile.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -40,8 +41,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _loadVersion() async {
     final info = await PackageInfo.fromPlatform();
-    if (mounted)
-      setState(() => _version = 'v${info.version} (${info.buildNumber})');
+    if (!mounted) return;
+    setState(() => _version = '${info.version}+${info.buildNumber}');
   }
 
   // ── navigation helpers ─────────────────────────────────────────────────────
@@ -195,6 +196,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
       applicationName: 'Alarm Walker',
       applicationVersion: _version,
       applicationLegalese: '© ${DateTime.now().year} Alarm Walker',
+    );
+  }
+
+  Future<void> _copyVersionLabel() async {
+    if (_version.isEmpty) return;
+    await Clipboard.setData(ClipboardData(text: 'Alarm Walker $_version'));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(context.tr('App version copied'))),
     );
   }
 
@@ -520,7 +530,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   child: _NavRow(
                     icon: Icons.info_outline,
                     label: context.tr('About Alarm Walker'),
-                    subtitle: _version,
+                    subtitle:
+                        _version.isEmpty
+                            ? context.tr('Loading version')
+                            : '${context.tr('Version')} $_version',
+                    isDark: isDark,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SettingsTile(
+                  onTap: _copyVersionLabel,
+                  child: _NavRow(
+                    icon: Icons.verified_outlined,
+                    label: context.tr('App version'),
+                    subtitle:
+                        _version.isEmpty
+                            ? context.tr('Loading version')
+                            : '${context.tr('Build')} $_version · '
+                                '${context.tr('Tap to copy')}',
                     isDark: isDark,
                   ),
                 ),

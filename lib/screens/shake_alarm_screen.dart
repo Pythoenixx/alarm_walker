@@ -49,9 +49,9 @@ class _ShakeAlarmScreenState extends State<ShakeAlarmScreen> {
 
   double get _threshold {
     return switch (_shakeIntensity) {
-      1 => 1.8,
-      2 => 2.2,
-      _ => 2.6,
+      1 => 2.0,
+      2 => 2.45,
+      _ => 2.9,
     };
   }
 

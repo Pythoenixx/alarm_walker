@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:math';
-
 import 'package:alarm/alarm.dart';
 import 'package:alarm/utils/alarm_set.dart';
 import 'package:alarm_walker/app_router.dart';
@@ -35,27 +34,16 @@ class _HomeState extends State<Home> {
   late final StreamSubscription<AlarmSet> _ringSubscription;
   bool _isFabVisible = true;
 
-  DateTime _nextOccurrence(AlarmModel alarm) {
-    final now = DateTime.now();
-    for (int i = 0; i < 7; i++) {
-      final candidate = DateTime(
-        now.year,
-        now.month,
-        now.day,
-        alarm.time.hour,
-        alarm.time.minute,
-      ).add(Duration(days: i));
-      if (!alarm.days.contains(candidate.weekday)) continue;
-      if (i == 0 && candidate.isBefore(now)) continue;
-      return candidate;
-    }
-    return DateTime(
-      now.year,
-      now.month,
-      now.day,
-      alarm.time.hour,
-      alarm.time.minute,
+  int _compareAlarms(AlarmModel a, AlarmModel b) {
+    final timeCompare = (a.time.hour * 60 + a.time.minute).compareTo(
+      b.time.hour * 60 + b.time.minute,
     );
+    if (timeCompare != 0) return timeCompare;
+
+    final titleCompare = a.title.toLowerCase().compareTo(b.title.toLowerCase());
+    if (titleCompare != 0) return titleCompare;
+
+    return (a.alarmId ?? 0).compareTo(b.alarmId ?? 0);
   }
 
   @override
@@ -179,11 +167,14 @@ class _HomeState extends State<Home> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      context.tr('Your scheduled alarms are paused until you turn this off.'),
+                      context.tr(
+                        'Your scheduled alarms are paused until you turn this off.',
+                      ),
                       style: AppTextStyles.caption(context).copyWith(
-                        color: isDark
-                            ? AppColors.darkBackgroundText
-                            : AppColors.lightBackgroundText,
+                        color:
+                            isDark
+                                ? AppColors.darkBackgroundText
+                                : AppColors.lightBackgroundText,
                       ),
                     ),
                   ],
@@ -368,7 +359,8 @@ class _HomeState extends State<Home> {
                           ),
                         ),
                         child: BlocConsumer<AlarmCubit, List<AlarmModel>>(
-                          listenWhen: (previous, current) => previous != current,
+                          listenWhen:
+                              (previous, current) => previous != current,
                           listener: (context, alarms) {
                             unawaited(_syncReminderNotifications());
                           },
@@ -479,11 +471,8 @@ class _HomeState extends State<Home> {
                                 ],
                               );
                             } else {
-                              final sortedAlarms = [...alarms]..sort(
-                                (a, b) => _nextOccurrence(
-                                  a,
-                                ).compareTo(_nextOccurrence(b)),
-                              );
+                              final sortedAlarms = [...alarms]
+                                ..sort(_compareAlarms);
                               return ListView(
                                 controller: scrollController,
                                 padding: const EdgeInsets.symmetric(
@@ -574,7 +563,10 @@ class _HomeState extends State<Home> {
                                       index++
                                     )
                                       AlarmTile(
-                                        key: ValueKey(sortedAlarms[index].time),
+                                        key: ValueKey(
+                                          sortedAlarms[index].alarmId ??
+                                              sortedAlarms[index].time,
+                                        ),
                                         alarmModel: sortedAlarms[index],
                                         onEnabledChanged:
                                             (v) => context
