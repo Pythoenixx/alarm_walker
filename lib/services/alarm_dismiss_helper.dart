@@ -4,7 +4,6 @@ import 'package:alarm_walker/models/profile_category.dart';
 import 'package:alarm_walker/services/adaptive_difficulty_service.dart';
 import 'package:alarm_walker/services/alarm_cubit.dart';
 import 'package:alarm_walker/services/alarm_gate_route_guard.dart';
-import 'package:alarm_walker/services/alarm_ringtone_recovery_service.dart';
 import 'package:alarm_walker/services/profile_cubit.dart';
 import 'package:alarm_walker/services/settings_cubit.dart';
 import 'package:flutter/material.dart';
@@ -26,7 +25,6 @@ Future<void> dismissActiveAlarmAndClose({
     alarmModel: alarmModel,
   );
 
-  await AlarmRingtoneRecoveryService.instance.stopBackupRingtone();
   await alarmCubit.finishRingingAlarm(alarmRef: alarmRef, result: result);
   final dbAlarmId = alarmModel.alarmId;
   if (dbAlarmId != null) {

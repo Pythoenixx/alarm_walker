@@ -8,7 +8,6 @@ import 'package:alarm_walker/models/alarm_model.dart';
 import 'package:alarm_walker/services/alarm_cubit.dart';
 import 'package:alarm_walker/services/alarm_dismiss_helper.dart';
 import 'package:alarm_walker/services/alarm_gate_route_guard.dart';
-import 'package:alarm_walker/services/alarm_ringtone_recovery_service.dart';
 import 'package:alarm_walker/services/settings_cubit.dart';
 import 'package:alarm_walker/services/shared_prefs_with_cache.dart';
 import 'package:alarm_walker/theme/app_colors.dart';
@@ -43,7 +42,8 @@ class _AlarmGateScreenState extends State<AlarmGateScreen>
   Timer? _countdownTimer;
   Timer? _alarmWatchdogTimer;
   Duration _remaining = Duration.zero;
-  bool _isStartingBackupRingtone = false;
+  bool _isRestoringAlarmSound = false;
+  bool _hasRestoredStoppedAlarmSound = false;
   bool _isFinishingSnooze = false;
 
   ActiveAlarmRef get _alarmRef => ActiveAlarmRef.from(
@@ -131,12 +131,11 @@ class _AlarmGateScreenState extends State<AlarmGateScreen>
   }
 
   Future<void> _restoreSoundIfNotificationWasDismissed() async {
-    if (
-      !mounted ||
-      _snoozed ||
-      _isProcessingDismiss ||
-      _isStartingBackupRingtone
-    ) {
+    if (!mounted ||
+        _snoozed ||
+        _isProcessingDismiss ||
+        _isRestoringAlarmSound ||
+        _hasRestoredStoppedAlarmSound) {
       return;
     }
 
@@ -145,22 +144,25 @@ class _AlarmGateScreenState extends State<AlarmGateScreen>
       (alarm) => alarm.id == widget.alarmSettings.id,
     );
 
-    if (stillScheduledOrRinging || !mounted || _snoozed || _isProcessingDismiss) {
+    if (stillScheduledOrRinging ||
+        !mounted ||
+        _snoozed ||
+        _isProcessingDismiss) {
       return;
     }
 
-    _isStartingBackupRingtone = true;
+    _isRestoringAlarmSound = true;
+    _hasRestoredStoppedAlarmSound = true;
     debugPrint(
-      '⚠️ Alarm notification/audio stopped while AlarmGate is open. Starting backup ringtone.',
+      '⚠️ Alarm notification/audio stopped while AlarmGate is open. Restoring original alarm sound once.',
     );
 
     try {
-      await AlarmRingtoneRecoveryService.instance.startBackupRingtone(
-        alarmModel: widget.alarmModel,
-        reason: 'notification_dismissed',
+      await context.read<AlarmCubit>().restoreActiveAlarmSound(
+        alarmSettings: widget.alarmSettings,
       );
     } finally {
-      _isStartingBackupRingtone = false;
+      _isRestoringAlarmSound = false;
     }
   }
 
@@ -169,9 +171,6 @@ class _AlarmGateScreenState extends State<AlarmGateScreen>
   Future<void> _snooze() async {
     if (!_canSnooze) return;
     unawaited(HapticFeedback.mediumImpact());
-    await AlarmRingtoneRecoveryService.instance.stopBackupRingtone();
-    if (!mounted) return;
-
     await context.read<AlarmCubit>().snoozeAlarm(
       alarmSettings: widget.alarmSettings,
       alarmRef: _alarmRef,
@@ -221,15 +220,11 @@ class _AlarmGateScreenState extends State<AlarmGateScreen>
       alarmRef: _alarmRef,
     );
 
-    await AlarmRingtoneRecoveryService.instance.startBackupRingtone(
-      alarmModel: widget.alarmModel,
-      reason: 'snooze_finished',
-    );
-
     if (!mounted) return;
 
     setState(() {
       _snoozed = false;
+      _hasRestoredStoppedAlarmSound = false;
       _remaining = Duration.zero;
       _pulseCtrl.repeat(reverse: true);
     });
@@ -245,15 +240,11 @@ class _AlarmGateScreenState extends State<AlarmGateScreen>
       alarmRef: _alarmRef,
     );
 
-    await AlarmRingtoneRecoveryService.instance.startBackupRingtone(
-      alarmModel: widget.alarmModel,
-      reason: 'wake_now',
-    );
-
     if (!mounted) return;
 
     setState(() {
       _snoozed = false;
+      _hasRestoredStoppedAlarmSound = false;
       _remaining = Duration.zero;
       _pulseCtrl.repeat(reverse: true);
     });
@@ -446,13 +437,12 @@ class _TopInfo extends StatelessWidget {
         final horizontalPadding = isCompactHeight ? 16.0 : 24.0;
         final topPadding = isCompactHeight ? 8.0 : 24.0;
         final iconSize = isCompactHeight ? 40.0 : 52.0;
-        final titleStyle = AppTextStyles.large(context).copyWith(
-          fontSize: isCompactHeight ? 18 : null,
-        );
-        final timeStyle = AppTextStyles.heading(context).copyWith(
-          color: muted,
-          fontSize: isCompactHeight ? 24 : null,
-        );
+        final titleStyle = AppTextStyles.large(
+          context,
+        ).copyWith(fontSize: isCompactHeight ? 18 : null);
+        final timeStyle = AppTextStyles.heading(
+          context,
+        ).copyWith(color: muted, fontSize: isCompactHeight ? 24 : null);
         final contentWidth =
             constraints.maxWidth > horizontalPadding * 2
                 ? constraints.maxWidth - (horizontalPadding * 2)
@@ -483,7 +473,8 @@ class _TopInfo extends StatelessWidget {
                               : pulseAnim,
                       child: ScaleTransition(
                         scale:
-                            snoozeConfirmAnim.status == AnimationStatus.dismissed
+                            snoozeConfirmAnim.status ==
+                                    AnimationStatus.dismissed
                                 ? const AlwaysStoppedAnimation(1.0)
                                 : Tween<double>(
                                   begin: 1.0,
@@ -530,14 +521,13 @@ class _TopInfo extends StatelessWidget {
                         ),
                         child: Text(
                           maxCount == 0
-                              ? context.tr(
-                                'Snoozed {count}×',
-                                {'count': snoozeCount},
-                              )
-                              : context.tr(
-                                'Snoozed {count} / {max}×',
-                                {'count': snoozeCount, 'max': maxCount},
-                              ),
+                              ? context.tr('Snoozed {count}×', {
+                                'count': snoozeCount,
+                              })
+                              : context.tr('Snoozed {count} / {max}×', {
+                                'count': snoozeCount,
+                                'max': maxCount,
+                              }),
                           style: AppTextStyles.caption(context).copyWith(
                             color: Colors.orange,
                             fontWeight: FontWeight.bold,
@@ -550,13 +540,12 @@ class _TopInfo extends StatelessWidget {
                     if (nextRingTime != null) ...[
                       SizedBox(height: isCompactHeight ? 6 : 8),
                       Text(
-                        context.tr(
-                          'Ringing again at {time}',
-                          {'time': DateFormat.jm().format(nextRingTime!)},
-                        ),
-                        style: AppTextStyles.caption(context).copyWith(
-                          color: muted,
-                        ),
+                        context.tr('Ringing again at {time}', {
+                          'time': DateFormat.jm().format(nextRingTime!),
+                        }),
+                        style: AppTextStyles.caption(
+                          context,
+                        ).copyWith(color: muted),
                         textAlign: TextAlign.center,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -826,8 +815,12 @@ class _DismissPanel extends StatelessWidget {
                 color:
                     snoozed
                         ? (isDark
-                            ? AppColors.darkBackgroundText.withValues(alpha: 0.55)
-                            : AppColors.lightBackgroundText.withValues(alpha: 0.55))
+                            ? AppColors.darkBackgroundText.withValues(
+                              alpha: 0.55,
+                            )
+                            : AppColors.lightBackgroundText.withValues(
+                              alpha: 0.55,
+                            ))
                         : Colors.red,
               ),
               const SizedBox(width: 8),
@@ -839,8 +832,12 @@ class _DismissPanel extends StatelessWidget {
                   color:
                       snoozed
                           ? (isDark
-                              ? AppColors.darkBackgroundText.withValues(alpha: 0.55)
-                              : AppColors.lightBackgroundText.withValues(alpha: 0.55))
+                              ? AppColors.darkBackgroundText.withValues(
+                                alpha: 0.55,
+                              )
+                              : AppColors.lightBackgroundText.withValues(
+                                alpha: 0.55,
+                              ))
                           : Colors.red,
                   fontWeight: FontWeight.w600,
                 ),

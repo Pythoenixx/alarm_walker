@@ -487,11 +487,15 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
     required AlarmSettings alarmSettings,
     required ActiveAlarmRef alarmRef,
   }) async {
-    // End the waiting period early, but keep the snooze count/history because
-    // the user already used one snooze. This keeps max snooze limits accurate.
-    // The in-app AlarmGate starts/continues the ringtone, so this should not
-    // schedule another immediate OS notification that can stack or duplicate.
-    await Alarm.stop(alarmRef.runtimeAlarmId);
+    // End the waiting period early or reactivate after the snooze countdown.
+    // Re-use the original AlarmSettings so the user's selected sound, volume,
+    // vibration, and notification settings are preserved. AlarmGateRouteGuard
+    // prevents the Home listener from stacking another AlarmGate route.
+    await Alarm.set(
+      alarmSettings: alarmSettings.copyWith(
+        dateTime: DateTime.now().add(const Duration(seconds: 1)),
+      ),
+    );
   }
 
   Future<void> restoreActiveAlarmSound({
