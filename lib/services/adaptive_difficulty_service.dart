@@ -92,7 +92,8 @@ class AdaptiveDifficultyService {
         analyzedLogs: completedLogs.length,
         metrics: metrics,
         changed: false,
-        message: 'Difficulty is already at the recommended range for this profile category.',
+        message:
+            'Difficulty is already at the recommended range for this profile category.',
       );
     }
 
@@ -124,8 +125,16 @@ class AdaptiveDifficultyService {
       return AdaptiveDifficultyDecision.madeEasier;
     }
 
+    // If the user often snoozes but still dismisses successfully, make future
+    // defaults firmer so the alarm requires more wake-up engagement.
+    if (metrics.averageSnoozeCount >= 2 &&
+        metrics.averageFailedAttempts < 1.5 &&
+        metrics.successRate >= 0.75 &&
+        metrics.averageDisarmSeconds <= 120) {
+      return AdaptiveDifficultyDecision.madeHarder;
+    }
+
     // If the user rarely snoozes, rarely fails, and completes tasks quickly,
-    // make future defaults a little firmer.
     if (metrics.averageSnoozeCount == 0 &&
         metrics.averageFailedAttempts < 0.5 &&
         metrics.successRate >= 0.85 &&
@@ -281,7 +290,8 @@ class AdaptiveDifficultyResult {
       analyzedLogs: analyzedLogs,
       metrics: null,
       changed: false,
-      message: 'At least ${AdaptiveDifficultyService.minimumLogsRequired} wake logs are required before adaptive difficulty can adjust defaults.',
+      message:
+          'At least ${AdaptiveDifficultyService.minimumLogsRequired} wake logs are required before adaptive difficulty can adjust defaults.',
     );
   }
 }

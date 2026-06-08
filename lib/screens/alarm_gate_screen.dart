@@ -43,8 +43,11 @@ class _AlarmGateScreenState extends State<AlarmGateScreen>
   Timer? _alarmWatchdogTimer;
   Duration _remaining = Duration.zero;
   bool _isRestoringAlarmSound = false;
-  bool _hasRestoredStoppedAlarmSound = false;
   bool _isFinishingSnooze = false;
+  DateTime? _lastAlarmSoundRestoreAt;
+  int _alarmSoundRestoreAttempts = 0;
+
+  static const Duration _alarmSoundRestoreCooldown = Duration(seconds: 8);
 
   ActiveAlarmRef get _alarmRef => ActiveAlarmRef.from(
     alarmSettings: widget.alarmSettings,
@@ -131,20 +134,41 @@ class _AlarmGateScreenState extends State<AlarmGateScreen>
   }
 
   Future<void> _restoreSoundIfNotificationWasDismissed() async {
-    if (!mounted ||
-        _snoozed ||
-        _isProcessingDismiss ||
-        _isRestoringAlarmSound ||
-        _hasRestoredStoppedAlarmSound) {
+    if (!mounted || _snoozed || _isProcessingDismiss || _isRestoringAlarmSound) {
       return;
     }
 
-    final alarms = await Alarm.getAlarms();
-    final stillScheduledOrRinging = alarms.any(
-      (alarm) => alarm.id == widget.alarmSettings.id,
-    );
+    final now = DateTime.now();
+    final lastRestoreAt = _lastAlarmSoundRestoreAt;
+    if (lastRestoreAt != null &&
+        now.difference(lastRestoreAt) < _alarmSoundRestoreCooldown) {
+      return;
+    }
 
-    if (stillScheduledOrRinging ||
+    final dbAlarmId = _m.alarmId;
+    final dbAlarmPayload = dbAlarmId?.toString();
+    final scheduledAlarms = await Alarm.getAlarms();
+    final matchingPayloadAlarms =
+        dbAlarmPayload == null
+            ? <AlarmSettings>[]
+            : scheduledAlarms
+                .where((alarm) => alarm.payload == dbAlarmPayload)
+                .toList();
+
+    final knownRuntimeIds = <int>{
+      widget.alarmSettings.id,
+      for (final alarm in matchingPayloadAlarms) alarm.id,
+    };
+
+    var anyKnownAlarmRinging = false;
+    for (final runtimeId in knownRuntimeIds) {
+      if (await Alarm.isRinging(runtimeId)) {
+        anyKnownAlarmRinging = true;
+        break;
+      }
+    }
+
+    if (anyKnownAlarmRinging ||
         !mounted ||
         _snoozed ||
         _isProcessingDismiss) {
@@ -152,9 +176,24 @@ class _AlarmGateScreenState extends State<AlarmGateScreen>
     }
 
     _isRestoringAlarmSound = true;
-    _hasRestoredStoppedAlarmSound = true;
+    _lastAlarmSoundRestoreAt = now;
+    _alarmSoundRestoreAttempts++;
+
+    final scheduledSnapshot = scheduledAlarms
+        .map(
+          (alarm) =>
+              'id=${alarm.id}, payload=${alarm.payload ?? '-'}, time=${alarm.dateTime.toIso8601String()}',
+        )
+        .join(' | ');
     debugPrint(
-      '⚠️ Alarm notification/audio stopped while AlarmGate is open. Restoring original alarm sound once.',
+      '⚠️ Alarm notification/audio stopped while AlarmGate is open. '
+      'Restoring original alarm sound. '
+      'attempt=$_alarmSoundRestoreAttempts, '
+      'dbAlarmId=$dbAlarmId, '
+      'originalRuntimeId=${widget.alarmSettings.id}, '
+      'knownRuntimeIds=${knownRuntimeIds.join(',')}, '
+      'matchingPayloadIds=${matchingPayloadAlarms.map((alarm) => alarm.id).join(',')}, '
+      'scheduled=[$scheduledSnapshot]',
     );
 
     try {
@@ -164,6 +203,11 @@ class _AlarmGateScreenState extends State<AlarmGateScreen>
     } finally {
       _isRestoringAlarmSound = false;
     }
+  }
+
+  void _resetAlarmSoundRestoreWindow() {
+    _lastAlarmSoundRestoreAt = null;
+    _alarmSoundRestoreAttempts = 0;
   }
 
   // ── snooze logic ───────────────────────────────────────────────────────────
@@ -215,19 +259,23 @@ class _AlarmGateScreenState extends State<AlarmGateScreen>
     _isFinishingSnooze = true;
     _countdownTimer?.cancel();
 
-    await context.read<AlarmCubit>().wakeSnoozedAlarmNow(
-      alarmSettings: widget.alarmSettings,
-      alarmRef: _alarmRef,
+    // The future snooze alarm was already scheduled when the user tapped
+    // Snooze. When the local countdown reaches zero, only return this gate to
+    // active mode. Scheduling another immediate alarm here creates duplicate
+    // Alarm.set calls and can make the package stop/restart the same alarm.
+    debugPrint(
+      '⏰ Snooze countdown finished for DB alarm ${_m.alarmId}. '
+      'Returning existing AlarmGate to active mode.',
     );
 
-    if (!mounted) return;
-
-    setState(() {
-      _snoozed = false;
-      _hasRestoredStoppedAlarmSound = false;
-      _remaining = Duration.zero;
-      _pulseCtrl.repeat(reverse: true);
-    });
+    if (mounted) {
+      setState(() {
+        _snoozed = false;
+        _resetAlarmSoundRestoreWindow();
+        _remaining = Duration.zero;
+        _pulseCtrl.repeat(reverse: true);
+      });
+    }
 
     _isFinishingSnooze = false;
   }
@@ -244,7 +292,7 @@ class _AlarmGateScreenState extends State<AlarmGateScreen>
 
     setState(() {
       _snoozed = false;
-      _hasRestoredStoppedAlarmSound = false;
+      _resetAlarmSoundRestoreWindow();
       _remaining = Duration.zero;
       _pulseCtrl.repeat(reverse: true);
     });
