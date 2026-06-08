@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 import 'package:alarm/alarm.dart';
 import 'package:alarm/utils/alarm_set.dart';
+import 'package:flutter/foundation.dart';
 import 'package:alarm_walker/app_router.dart';
 import 'package:alarm_walker/extensions/context_extensions.dart';
 import 'package:alarm_walker/models/alarm_model.dart';
@@ -78,9 +79,9 @@ class _HomeState extends State<Home> {
     final dbAlarmId = payload == null ? null : int.tryParse(payload);
 
     if (dbAlarmId == null) {
-      debugPrint(
-        '⚠️ Ringing alarm has invalid payload. Stopping orphan alarm.',
-      );
+      if (kDebugMode) {
+        debugPrint('[Home.alarm] Invalid payload. Stopping orphan alarm.');
+      }
       await alarmCubit.stopRuntimeAlarm(alarmRinging.id);
       return;
     }
@@ -90,17 +91,19 @@ class _HomeState extends State<Home> {
     if (!mounted) return;
 
     if (alarmModel == null) {
-      debugPrint(
-        '⚠️ Alarm ID $dbAlarmId not found in DB. Stopping orphan alarm.',
-      );
+      if (kDebugMode) {
+        debugPrint(
+          '[Home.alarm] DB alarm $dbAlarmId not found. Stopping orphan alarm.',
+        );
+      }
       await alarmCubit.stopRuntimeAlarm(alarmRinging.id);
       return;
     }
 
     if (AlarmGateRouteGuard.isActiveForDbAlarm(dbAlarmId)) {
-      debugPrint(
-        '⏰ Alarm gate already active for DB alarm $dbAlarmId. Skipping duplicate route push.',
-      );
+      if (kDebugMode) {
+        debugPrint('[Home.alarm] Gate already active for DB alarm $dbAlarmId.');
+      }
       return;
     }
 

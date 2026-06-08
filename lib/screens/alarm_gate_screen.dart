@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:alarm/alarm.dart';
 import 'package:alarm/model/alarm_settings.dart';
+import 'package:flutter/foundation.dart';
 import 'package:alarm_walker/app_router.dart';
 import 'package:alarm_walker/extensions/context_extensions.dart';
 import 'package:alarm_walker/models/alarm_model.dart';
@@ -124,6 +125,10 @@ class _AlarmGateScreenState extends State<AlarmGateScreen>
   }
 
   // ── active alarm sound protection ─────────────────────────────────────────
+  // Android can stop the package alarm when the notification is dismissed even
+  // while AlarmGate is visible. The watchdog restores the original package
+  // alarm sound, but keeps a cooldown so Alarm.set() has time to settle and
+  // cannot loop rapidly.
 
   void _startAlarmWatchdog() {
     _alarmWatchdogTimer?.cancel();
@@ -134,7 +139,10 @@ class _AlarmGateScreenState extends State<AlarmGateScreen>
   }
 
   Future<void> _restoreSoundIfNotificationWasDismissed() async {
-    if (!mounted || _snoozed || _isProcessingDismiss || _isRestoringAlarmSound) {
+    if (!mounted ||
+        _snoozed ||
+        _isProcessingDismiss ||
+        _isRestoringAlarmSound) {
       return;
     }
 
@@ -168,10 +176,7 @@ class _AlarmGateScreenState extends State<AlarmGateScreen>
       }
     }
 
-    if (anyKnownAlarmRinging ||
-        !mounted ||
-        _snoozed ||
-        _isProcessingDismiss) {
+    if (anyKnownAlarmRinging || !mounted || _snoozed || _isProcessingDismiss) {
       return;
     }
 
@@ -179,22 +184,22 @@ class _AlarmGateScreenState extends State<AlarmGateScreen>
     _lastAlarmSoundRestoreAt = now;
     _alarmSoundRestoreAttempts++;
 
-    final scheduledSnapshot = scheduledAlarms
-        .map(
-          (alarm) =>
-              'id=${alarm.id}, payload=${alarm.payload ?? '-'}, time=${alarm.dateTime.toIso8601String()}',
-        )
-        .join(' | ');
-    debugPrint(
-      '⚠️ Alarm notification/audio stopped while AlarmGate is open. '
-      'Restoring original alarm sound. '
-      'attempt=$_alarmSoundRestoreAttempts, '
-      'dbAlarmId=$dbAlarmId, '
-      'originalRuntimeId=${widget.alarmSettings.id}, '
-      'knownRuntimeIds=${knownRuntimeIds.join(',')}, '
-      'matchingPayloadIds=${matchingPayloadAlarms.map((alarm) => alarm.id).join(',')}, '
-      'scheduled=[$scheduledSnapshot]',
-    );
+    if (kDebugMode) {
+      final scheduledSnapshot = scheduledAlarms
+          .map(
+            (alarm) =>
+                'id=${alarm.id}, payload=${alarm.payload ?? '-'}, time=${alarm.dateTime.toIso8601String()}',
+          )
+          .join(' | ');
+      debugPrint(
+        '[AlarmGate.watchdog] Restoring stopped alarm sound. '
+        'attempt=$_alarmSoundRestoreAttempts, '
+        'dbAlarmId=$dbAlarmId, '
+        'runtimeIds=${knownRuntimeIds.join(',')}, '
+        'payloadMatches=${matchingPayloadAlarms.map((alarm) => alarm.id).join(',')}, '
+        'scheduled=[$scheduledSnapshot]',
+      );
+    }
 
     try {
       await context.read<AlarmCubit>().restoreActiveAlarmSound(
@@ -263,10 +268,12 @@ class _AlarmGateScreenState extends State<AlarmGateScreen>
     // Snooze. When the local countdown reaches zero, only return this gate to
     // active mode. Scheduling another immediate alarm here creates duplicate
     // Alarm.set calls and can make the package stop/restart the same alarm.
-    debugPrint(
-      '⏰ Snooze countdown finished for DB alarm ${_m.alarmId}. '
-      'Returning existing AlarmGate to active mode.',
-    );
+    if (kDebugMode) {
+      debugPrint(
+        '[AlarmGate.snooze] Countdown finished for DB alarm ${_m.alarmId}; '
+        'returning existing gate to active mode.',
+      );
+    }
 
     if (mounted) {
       setState(() {
