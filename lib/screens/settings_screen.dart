@@ -222,10 +222,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       await DatabaseDebugAccessService.unlock();
       if (!mounted) return;
       setState(() => _databaseDebugUnlocked = true);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.tr('Database viewer unlocked for this device')),
-        ),
+      _showVersionSnackBar(
+        context.tr('Database viewer unlocked for this device'),
+        duration: const Duration(seconds: 2),
       );
       return;
     }
@@ -234,21 +233,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (!mounted) return;
 
     if (_databaseDebugUnlocked || _versionTapCount < 5) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.tr('App version copied'))),
-      );
+      _showVersionSnackBar(context.tr('App version copied'));
       return;
     }
 
     final remaining = 8 - _versionTapCount;
-    ScaffoldMessenger.of(context).showSnackBar(
+    _showVersionSnackBar(
+      context.tr(
+        '{count} more taps to unlock database viewer',
+        {'count': remaining},
+      ),
+    );
+  }
+
+  void _showVersionSnackBar(
+    String message, {
+    Duration duration = const Duration(milliseconds: 900),
+  }) {
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.clearSnackBars();
+    messenger.showSnackBar(
       SnackBar(
-        content: Text(
-          context.tr(
-            '{count} more taps to unlock database viewer',
-            {'count': remaining},
-          ),
-        ),
+        content: Text(message),
+        duration: duration,
+        behavior: SnackBarBehavior.floating,
       ),
     );
   }

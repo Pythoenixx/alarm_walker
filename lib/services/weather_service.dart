@@ -23,6 +23,7 @@ class WeatherService {
   static const manualLatitudeKey = 'weatherManualLatitude';
   static const manualLongitudeKey = 'weatherManualLongitude';
   static const _weatherCacheKey = 'weatherLastSuccessfulResponse';
+  static const _locationCacheKey = 'weatherLastSuccessfulLocation';
 
   Future<WeatherModel> getCurrentWeather() async {
     try {
@@ -45,15 +46,23 @@ class WeatherService {
   }
 
   Future<_ResolvedWeatherLocation> _loadWeatherLocation() async {
-    final position = await _determinePosition();
-    final lat = position.latitude.toStringAsFixed(2);
-    final lon = position.longitude.toStringAsFixed(2);
-    return _ResolvedWeatherLocation(
-      name: 'GPS $lat, $lon',
-      latitude: position.latitude,
-      longitude: position.longitude,
-      isManual: false,
-    );
+    try {
+      final position = await _determinePosition();
+      final lat = position.latitude.toStringAsFixed(2);
+      final lon = position.longitude.toStringAsFixed(2);
+      final location = _ResolvedWeatherLocation(
+        name: 'GPS $lat, $lon',
+        latitude: position.latitude,
+        longitude: position.longitude,
+        isManual: false,
+      );
+      await _saveCachedLocation(location);
+      return location;
+    } on WeatherException {
+      final cachedLocation = _loadCachedLocation();
+      if (cachedLocation != null) return cachedLocation;
+      rethrow;
+    }
   }
 
   Future<WeatherModel> _fetchCurrentWeather({
@@ -103,6 +112,45 @@ class WeatherService {
       _weatherCacheKey,
       jsonEncode(weather.toCacheJson()),
     );
+  }
+
+  Future<void> _saveCachedLocation(_ResolvedWeatherLocation location) async {
+    await SharedPreferencesWithCache.instance.setString(
+      _locationCacheKey,
+      jsonEncode({
+        'latitude': location.latitude,
+        'longitude': location.longitude,
+        'name': location.name,
+        'isManual': location.isManual,
+      }),
+    );
+  }
+
+  _ResolvedWeatherLocation? _loadCachedLocation() {
+    final cacheText = SharedPreferencesWithCache.instance.get<String>(
+      _locationCacheKey,
+    );
+    if (cacheText == null || cacheText.trim().isEmpty) return null;
+
+    try {
+      final decoded = jsonDecode(cacheText);
+      if (decoded is! Map<String, dynamic>) return null;
+
+      final latitude = decoded['latitude'];
+      final longitude = decoded['longitude'];
+      if (latitude is! num || longitude is! num) return null;
+
+      return _ResolvedWeatherLocation(
+        // Do not claim this is the live GPS position. It is only the most
+        // recent location that previously worked for weather refresh.
+        name: 'Last known location',
+        latitude: latitude.toDouble(),
+        longitude: longitude.toDouble(),
+        isManual: decoded['isManual'] as bool? ?? false,
+      );
+    } catch (_) {
+      return null;
+    }
   }
 
   WeatherModel? _loadCachedWeather() {

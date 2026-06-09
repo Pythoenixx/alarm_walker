@@ -434,6 +434,7 @@ const Map<String, String> _msTranslations = {
   '{message} · using saved weather': '{message} · menggunakan cuaca tersimpan',
   'Current location': 'Lokasi semasa',
   'Saved location': 'Lokasi tersimpan',
+  'Last known location': 'Lokasi terakhir diketahui',
   'Clear sky': 'Langit cerah',
   'Partly cloudy': 'Separa mendung',
   'Foggy': 'Berkabus',

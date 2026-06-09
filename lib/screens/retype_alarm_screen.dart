@@ -31,18 +31,19 @@ class _RetypeAlarmScreenState extends State<RetypeAlarmScreen> {
   String? _error;
   bool _isCorrect = false;
 
-  // List of sentences to choose from
+  // Random default phrases are intentionally mixed-case and symbol-heavy.
+  // This keeps Retype firmer when the user leaves the custom phrase empty.
   static const List<String> _sentences = [
-    'k9!2z.Q7@4m',
-    'v8?P1@x5.R3',
-    '2!mZ.9q@7B',
-    'x6.1V@p9?3k',
-    '7L@4n.8j!1w',
-    'b3?9m.V1@6z',
-    '4k.7Q!2w@8p',
-    '9!5z.R2@1x',
-    'm7@3k.V9?4j',
-    '1q.8Z!5p@2n',
+    'K9!2z.Q7@4mX',
+    'V8?P1@x5.R3t',
+    '2!mZ.9q@7Bv',
+    'X6.1V@p9?3kL',
+    '7L@4n.8j!1wQ',
+    'B3?9m.V1@6zR',
+    '4k.7Q!2w@8pN',
+    '9!5z.R2@1xT',
+    'M7@3k.V9?4jS',
+    '1q.8Z!5p@2nD',
   ];
 
   @override
