@@ -306,7 +306,7 @@ class _OverviewHero extends StatelessWidget {
                 label:
                     latest == null
                         ? context.tr('No latest wake')
-                        : context.tr('Latest {time}', {'time': DateFormat('MMM d, h:mm a').format(latest)}),
+                        : context.tr('Latest {time}', {'time': _formatLatestWakeTime(context, latest)}),
               ),
             ],
           ),
@@ -314,6 +314,30 @@ class _OverviewHero extends StatelessWidget {
       ),
     );
   }
+
+  String _formatLatestWakeTime(BuildContext context, DateTime dt) {
+    final time = DateFormat('h:mm a').format(dt);
+    if (Localizations.localeOf(context).languageCode != 'ms') {
+      return DateFormat('MMM d, h:mm a').format(dt);
+    }
+    return '${dt.day} ${_msMonthAbbreviation(dt.month)}, $time';
+  }
+
+  String _msMonthAbbreviation(int month) => switch (month) {
+    DateTime.january => 'Jan',
+    DateTime.february => 'Feb',
+    DateTime.march => 'Mac',
+    DateTime.april => 'Apr',
+    DateTime.may => 'Mei',
+    DateTime.june => 'Jun',
+    DateTime.july => 'Jul',
+    DateTime.august => 'Ogos',
+    DateTime.september => 'Sep',
+    DateTime.october => 'Okt',
+    DateTime.november => 'Nov',
+    DateTime.december => 'Dis',
+    _ => '',
+  };
 }
 
 class _HeroChip extends StatelessWidget {
@@ -952,7 +976,39 @@ class _WakeHistoryList extends StatelessWidget {
 
   const _WakeHistoryList({required this.logs, required this.isDark});
 
-  String _formatDate(DateTime dt) => DateFormat('EEE, MMM d').format(dt);
+  String _formatDate(BuildContext context, DateTime dt) {
+    if (Localizations.localeOf(context).languageCode != 'ms') {
+      return DateFormat('EEE, MMM d').format(dt);
+    }
+    return '${_msWeekdayAbbreviation(dt.weekday)}, ${dt.day} ${_msMonthAbbreviation(dt.month)}';
+  }
+
+  String _msWeekdayAbbreviation(int weekday) => switch (weekday) {
+    DateTime.monday => 'Isn',
+    DateTime.tuesday => 'Sel',
+    DateTime.wednesday => 'Rab',
+    DateTime.thursday => 'Kha',
+    DateTime.friday => 'Jum',
+    DateTime.saturday => 'Sab',
+    DateTime.sunday => 'Ahd',
+    _ => '',
+  };
+
+  String _msMonthAbbreviation(int month) => switch (month) {
+    DateTime.january => 'Jan',
+    DateTime.february => 'Feb',
+    DateTime.march => 'Mac',
+    DateTime.april => 'Apr',
+    DateTime.may => 'Mei',
+    DateTime.june => 'Jun',
+    DateTime.july => 'Jul',
+    DateTime.august => 'Ogos',
+    DateTime.september => 'Sep',
+    DateTime.october => 'Okt',
+    DateTime.november => 'Nov',
+    DateTime.december => 'Dis',
+    _ => '',
+  };
 
   String _formatTime(DateTime dt) => DateFormat('h:mm a').format(dt);
 
@@ -1008,7 +1064,7 @@ class _WakeHistoryList extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 12),
               child: _WakeLogCard(
                 log: log,
-                date: _formatDate(log.wakeTime),
+                date: _formatDate(context, log.wakeTime),
                 time: _formatTime(log.wakeTime),
                 isDark: isDark,
               ),

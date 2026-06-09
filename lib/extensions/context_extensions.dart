@@ -484,4 +484,24 @@ const Map<String, String> _msTranslations = {
   'Auto-fails a task if not completed in time': 'Tugasan gagal automatik jika tidak siap dalam masa ditetapkan',
   'Seconds per task': 'Saat setiap tugasan',
 
+
+  // Database admin screen
+  'Database Admin': 'Admin Pangkalan Data',
+  'Admin-only local database viewer': 'Paparan pangkalan data tempatan untuk admin sahaja',
+  'Local Database Viewer': 'Paparan Pangkalan Data Tempatan',
+  'Admin-only view for checking local alarm, settings, and wake log records.': 'Paparan admin sahaja untuk menyemak rekod penggera, tetapan, dan log bangun tempatan.',
+  'Tables': 'Jadual',
+  'Select table': 'Pilih jadual',
+  '{rows} rows · {columns} columns': '{rows} baris · {columns} lajur',
+  'No primary key': 'Tiada kunci utama',
+  'PK': 'PK',
+  'No rows in this table yet.': 'Belum ada baris dalam jadual ini.',
+  'Actions': 'Tindakan',
+  'Delete row': 'Padam baris',
+  'Delete row?': 'Padam baris?',
+  'This will permanently delete the selected database row. Use this only for admin testing or cleanup.': 'Ini akan memadam baris pangkalan data yang dipilih secara kekal. Gunakan hanya untuk ujian atau pembersihan admin.',
+  'Admin access required': 'Akses admin diperlukan',
+  'This local database viewer is only shown to accounts with the admin role.': 'Paparan pangkalan data tempatan ini hanya ditunjukkan kepada akaun dengan peranan admin.',
+  'No local database tables found': 'Tiada jadual pangkalan data tempatan dijumpai',
+
 };

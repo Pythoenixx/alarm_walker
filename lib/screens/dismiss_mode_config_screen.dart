@@ -394,8 +394,8 @@ class _DismissModeConfigScreenState extends State<DismissModeConfigScreen> {
           padding: const EdgeInsets.only(bottom: 32),
           children: [
             ...modeConfig,
-            // Task timer applies to all challenge modes
-            ..._buildGeneralConfig(isDark),
+            // Runtime task timer is currently implemented for Math tasks.
+            if (_s.mode == AlarmDisarmMode.math) ..._buildGeneralConfig(isDark),
           ],
         ),
       ),

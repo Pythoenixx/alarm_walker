@@ -9,6 +9,7 @@ import 'package:alarm_walker/screens/dismiss_settings_screen.dart';
 import 'package:alarm_walker/screens/snooze_settings_screen.dart';
 import 'package:alarm_walker/screens/sound_settings_screen.dart';
 import 'package:alarm_walker/services/alarm_cubit.dart';
+import 'package:alarm_walker/services/admin_auth_service.dart';
 import 'package:alarm_walker/services/settings_cubit.dart';
 import 'package:alarm_walker/services/reminder_notification_service.dart';
 import 'package:alarm_walker/theme/app_colors.dart';
@@ -32,11 +33,20 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   String _version = '';
+  late final Future<bool> _showDatabaseAdminTile;
 
   @override
   void initState() {
     super.initState();
+    _showDatabaseAdminTile = _canShowDatabaseAdminTile();
     _loadVersion();
+  }
+
+  Future<bool> _canShowDatabaseAdminTile() async {
+    final service = AdminAuthService();
+    final user = service.currentUser;
+    if (user == null) return false;
+    return service.isAuthorizedAdmin(user);
   }
 
   Future<void> _loadVersion() async {
@@ -492,15 +502,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   label: context.tr('System'),
                   isDark: isDark,
                 ), // TODO: localize
-                SettingsTile(
-                  onTap: () => context.pushNamed(AppRoute.database.name),
-                  child: _NavRow(
-                    icon: Icons.storage_outlined,
-                    label: context.localization.database,
-                    isDark: isDark,
-                  ),
+                FutureBuilder<bool>(
+                  future: _showDatabaseAdminTile,
+                  builder: (context, snapshot) {
+                    if (snapshot.data != true) {
+                      return const SizedBox.shrink();
+                    }
+
+                    return Column(
+                      children: [
+                        SettingsTile(
+                          onTap: () => context.pushNamed(AppRoute.database.name),
+                          child: _NavRow(
+                            icon: Icons.storage_outlined,
+                            label: context.localization.database,
+                            subtitle: context.tr('Admin-only local database viewer'),
+                            isDark: isDark,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                      ],
+                    );
+                  },
                 ),
-                const SizedBox(height: 8),
                 SettingsTile(
                   onTap: _showPermissionsSheet,
                   child: _NavRow(

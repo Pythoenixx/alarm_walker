@@ -16,8 +16,8 @@ class ProfileCategoryPresets {
         shakeCount: 18,
         shakeIntensity: 1,
         walkSteps: 20,
-        reTypeText: 'Wake up',
-        reTypeCaseSensitive: false,
+        reTypeText: '',
+        reTypeCaseSensitive: true,
       ),
       ProfileCategory.adult => const DismissSettings(
         mode: AlarmDisarmMode.shake,
@@ -27,8 +27,8 @@ class ProfileCategoryPresets {
         shakeCount: 30,
         shakeIntensity: 2,
         walkSteps: 30,
-        reTypeText: 'I am awake',
-        reTypeCaseSensitive: false,
+        reTypeText: '',
+        reTypeCaseSensitive: true,
       ),
       ProfileCategory.senior => const DismissSettings(
         mode: AlarmDisarmMode.shake,
@@ -38,8 +38,8 @@ class ProfileCategoryPresets {
         shakeCount: 12,
         shakeIntensity: 1,
         walkSteps: 15,
-        reTypeText: 'Wake up',
-        reTypeCaseSensitive: false,
+        reTypeText: '',
+        reTypeCaseSensitive: true,
       ),
     };
   }

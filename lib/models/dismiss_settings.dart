@@ -26,7 +26,7 @@ class DismissSettings {
     this.shakeCount = 30,
     this.shakeIntensity = 1,
     this.reTypeText = '',
-    this.reTypeCaseSensitive = false,
+    this.reTypeCaseSensitive = true,
     this.taskTimerSeconds,
   });
 
@@ -82,7 +82,7 @@ class DismissSettings {
         shakeCount: json['shakeCount'] as int? ?? 30,
         shakeIntensity: json['shakeIntensity'] as int? ?? 1,
         reTypeText: json['reTypeText'] as String? ?? '',
-        reTypeCaseSensitive: json['reTypeCaseSensitive'] as bool? ?? false,
+        reTypeCaseSensitive: json['reTypeCaseSensitive'] as bool? ?? true,
         taskTimerSeconds: json['taskTimerSeconds'] as int?,
       );
 }
