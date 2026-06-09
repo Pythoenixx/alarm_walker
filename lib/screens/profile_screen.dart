@@ -62,6 +62,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
 
     if (!mounted) return;
+    context.read<ProfileCubit>().setCachedProfile(profile);
     setState(() => _profile = profile);
   }
 
@@ -241,7 +242,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       profileCategory: selectedCategory,
     );
 
-    await widget.userRepo.saveProfile(updated);
+    await context.read<ProfileCubit>().updateProfile(updated);
     final syncedToCloud = await ProfileCategorySyncService.saveCategory(
       userId: updated.userId,
       category: selectedCategory,

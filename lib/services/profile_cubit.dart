@@ -22,6 +22,10 @@ class ProfileCubit extends Cubit<UserProfile?> {
     );
   }
 
+  void setCachedProfile(UserProfile profile) {
+    emit(profile);
+  }
+
   Future<void> updateProfile(UserProfile updated) async {
     await repository.saveProfile(updated);
     emit(updated);
