@@ -109,7 +109,7 @@ class _DismissModeConfigScreenState extends State<DismissModeConfigScreen> {
   }
 
   Widget _buildDifficultyPicker(int current) {
-    const labels = ['Easy', 'Medium', 'Hard']; // TODO: localize
+    final labels = [context.tr('Easy'), context.tr('Medium'), context.tr('Hard')];
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
       child: Row(
@@ -150,15 +150,14 @@ class _DismissModeConfigScreenState extends State<DismissModeConfigScreen> {
   // ── Mode-specific sections ─────────────────────────────────────────────────
 
   List<Widget> _buildWalkConfig(bool isDark) => [
-    _buildSection('Walk settings', [
-      // TODO: localize
+    _buildSection(context.tr('Walk settings'), [
       _sliderRow(
-        label: 'Steps required',
+        label: context.tr('Steps required'),
         value: _s.walkSteps.toDouble(),
         min: 10,
         max: 200,
         divisions: 19,
-        display: (v) => '${v.round()} steps',
+        display: (v) => context.tr('{count} steps', {'count': v.round()}),
         onChanged:
             (v) => setState(() => _s = _s.copyWith(walkSteps: v.round())),
       ),
@@ -166,19 +165,18 @@ class _DismissModeConfigScreenState extends State<DismissModeConfigScreen> {
   ];
 
   List<Widget> _buildMathConfig(bool isDark) => [
-    _buildSection('Math settings', [
-      // TODO: localize
+    _buildSection(context.tr('Math settings'), [
       Padding(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
         child: Text(
-          'Difficulty',
+          context.tr('Difficulty'),
           style: AppTextStyles.caption(context),
-        ), // TODO: localize
+        ),
       ),
       _buildDifficultyPicker(_s.mathDifficulty),
       const Divider(height: 1, indent: 16),
       _sliderRow(
-        label: 'Number of problems',
+        label: context.tr('Number of problems'),
         value: _s.mathProblemCount.toDouble(),
         min: 1,
         max: 10,
@@ -190,8 +188,8 @@ class _DismissModeConfigScreenState extends State<DismissModeConfigScreen> {
       ),
       const Divider(height: 1, indent: 16),
       AppSwitchTile(
-        title: 'Allow skipping problems', // TODO: localize
-        subtitle: 'Can skip a hard problem at a small time penalty',
+        title: context.tr('Allow skipping problems'),
+        subtitle: context.tr('Can skip a hard problem at a small time penalty'),
         value: _s.mathAllowSkip,
         onChanged: (v) => setState(() => _s = _s.copyWith(mathAllowSkip: v)),
       ),
@@ -199,10 +197,9 @@ class _DismissModeConfigScreenState extends State<DismissModeConfigScreen> {
   ];
 
   List<Widget> _buildShakeConfig(bool isDark) => [
-    _buildSection('Shake settings', [
-      // TODO: localize
+    _buildSection(context.tr('Shake settings'), [
       _sliderRow(
-        label: 'Shakes required',
+        label: context.tr('Shakes required'),
         value: _s.shakeCount.toDouble(),
         min: 1,
         max: 100,
@@ -218,18 +215,18 @@ class _DismissModeConfigScreenState extends State<DismissModeConfigScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Intensity threshold',
+              context.tr('Intensity threshold'),
               style: AppTextStyles.caption(context),
-            ), // TODO: localize
+            ),
             const SizedBox(height: 8),
             Row(
               children: List.generate(3, (i) {
                 final v = i + 1;
                 final labels = [
-                  'Light',
-                  'Normal',
-                  'Vigorous',
-                ]; // TODO: localize
+                  context.tr('Light'),
+                  context.tr('Normal'),
+                  context.tr('Vigorous'),
+                ];
                 final selected = _s.shakeIntensity == v;
                 return Expanded(
                   child: GestureDetector(
@@ -272,22 +269,21 @@ class _DismissModeConfigScreenState extends State<DismissModeConfigScreen> {
   ];
 
   List<Widget> _buildReTypeConfig(bool isDark) => [
-    _buildSection('Retype settings', [
-      // TODO: localize
+    _buildSection(context.tr('Retype settings'), [
       Padding(
         padding: const EdgeInsets.all(16),
         child: TextField(
           controller: _reTypeController,
-          decoration: const InputDecoration(
-            labelText: 'Phrase to retype', // TODO: localize
-            hintText: 'e.g. "I am awake"',
+          decoration: InputDecoration(
+            labelText: context.tr('Phrase to retype'),
+            hintText: context.tr('e.g. "I am awake"'),
           ),
           maxLength: 60,
         ),
       ),
       const Divider(height: 1, indent: 16),
       AppSwitchTile(
-        title: 'Case sensitive', // TODO: localize
+        title: context.tr('Case sensitive'),
         value: _s.reTypeCaseSensitive,
         onChanged:
             (v) => setState(() => _s = _s.copyWith(reTypeCaseSensitive: v)),
@@ -300,11 +296,10 @@ class _DismissModeConfigScreenState extends State<DismissModeConfigScreen> {
   List<Widget> _buildGeneralConfig(bool isDark) {
     final hasTimer = _s.taskTimerSeconds != null;
     return [
-      _buildSection('Task timer', [
-        // TODO: localize
+      _buildSection(context.tr('Task timer'), [
         AppSwitchTile(
-          title: 'Limit time per task', // TODO: localize
-          subtitle: 'Auto-fails a task if not completed in time',
+          title: context.tr('Limit time per task'),
+          subtitle: context.tr('Auto-fails a task if not completed in time'),
           value: hasTimer,
           onChanged:
               (v) => setState(
@@ -322,7 +317,7 @@ class _DismissModeConfigScreenState extends State<DismissModeConfigScreen> {
           child:
               hasTimer
                   ? _sliderRow(
-                    label: 'Seconds per task',
+                    label: context.tr('Seconds per task'),
                     value: (_s.taskTimerSeconds ?? 30).toDouble(),
                     min: 10,
                     max: 120,
@@ -346,7 +341,7 @@ class _DismissModeConfigScreenState extends State<DismissModeConfigScreen> {
     final bool isDark = context.isDarkMode;
 
     final modeTitle = switch (_s.mode) {
-      AlarmDisarmMode.walk => 'Walk', // TODO: localize
+      AlarmDisarmMode.walk => 'Walk',
       AlarmDisarmMode.math => 'Math',
       AlarmDisarmMode.shake => 'Shake',
       AlarmDisarmMode.retype => 'Retype',
@@ -378,9 +373,9 @@ class _DismissModeConfigScreenState extends State<DismissModeConfigScreen> {
           TextButton(
             onPressed: _save,
             child: Text(
-              'Save',
+              context.tr('Save'),
               style: TextStyle(color: AppColors.primary),
-            ), // TODO: localize
+            ),
           ),
         ],
       ),

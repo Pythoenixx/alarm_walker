@@ -45,18 +45,18 @@ class _AlarmTileState extends State<AlarmTile> {
     _selectedDays = widget.alarmModel.days.toSet();
   }
 
-  String _repeatLabel() {
-    if (widget.alarmModel.isOnce) return 'One-time';
-    if (_selectedDays.isEmpty) return 'No repeat days';
+  String _repeatLabel(BuildContext context) {
+    if (widget.alarmModel.isOnce) return context.tr('One-time');
+    if (_selectedDays.isEmpty) return context.tr('No repeat days');
 
-    const dayLabels = {
-      DateTime.monday: 'Mon',
-      DateTime.tuesday: 'Tue',
-      DateTime.wednesday: 'Wed',
-      DateTime.thursday: 'Thu',
-      DateTime.friday: 'Fri',
-      DateTime.saturday: 'Sat',
-      DateTime.sunday: 'Sun',
+    final dayLabels = {
+      DateTime.monday: context.tr('Mon'),
+      DateTime.tuesday: context.tr('Tue'),
+      DateTime.wednesday: context.tr('Wed'),
+      DateTime.thursday: context.tr('Thu'),
+      DateTime.friday: context.tr('Fri'),
+      DateTime.saturday: context.tr('Sat'),
+      DateTime.sunday: context.tr('Sun'),
     };
 
     final ordered = [
@@ -69,7 +69,7 @@ class _AlarmTileState extends State<AlarmTile> {
       DateTime.sunday,
     ];
 
-    if (_selectedDays.length == 7) return 'Every day';
+    if (_selectedDays.length == 7) return context.tr('Every day');
     if (_selectedDays.length == 5 &&
         _selectedDays.containsAll([
           DateTime.monday,
@@ -78,7 +78,7 @@ class _AlarmTileState extends State<AlarmTile> {
           DateTime.thursday,
           DateTime.friday,
         ])) {
-      return 'Weekdays';
+      return context.tr('Weekdays');
     }
 
     return ordered
@@ -97,21 +97,24 @@ class _AlarmTileState extends State<AlarmTile> {
     };
   }
 
-  String _dismissModeLabel(AlarmDisarmMode mode) {
+  String _dismissModeLabel(BuildContext context, AlarmDisarmMode mode) {
     return switch (mode) {
-      AlarmDisarmMode.normal => 'Normal',
-      AlarmDisarmMode.walk => 'Walk',
-      AlarmDisarmMode.math => 'Math',
-      AlarmDisarmMode.shake => 'Shake',
-      AlarmDisarmMode.retype => 'Retype',
+      AlarmDisarmMode.normal => context.tr('Normal'),
+      AlarmDisarmMode.walk => context.tr('Walk'),
+      AlarmDisarmMode.math => context.tr('Math'),
+      AlarmDisarmMode.shake => context.tr('Shake'),
+      AlarmDisarmMode.retype => context.tr('Retype'),
     };
   }
 
-  String _snoozeLabel() {
+  String _snoozeLabel(BuildContext context) {
     final snooze = widget.alarmModel.snoozeSettings;
-    if (!snooze.enabled) return 'Snooze off';
+    if (!snooze.enabled) return context.tr('Snooze off');
     final max = snooze.maxCount == 0 ? '∞' : '${snooze.maxCount}×';
-    return 'Snooze ${snooze.durationMinutes} min · max $max';
+    return context.tr(
+      'Snooze {minutes} min · max {max}',
+      {'minutes': snooze.durationMinutes, 'max': max},
+    );
   }
 
   Color _mutedColor(bool isDark) {
@@ -151,7 +154,7 @@ class _AlarmTileState extends State<AlarmTile> {
   }) {
     final accent = active ? AppColors.primary : _mutedColor(isDark);
     return Tooltip(
-      message: 'Repeat: ${_repeatLabel()}',
+      message: context.tr('Repeat: {repeat}', {'repeat': _repeatLabel(context)}),
       child: Container(
         height: 28,
         padding: const EdgeInsets.symmetric(horizontal: 9),
@@ -174,7 +177,7 @@ class _AlarmTileState extends State<AlarmTile> {
             ),
             const SizedBox(width: 5),
             Text(
-              _repeatLabel(),
+              _repeatLabel(context),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
@@ -301,7 +304,7 @@ class _AlarmTileState extends State<AlarmTile> {
                           children: [
                             Text(
                               alarm.title.trim().isEmpty
-                                  ? 'Alarm'
+                                  ? context.tr('Alarm')
                                   : alarm.title.trim(),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -343,14 +346,22 @@ class _AlarmTileState extends State<AlarmTile> {
                                       alarm.dismissSettings.mode,
                                     ),
                                     tooltip:
-                                        'Dismiss mode: ${_dismissModeLabel(alarm.dismissSettings.mode)}',
+                                        context.tr('Dismiss mode: {mode}', {
+                                          'mode': _dismissModeLabel(
+                                            context,
+                                            alarm.dismissSettings.mode,
+                                          ),
+                                        }),
                                     isDark: isDark,
                                     active: isVisuallyActive,
                                   ),
                                   _iconBadge(
                                     icon: Icons.music_note_outlined,
                                     tooltip:
-                                        'Sound: ${alarm.soundSettings.soundName ?? 'Default'}',
+                                        context.tr('Sound: {sound}', {
+                                          'sound': alarm.soundSettings.soundName ??
+                                              context.tr('Default'),
+                                        }),
                                     isDark: isDark,
                                     active: isVisuallyActive,
                                   ),
@@ -359,7 +370,7 @@ class _AlarmTileState extends State<AlarmTile> {
                                         alarm.snoozeSettings.enabled
                                             ? Icons.snooze_outlined
                                             : Icons.snooze_rounded,
-                                    tooltip: _snoozeLabel(),
+                                    tooltip: _snoozeLabel(context),
                                     isDark: isDark,
                                     active:
                                         isVisuallyActive &&
@@ -368,7 +379,7 @@ class _AlarmTileState extends State<AlarmTile> {
                                   if (isPausedByVacation)
                                     _iconBadge(
                                       icon: Icons.beach_access_outlined,
-                                      tooltip: 'Vacation paused',
+                                      tooltip: context.tr('Vacation paused'),
                                       isDark: isDark,
                                       active: true,
                                       color: Colors.orange,

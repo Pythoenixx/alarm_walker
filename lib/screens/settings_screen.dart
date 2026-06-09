@@ -790,27 +790,27 @@ class _PermissionsSheetState extends State<_PermissionsSheet> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Permissions', // TODO: localize
+            context.tr('Permissions'),
             style: AppTextStyles.heading(context),
           ),
           const SizedBox(height: 4),
           Text(
-            'These permissions are required for alarms to work reliably.', // TODO: localize
+            context.tr('These permissions are required for alarms to work reliably.'),
             style: AppTextStyles.caption(context),
           ),
           const SizedBox(height: 20),
           _PermissionRow(
             icon: Icons.notifications_outlined,
-            label: 'Notifications', // TODO: localize
-            description: 'Show alarm notifications',
+            label: context.tr('Notifications'),
+            description: context.tr('Show alarm notifications'),
             status: _notification,
             onRequest: () => _request(Permission.notification),
           ),
           const SizedBox(height: 12),
           _PermissionRow(
             icon: Icons.alarm_outlined,
-            label: 'Exact alarms', // TODO: localize
-            description: 'Schedule alarms at precise times',
+            label: context.tr('Exact alarms'),
+            description: context.tr('Schedule alarms at precise times'),
             status: _exactAlarm,
             onRequest: () => _request(Permission.scheduleExactAlarm),
           ),
@@ -841,11 +841,11 @@ class _PermissionRow extends StatelessWidget {
     final granted = status.isGranted;
     final statusColor = granted ? Colors.green : Colors.orange;
     final statusLabel = switch (status) {
-      PermissionStatus.granted => 'Granted', // TODO: localize
-      PermissionStatus.denied => 'Denied',
-      PermissionStatus.permanentlyDenied => 'Blocked — tap to open settings',
-      PermissionStatus.restricted => 'Restricted',
-      _ => 'Unknown',
+      PermissionStatus.granted => context.tr('Granted'),
+      PermissionStatus.denied => context.tr('Denied'),
+      PermissionStatus.permanentlyDenied => context.tr('Blocked — tap to open settings'),
+      PermissionStatus.restricted => context.tr('Restricted'),
+      _ => context.tr('Unknown'),
     };
 
     return Row(
@@ -903,8 +903,8 @@ class _PermissionRow extends StatelessWidget {
               ),
               child: Text(
                 status.isPermanentlyDenied
-                    ? 'Open settings'
-                    : statusLabel, // TODO: localize
+                    ? context.tr('Open settings')
+                    : statusLabel,
                 style: AppTextStyles.caption(
                   context,
                 ).copyWith(color: statusColor, fontWeight: FontWeight.bold),

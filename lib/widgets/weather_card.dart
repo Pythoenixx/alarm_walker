@@ -31,9 +31,9 @@ class _WeatherCardState extends State<WeatherCard> {
       final weather = await widget.service.getCurrentWeather();
       if (showRefreshFeedback && mounted && weather.isCached) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text(
-              'Weather refresh needs location and internet. Showing last saved weather.',
+              context.tr('Weather refresh needs location and internet. Showing last saved weather.'),
             ),
           ),
         );
@@ -44,7 +44,7 @@ class _WeatherCardState extends State<WeatherCard> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              _friendlyRefreshError(error),
+              _friendlyRefreshError(context, error),
             ),
           ),
         );
@@ -53,12 +53,12 @@ class _WeatherCardState extends State<WeatherCard> {
     }
   }
 
-  String _friendlyRefreshError(Object error) {
+  String _friendlyRefreshError(BuildContext context, Object error) {
     final message = error.toString();
     if (message.toLowerCase().contains('location')) {
-      return 'Weather refresh needs location and internet. Please enable both, then try again.';
+      return context.tr('Weather refresh needs location and internet. Please enable both, then try again.');
     }
-    return 'Weather refresh needs internet. Please check your connection, then try again.';
+    return context.tr('Weather refresh needs internet. Please check your connection, then try again.');
   }
 
   void _refreshWeather() {
@@ -115,7 +115,7 @@ class _WeatherCardState extends State<WeatherCard> {
 
           if (weather == null) {
             return _WeatherError(
-              message: 'Weather data is unavailable.',
+              message: context.tr('Weather data is unavailable.'),
               onRefresh: _refreshWeather,
               isDark: isDark,
             );
@@ -149,7 +149,7 @@ class _WeatherLoading extends StatelessWidget {
         const SizedBox(width: 12),
         Expanded(
           child: Text(
-            'Loading weather...',
+            context.tr('Loading weather...'),
             style: AppTextStyles.body(context).copyWith(
               color: isDark
                   ? AppColors.darkBackgroundText
@@ -197,7 +197,7 @@ class _WeatherError extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Weather unavailable',
+                context.tr('Weather unavailable'),
                 style: AppTextStyles.body(context).copyWith(
                   fontWeight: FontWeight.w600,
                   color: isDark
@@ -207,7 +207,7 @@ class _WeatherError extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                message,
+                context.tr(message),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: AppTextStyles.caption(context),
@@ -216,7 +216,7 @@ class _WeatherError extends StatelessWidget {
           ),
         ),
         IconButton(
-          tooltip: 'Retry',
+          tooltip: context.tr('Retry'),
           onPressed: onRefresh,
           icon: const Icon(Icons.refresh_rounded),
           color: AppColors.primary,
@@ -275,7 +275,7 @@ class _WeatherContent extends StatelessWidget {
                   const SizedBox(width: 8),
                   Flexible(
                     child: Text(
-                      weather.condition,
+                      context.tr(weather.condition),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: AppTextStyles.caption(context).copyWith(
@@ -286,7 +286,7 @@ class _WeatherContent extends StatelessWidget {
                   ),
                   const SizedBox(width: 4),
                   Tooltip(
-                    message: _locationTooltip(weather),
+                    message: _locationTooltip(context, weather),
                     child: Icon(
                       weather.isManualLocation
                           ? Icons.place_outlined
@@ -299,7 +299,7 @@ class _WeatherContent extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                weather.message,
+                context.tr(weather.message),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: AppTextStyles.caption(context).copyWith(
@@ -311,7 +311,7 @@ class _WeatherContent extends StatelessWidget {
           ),
         ),
         IconButton(
-          tooltip: 'Refresh weather',
+          tooltip: context.tr('Refresh weather'),
           onPressed: onRefresh,
           icon: const Icon(Icons.refresh_rounded),
           color: AppColors.primary,
@@ -320,15 +320,15 @@ class _WeatherContent extends StatelessWidget {
     );
   }
 
-  String _locationTooltip(WeatherModel weather) {
+  String _locationTooltip(BuildContext context, WeatherModel weather) {
     final location = weather.locationName.trim();
     if (location.startsWith('GPS ')) {
-      return 'Weather source: $location';
+      return context.tr('Weather source: {location}', {'location': location});
     }
     if (location.isNotEmpty && location != 'Current location') {
-      return 'Weather source: $location';
+      return context.tr('Weather source: {location}', {'location': location});
     }
-    return 'Weather source: device location';
+    return context.tr('Weather source: device location');
   }
 
   IconData _iconForCode(int code) {

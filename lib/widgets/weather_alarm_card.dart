@@ -54,7 +54,7 @@ class _WeatherAlarmCardState extends State<WeatherAlarmCard> {
                   ),
                   const SizedBox(width: 10),
                   Text(
-                    'Checking weather...', // TODO: localize
+                    context.tr('Checking weather...'),
                     style: AppTextStyles.caption(context),
                   ),
                 ],
@@ -71,7 +71,7 @@ class _WeatherAlarmCardState extends State<WeatherAlarmCard> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Weather message unavailable', // TODO: localize
+                      context.tr('Weather message unavailable'),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: AppTextStyles.caption(context),
@@ -105,7 +105,7 @@ class _WeatherAlarmCardState extends State<WeatherAlarmCard> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        '${weather.temperature.round()}°C · ${weather.condition} · ${weather.locationName}',
+                        _weatherSummary(context, weather),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: AppTextStyles.caption(context).copyWith(
@@ -116,8 +116,11 @@ class _WeatherAlarmCardState extends State<WeatherAlarmCard> {
                       const SizedBox(height: 2),
                       Text(
                         weather.isCached
-                            ? '${weather.message} · using saved weather'
-                            : weather.message,
+                            ? context.tr(
+                                '{message} · using saved weather',
+                                {'message': context.tr(weather.message)},
+                              )
+                            : context.tr(weather.message),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: AppTextStyles.caption(context),
@@ -130,6 +133,18 @@ class _WeatherAlarmCardState extends State<WeatherAlarmCard> {
           );
         },
       ),
+    );
+  }
+
+
+  String _weatherSummary(BuildContext context, WeatherModel weather) {
+    return context.tr(
+      '{temperature}°C · {condition} · {location}',
+      {
+        'temperature': weather.temperature.round(),
+        'condition': context.tr(weather.condition),
+        'location': context.tr(weather.locationName),
+      },
     );
   }
 

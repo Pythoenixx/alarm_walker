@@ -41,7 +41,7 @@ class ThemeListTile extends StatelessWidget {
       onTap: () => onChanged(_nextMode(mode)),
       child: Row(
         children: [
-          Text('Theme', style: AppTextStyles.body(context)),
+          Text(context.tr('Theme'), style: AppTextStyles.body(context)),
           const Spacer(),
           Icon(_iconForMode(mode), color: color),
         ],
