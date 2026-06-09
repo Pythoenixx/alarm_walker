@@ -1,6 +1,7 @@
 import 'package:alarm_walker/extensions/context_extensions.dart';
 import 'package:alarm_walker/models/alarm_repository.dart';
 import 'package:alarm_walker/services/admin_auth_service.dart';
+import 'package:alarm_walker/services/database_debug_access_service.dart';
 import 'package:alarm_walker/theme/app_colors.dart';
 import 'package:alarm_walker/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
@@ -25,6 +26,7 @@ class _DatabaseScreenState extends State<DatabaseScreen> {
 
   Future<bool> _isAuthorizedAdmin() async {
     final service = AdminAuthService();
+    if (DatabaseDebugAccessService.isUnlocked) return true;
     final user = service.currentUser;
     if (user == null) return false;
     return service.isAuthorizedAdmin(user);
@@ -99,11 +101,6 @@ class _DatabaseScreenState extends State<DatabaseScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _HeaderCard(
-                        isDark: isDark,
-                        tableCount: tables.length,
-                      ),
-                      const SizedBox(height: 12),
                       _TableSelectorCard(
                         isDark: isDark,
                         tables: tables,
@@ -189,64 +186,6 @@ class _TableData {
     required this.rows,
     required this.pkColumn,
   });
-}
-
-class _HeaderCard extends StatelessWidget {
-  final bool isDark;
-  final int tableCount;
-
-  const _HeaderCard({required this.isDark, required this.tableCount});
-
-  @override
-  Widget build(BuildContext context) {
-    final muted =
-        isDark ? AppColors.darkBackgroundText : AppColors.lightBackgroundText;
-
-    return _SoftCard(
-      isDark: isDark,
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: const Icon(
-              Icons.admin_panel_settings_outlined,
-              color: AppColors.primary,
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  context.tr('Local Database Viewer'),
-                  style: AppTextStyles.heading(context).copyWith(fontSize: 17),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  context.tr(
-                    'Admin-only view for checking local alarm, settings, and wake log records.',
-                  ),
-                  style: AppTextStyles.caption(context).copyWith(color: muted),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          _MetricPill(
-            label: context.tr('Tables'),
-            value: '$tableCount',
-            isDark: isDark,
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class _TableSelectorCard extends StatelessWidget {
@@ -570,7 +509,7 @@ class _AccessRequiredCard extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 context.tr(
-                  'This local database viewer is only shown to accounts with the admin role.',
+                  'This local database viewer is available to admins, or after unlocking developer access from Settings.',
                 ),
                 style: AppTextStyles.caption(context),
                 textAlign: TextAlign.center,

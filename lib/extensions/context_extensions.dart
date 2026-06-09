@@ -488,6 +488,9 @@ const Map<String, String> _msTranslations = {
   // Database admin screen
   'Database Admin': 'Admin Pangkalan Data',
   'Admin-only local database viewer': 'Paparan pangkalan data tempatan untuk admin sahaja',
+  'Developer local database viewer': 'Paparan pangkalan data tempatan pembangun',
+  'Database viewer unlocked for this device': 'Paparan pangkalan data dibuka untuk peranti ini',
+  '{count} more taps to unlock database viewer': '{count} ketikan lagi untuk buka paparan pangkalan data',
   'Local Database Viewer': 'Paparan Pangkalan Data Tempatan',
   'Admin-only view for checking local alarm, settings, and wake log records.': 'Paparan admin sahaja untuk menyemak rekod penggera, tetapan, dan log bangun tempatan.',
   'Tables': 'Jadual',
@@ -501,7 +504,7 @@ const Map<String, String> _msTranslations = {
   'Delete row?': 'Padam baris?',
   'This will permanently delete the selected database row. Use this only for admin testing or cleanup.': 'Ini akan memadam baris pangkalan data yang dipilih secara kekal. Gunakan hanya untuk ujian atau pembersihan admin.',
   'Admin access required': 'Akses admin diperlukan',
-  'This local database viewer is only shown to accounts with the admin role.': 'Paparan pangkalan data tempatan ini hanya ditunjukkan kepada akaun dengan peranan admin.',
+  'This local database viewer is available to admins, or after unlocking developer access from Settings.': 'Paparan pangkalan data tempatan ini tersedia untuk admin, atau selepas akses pembangun dibuka daripada Tetapan.',
   'No local database tables found': 'Tiada jadual pangkalan data tempatan dijumpai',
 
 };

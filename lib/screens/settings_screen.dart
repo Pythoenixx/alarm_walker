@@ -10,6 +10,7 @@ import 'package:alarm_walker/screens/snooze_settings_screen.dart';
 import 'package:alarm_walker/screens/sound_settings_screen.dart';
 import 'package:alarm_walker/services/alarm_cubit.dart';
 import 'package:alarm_walker/services/admin_auth_service.dart';
+import 'package:alarm_walker/services/database_debug_access_service.dart';
 import 'package:alarm_walker/services/settings_cubit.dart';
 import 'package:alarm_walker/services/reminder_notification_service.dart';
 import 'package:alarm_walker/theme/app_colors.dart';
@@ -33,6 +34,8 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   String _version = '';
+  int _versionTapCount = 0;
+  bool _databaseDebugUnlocked = DatabaseDebugAccessService.isUnlocked;
   late final Future<bool> _showDatabaseAdminTile;
 
   @override
@@ -44,6 +47,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<bool> _canShowDatabaseAdminTile() async {
     final service = AdminAuthService();
+    if (DatabaseDebugAccessService.isUnlocked) return true;
     final user = service.currentUser;
     if (user == null) return false;
     return service.isAuthorizedAdmin(user);
@@ -209,12 +213,43 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Future<void> _copyVersionLabel() async {
+  Future<void> _handleVersionTileTap() async {
     if (_version.isEmpty) return;
+
+    _versionTapCount += 1;
+
+    if (!_databaseDebugUnlocked && _versionTapCount >= 8) {
+      await DatabaseDebugAccessService.unlock();
+      if (!mounted) return;
+      setState(() => _databaseDebugUnlocked = true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.tr('Database viewer unlocked for this device')),
+        ),
+      );
+      return;
+    }
+
     await Clipboard.setData(ClipboardData(text: 'Alarm Walker $_version'));
     if (!mounted) return;
+
+    if (_databaseDebugUnlocked || _versionTapCount < 5) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.tr('App version copied'))),
+      );
+      return;
+    }
+
+    final remaining = 8 - _versionTapCount;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(context.tr('App version copied'))),
+      SnackBar(
+        content: Text(
+          context.tr(
+            '{count} more taps to unlock database viewer',
+            {'count': remaining},
+          ),
+        ),
+      ),
     );
   }
 
@@ -505,7 +540,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 FutureBuilder<bool>(
                   future: _showDatabaseAdminTile,
                   builder: (context, snapshot) {
-                    if (snapshot.data != true) {
+                    if (snapshot.data != true && !_databaseDebugUnlocked) {
                       return const SizedBox.shrink();
                     }
 
@@ -516,7 +551,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           child: _NavRow(
                             icon: Icons.storage_outlined,
                             label: context.localization.database,
-                            subtitle: context.tr('Admin-only local database viewer'),
+                            subtitle: context.tr(
+                              _databaseDebugUnlocked
+                                  ? 'Developer local database viewer'
+                                  : 'Admin-only local database viewer',
+                            ),
                             isDark: isDark,
                           ),
                         ),
@@ -563,7 +602,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 const SizedBox(height: 8),
                 SettingsTile(
-                  onTap: _copyVersionLabel,
+                  onTap: _handleVersionTileTap,
                   child: _NavRow(
                     icon: Icons.verified_outlined,
                     label: context.tr('App version'),
