@@ -20,7 +20,7 @@ class ReminderNotificationService {
   static const String _channelName = 'Alarm Walker Reminders';
   static const String _channelDescription =
       'Bedtime, weekend, and next-alarm reminder notifications.';
-  static const String _notificationIcon = 'notification_icon';
+  static const String _notificationIcon = 'ic_stat_alarm_walker_noti_icon';
 
   static const String _bedtimeShownKey = 'reminder_bedtime_shown_date';
   static const String _weekendShownKey = 'reminder_weekend_shown_date';
@@ -32,7 +32,7 @@ class ReminderNotificationService {
     if (_initialized) return;
 
     const androidSettings = AndroidInitializationSettings(
-      '@drawable/notification_icon',
+      '@drawable/ic_stat_alarm_walker_noti_icon',
     );
     const iosSettings = DarwinInitializationSettings();
 
