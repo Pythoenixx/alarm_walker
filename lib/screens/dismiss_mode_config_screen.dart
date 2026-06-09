@@ -367,7 +367,7 @@ class _DismissModeConfigScreenState extends State<DismissModeConfigScreen> {
       appBar: AppBar(
         backgroundColor:
             isDark ? AppColors.darkScaffold1 : AppColors.lightScaffold1,
-        title: Text('Configure $modeTitle'), // TODO: localize
+        title: Text(context.tr('Configure {mode}', {'mode': context.tr(modeTitle)})),
         titleTextStyle: AppTextStyles.heading(context),
         centerTitle: true,
         leading: IconButton(

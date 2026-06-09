@@ -157,8 +157,8 @@ class _LoginScreenState extends State<LoginScreen> {
         // Navigator.pushReplacementNamed(context, '/home');
         context.goNamed(AppRoute.home.name);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Login successful!'),
+          SnackBar(
+            content: Text(context.tr('Login successful!')),
             backgroundColor: Colors.green,
           ),
         );
@@ -167,25 +167,25 @@ class _LoginScreenState extends State<LoginScreen> {
       String message;
       switch (e.code) {
         case 'user-not-found':
-          message = 'No account found with this email.';
+          message = context.tr('No account found with this email.');
           break;
         case 'wrong-password':
-          message = 'Incorrect password. Please try again.';
+          message = context.tr('Incorrect password. Please try again.');
           break;
         case 'invalid-email':
-          message = 'The email address is not valid.';
+          message = context.tr('The email address is not valid.');
           break;
         case 'user-disabled':
-          message = 'This account has been disabled.';
+          message = context.tr('This account has been disabled.');
           break;
         case 'invalid-credential':
-          message = 'Invalid email or password.';
+          message = context.tr('Invalid email or password.');
           break;
         case 'too-many-requests':
-          message = 'Too many failed attempts. Please try again later.';
+          message = context.tr('Too many failed attempts. Please try again later.');
           break;
         default:
-          message = 'An error occurred. Please try again.';
+          message = context.tr('An error occurred. Please try again.');
       }
 
       if (mounted) {
@@ -207,7 +207,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _errorMessage = 'An unexpected error occurred. Please try again.';
+          _errorMessage = context.tr('An unexpected error occurred. Please try again.');
         });
       }
     }
@@ -218,8 +218,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (email.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter your email address'),
+        SnackBar(
+          content: Text(context.tr('Please enter your email address')),
           backgroundColor: Colors.orange,
         ),
       );
@@ -235,15 +235,14 @@ class _LoginScreenState extends State<LoginScreen> {
             context: context,
             builder:
                 (context) => AlertDialog(
-                  title: const Text('Password Reset'),
+                  title: Text(context.tr('Password Reset')),
                   content: Text(
-                    'A password reset link has been sent to $email. '
-                    'Please check your email.',
+                    context.tr('A password reset link has been sent to {email}. Please check your email.', {'email': email}),
                   ),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(context),
-                      child: const Text('OK'),
+                      child: Text(context.tr('OK')),
                     ),
                   ],
                 ),
@@ -253,11 +252,11 @@ class _LoginScreenState extends State<LoginScreen> {
     } on FirebaseAuthException catch (e) {
       String message;
       if (e.code == 'user-not-found') {
-        message = 'No account found with this email.';
+        message = context.tr('No account found with this email.');
       } else if (e.code == 'invalid-email') {
-        message = 'The email address is not valid.';
+        message = context.tr('The email address is not valid.');
       } else {
-        message = 'Failed to send reset email. Please try again.';
+        message = context.tr('Failed to send reset email. Please try again.');
       }
 
       if (mounted) {

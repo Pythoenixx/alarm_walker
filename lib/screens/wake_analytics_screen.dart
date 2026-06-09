@@ -84,17 +84,17 @@ class _WakeAnalyticsScreenState extends State<WakeAnalyticsScreen> {
         leading:
             Navigator.of(context).canPop()
                 ? IconButton(
-                  tooltip: 'Back',
+                  tooltip: context.tr('Back'),
                   onPressed: () => Navigator.of(context).pop(),
                   icon: const Icon(Icons.arrow_back),
                 )
                 : null,
         centerTitle: true,
-        title: const Text('Wake Analytics'),
+        title: Text(context.tr('Wake Analytics')),
         titleTextStyle: AppTextStyles.heading(context),
         actions: [
           IconButton(
-            tooltip: 'Refresh',
+            tooltip: context.tr('Refresh'),
             onPressed: () => unawaited(_refresh()),
             icon: const Icon(Icons.refresh_rounded),
           ),
@@ -263,8 +263,8 @@ class _OverviewHero extends StatelessWidget {
                   children: [
                     Text(
                       total == 0
-                          ? 'No wake records yet'
-                          : '$successRate% successful wake-ups',
+                          ? context.tr('No wake records yet')
+                          : context.tr('{rate}% successful wake-ups', {'rate': successRate}),
                       style: AppTextStyles.large(context).copyWith(
                         color: Colors.white,
                         fontSize: 22,
@@ -274,8 +274,8 @@ class _OverviewHero extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       total == 0
-                          ? 'Complete an alarm to start.'
-                          : '$success / $total successful records',
+                          ? context.tr('Complete an alarm to start.')
+                          : context.tr('{success} / {total} successful records', {'success': success, 'total': total}),
                       style: AppTextStyles.body(context).copyWith(
                         color: Colors.white.withValues(alpha: 0.82),
                       ),
@@ -292,21 +292,21 @@ class _OverviewHero extends StatelessWidget {
             children: [
               _HeroChip(
                 icon: Icons.person_outline_rounded,
-                label: data.profileCategory.label,
+                label: context.tr(data.profileCategory.label),
               ),
               _HeroChip(
                 icon: Icons.auto_graph_rounded,
                 label:
                     data.adaptiveDifficultyEnabled
-                        ? 'Adaptive ON'
-                        : 'Adaptive OFF',
+                        ? context.tr('Adaptive ON')
+                        : context.tr('Adaptive OFF'),
               ),
               _HeroChip(
                 icon: Icons.calendar_month_rounded,
                 label:
                     latest == null
-                        ? 'No latest wake'
-                        : 'Latest ${DateFormat('MMM d, h:mm a').format(latest)}',
+                        ? context.tr('No latest wake')
+                        : context.tr('Latest {time}', {'time': DateFormat('MMM d, h:mm a').format(latest)}),
               ),
             ],
           ),
@@ -384,7 +384,7 @@ class _SectionHeader extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                title,
+                context.tr(title),
                 style: AppTextStyles.large(context).copyWith(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -393,7 +393,7 @@ class _SectionHeader extends StatelessWidget {
               ),
               const SizedBox(height: 2),
               Text(
-                'Summary',
+                context.tr('Summary'),
                 style: AppTextStyles.caption(context).copyWith(
                   color: textColor.withValues(alpha: 0.48),
                 ),
@@ -464,9 +464,9 @@ class _SummaryCards extends StatelessWidget {
             Expanded(
               child: _StatCard(
                 icon: Icons.alarm_rounded,
-                label: 'Total Records',
+                label: context.tr('Total Records'),
                 value: total.toString(),
-                caption: 'Wake attempts',
+                caption: context.tr('Wake attempts'),
                 isDark: isDark,
                 color: Colors.blue,
               ),
@@ -475,9 +475,9 @@ class _SummaryCards extends StatelessWidget {
             Expanded(
               child: _StatCard(
                 icon: Icons.verified_rounded,
-                label: 'Success Rate',
+                label: context.tr('Success Rate'),
                 value: '$successRate%',
-                caption: '$success successful',
+                caption: context.tr('{count} successful', {'count': success}),
                 isDark: isDark,
                 color: Colors.green,
               ),
@@ -490,9 +490,9 @@ class _SummaryCards extends StatelessWidget {
             Expanded(
               child: _StatCard(
                 icon: Icons.timer_rounded,
-                label: 'Avg Disarm',
+                label: context.tr('Avg Disarm'),
                 value: _formatDurationMs(avgMs),
-                caption: 'Challenge time',
+                caption: context.tr('Challenge time'),
                 isDark: isDark,
                 color: Colors.orange,
               ),
@@ -501,9 +501,9 @@ class _SummaryCards extends StatelessWidget {
             Expanded(
               child: _StatCard(
                 icon: Icons.snooze_rounded,
-                label: 'Snoozes',
+                label: context.tr('Snoozes'),
                 value: totalSnoozes.toString(),
-                caption: 'Total used',
+                caption: context.tr('Total used'),
                 isDark: isDark,
                 color: Colors.purple,
               ),
@@ -516,9 +516,9 @@ class _SummaryCards extends StatelessWidget {
             Expanded(
               child: _StatCard(
                 icon: Icons.touch_app_rounded,
-                label: 'Failed Attempts',
+                label: context.tr('Failed Attempts'),
                 value: totalFailedAttempts.toString(),
-                caption: 'Wrong challenge inputs',
+                caption: context.tr('Wrong challenge inputs'),
                 isDark: isDark,
                 color: Colors.redAccent,
               ),
@@ -527,9 +527,9 @@ class _SummaryCards extends StatelessWidget {
             Expanded(
               child: _StatCard(
                 icon: Icons.insights_rounded,
-                label: 'Avg Attempts',
+                label: context.tr('Avg Attempts'),
                 value: averageFailedAttempts.toStringAsFixed(1),
-                caption: 'Per wake record',
+                caption: context.tr('Per wake record'),
                 isDark: isDark,
                 color: Colors.deepOrange,
               ),
@@ -561,11 +561,11 @@ class _AdaptiveDifficultyCard extends StatelessWidget {
     final decision = result?.decision;
     final color = _colorForDecision(decision, enabled);
     final icon = _iconForDecision(decision, enabled);
-    final title = _titleForDecision(decision, enabled);
+    final title = context.tr(_titleForDecision(decision, enabled));
     final subtitle =
         enabled
-            ? result?.message ?? 'Adaptive difficulty is ready to analyze wake-up records.'
-            : 'Adaptive difficulty is turned off in Settings.';
+            ? context.tr(result?.message ?? 'Adaptive difficulty is ready to analyze wake-up records.')
+            : context.tr('Adaptive difficulty is turned off in Settings.');
     final metrics = result?.metrics;
 
     return _SurfaceCard(
@@ -592,7 +592,7 @@ class _AdaptiveDifficultyCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Adaptive Difficulty',
+                      context.tr('Adaptive Difficulty'),
                       style: AppTextStyles.large(context).copyWith(
                         fontSize: 17,
                         fontWeight: FontWeight.bold,
@@ -625,7 +625,7 @@ class _AdaptiveDifficultyCard extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Default challenge summary',
+                  context.tr('Default challenge summary'),
                   style: AppTextStyles.caption(context).copyWith(
                     color:
                         isDark
@@ -644,28 +644,28 @@ class _AdaptiveDifficultyCard extends StatelessWidget {
             children: [
               _InfoChip(
                 icon: Icons.person_outline,
-                label: profileCategory.label,
+                label: context.tr(profileCategory.label),
                 isDark: isDark,
               ),
               _InfoChip(
                 icon: Icons.analytics_outlined,
-                label: '${result?.analyzedLogs ?? 0} logs analyzed',
+                label: context.tr('{count} logs analyzed', {'count': result?.analyzedLogs ?? 0}),
                 isDark: isDark,
               ),
               _InfoChip(
                 icon: Icons.calculate_outlined,
                 label:
-                    'Math ${_mathDifficultyLabel(defaultDismissSettings.mathDifficulty)}',
+                    context.tr('Math {level}', {'level': context.tr(_mathDifficultyLabel(defaultDismissSettings.mathDifficulty))}),
                 isDark: isDark,
               ),
               _InfoChip(
                 icon: Icons.format_list_numbered,
-                label: '${defaultDismissSettings.mathProblemCount} problems',
+                label: context.tr('{count} problems', {'count': defaultDismissSettings.mathProblemCount}),
                 isDark: isDark,
               ),
               _InfoChip(
                 icon: Icons.directions_walk,
-                label: '${defaultDismissSettings.walkSteps} steps',
+                label: context.tr('{count} steps', {'count': defaultDismissSettings.walkSteps}),
                 isDark: isDark,
               ),
             ],
@@ -680,21 +680,21 @@ class _AdaptiveDifficultyCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: _MiniMetric(
-                    label: 'Success',
+                    label: context.tr('Success'),
                     value: '${(metrics.successRate * 100).toStringAsFixed(0)}%',
                     isDark: isDark,
                   ),
                 ),
                 Expanded(
                   child: _MiniMetric(
-                    label: 'Avg snooze',
+                    label: context.tr('Avg snooze'),
                     value: metrics.averageSnoozeCount.toStringAsFixed(1),
                     isDark: isDark,
                   ),
                 ),
                 Expanded(
                   child: _MiniMetric(
-                    label: 'Avg disarm',
+                    label: context.tr('Avg disarm'),
                     value: '${metrics.averageDisarmSeconds.toStringAsFixed(0)}s',
                     isDark: isDark,
                   ),
@@ -979,7 +979,7 @@ class _WakeHistoryList extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              'No wake logs yet',
+              context.tr('No wake logs yet'),
               style: AppTextStyles.large(context).copyWith(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -987,7 +987,7 @@ class _WakeHistoryList extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              'Dismiss an alarm to start recording wake-up performance.',
+              context.tr('Dismiss an alarm to start recording wake-up performance.'),
               textAlign: TextAlign.center,
               style: AppTextStyles.body(context).copyWith(
                 color:
@@ -1034,7 +1034,7 @@ class _WakeLogCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final successColor = log.success ? Colors.green : Colors.red;
-    final successLabel = log.success ? 'Success' : 'Failed';
+    final successLabel = context.tr(log.success ? 'Success' : 'Failed');
     final textColor =
         isDark ? AppColors.darkBackgroundText : AppColors.lightBackgroundText;
 
@@ -1082,24 +1082,24 @@ class _WakeLogCard extends StatelessWidget {
                   children: [
                     _CompactMetric(
                       icon: _modeIcon(log.disarmMode),
-                      label: _modeLabel(log.disarmMode),
+                      label: context.tr(_modeLabel(log.disarmMode)),
                       isDark: isDark,
                     ),
                     _CompactMetric(
                       icon: Icons.snooze_rounded,
-                      label: '${log.snoozeCount} snooze${log.snoozeCount == 1 ? '' : 's'}',
+                      label: context.tr('{count} snoozes', {'count': log.snoozeCount}),
                       isDark: isDark,
                     ),
                     _CompactMetric(
                       icon: Icons.timer_rounded,
-                      label: '${_formatDurationMs(log.disarmDurationMs)} disarm',
+                      label: context.tr('{duration} disarm', {'duration': _formatDurationMs(log.disarmDurationMs)}),
                       isDark: isDark,
                     ),
                     if (log.failedAttemptCount > 0)
                       _CompactMetric(
                         icon: Icons.touch_app_rounded,
                         label:
-                            '${log.failedAttemptCount} failed attempt${log.failedAttemptCount == 1 ? '' : 's'}',
+                            context.tr('{count} failed attempts', {'count': log.failedAttemptCount}),
                         isDark: isDark,
                       ),
                   ],
@@ -1225,7 +1225,7 @@ class _AnalyticsErrorState extends StatelessWidget {
               const Icon(Icons.error_outline_rounded, size: 48, color: Colors.red),
               const SizedBox(height: 16),
               Text(
-                'Failed to load analytics',
+                context.tr('Failed to load analytics'),
                 style: AppTextStyles.large(context).copyWith(
                   fontWeight: FontWeight.bold,
                   color: textColor,
@@ -1233,7 +1233,7 @@ class _AnalyticsErrorState extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'Please try refreshing the page.',
+                context.tr('Please try refreshing the page.'),
                 textAlign: TextAlign.center,
                 style: AppTextStyles.body(context).copyWith(
                   color: textColor.withValues(alpha: 0.68),
@@ -1243,7 +1243,7 @@ class _AnalyticsErrorState extends StatelessWidget {
               ElevatedButton.icon(
                 onPressed: onRetry,
                 icon: const Icon(Icons.refresh_rounded),
-                label: const Text('Retry'),
+                label: Text(context.tr('Retry')),
               ),
             ],
           ),

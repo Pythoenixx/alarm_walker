@@ -139,7 +139,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               height: 20,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                            : Text(_page == 2 ? 'Start using app' : 'Next'),
+                            : Text(context.tr(_page == 2 ? 'Start using app' : 'Next')),
                   ),
                 ),
               ],
@@ -255,25 +255,35 @@ class _OnboardingContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.12),
-            borderRadius: BorderRadius.circular(24),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                  child: Icon(icon, color: AppColors.primary, size: 40),
+                ),
+                const SizedBox(height: 24),
+                Text(context.tr(title), style: AppTextStyles.large(context)),
+                const SizedBox(height: 12),
+                Text(context.tr(description), style: AppTextStyles.body(context)),
+                const SizedBox(height: 28),
+                ...children,
+              ],
+            ),
           ),
-          child: Icon(icon, color: AppColors.primary, size: 40),
-        ),
-        const SizedBox(height: 24),
-        Text(title, style: AppTextStyles.large(context)),
-        const SizedBox(height: 12),
-        Text(description, style: AppTextStyles.body(context)),
-        const SizedBox(height: 28),
-        ...children,
-      ],
+        );
+      },
     );
   }
 }
@@ -318,10 +328,10 @@ class _CategoryCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(category.label, style: AppTextStyles.heading(context)),
+                  Text(context.tr(category.label), style: AppTextStyles.heading(context)),
                   const SizedBox(height: 4),
                   Text(
-                    _descriptionForCategory(category),
+                    context.tr(_descriptionForCategory(category)),
                     style: AppTextStyles.caption(context),
                   ),
                 ],
@@ -350,7 +360,7 @@ class _FeatureLine extends StatelessWidget {
         children: [
           Icon(icon, color: AppColors.primary, size: 20),
           const SizedBox(width: 10),
-          Expanded(child: Text(text, style: AppTextStyles.body(context))),
+          Expanded(child: Text(context.tr(text), style: AppTextStyles.body(context))),
         ],
       ),
     );
