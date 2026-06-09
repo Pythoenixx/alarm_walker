@@ -124,6 +124,8 @@ class BackupRestoreService {
           profileCategory: ProfileCategory.fallback,
         );
 
+    // Include soft-deleted alarms in backup so historical wake logs can still
+    // restore their alarm_id references and remain visible in Wake Analytics.
     final alarms = await db.query(
       'alarm',
       where: 'user_id = ?',
@@ -230,6 +232,7 @@ class BackupRestoreService {
           'snooze_settings': alarm['snooze_settings'] as String? ?? '{}',
           'sound_settings': alarm['sound_settings'] as String? ?? '{}',
           'dismiss_settings': alarm['dismiss_settings'] as String? ?? '{}',
+          'deleted_at': alarm['deleted_at'] as String?,
         };
 
         final newAlarmId = await txn.insert('alarm', row);

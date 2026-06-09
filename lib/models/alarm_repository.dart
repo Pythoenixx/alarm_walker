@@ -14,7 +14,7 @@ class AlarmRepository {
   Future<List<AlarmModel>> getAlarms({required String userId}) async {
     final alarmRows = await db.query(
       'alarm',
-      where: 'user_id = ?',
+      where: 'user_id = ? AND deleted_at IS NULL',
       whereArgs: [userId],
     );
 
@@ -36,7 +36,7 @@ class AlarmRepository {
   }) async {
     final rows = await db.query(
       'alarm',
-      where: 'alarm_id = ? AND user_id = ?',
+      where: 'alarm_id = ? AND user_id = ? AND deleted_at IS NULL',
       whereArgs: [alarmId, userId],
       limit: 1,
     );
@@ -68,9 +68,13 @@ class AlarmRepository {
   }
 
   Future<void> deleteAlarm(int alarmId, {required String userId}) async {
-    await db.delete(
+    // Soft-delete the alarm setup instead of hard-deleting the row.
+    // Wake logs still reference this alarm_id, so keeping the row preserves the
+    // user's Wake Analytics history after they remove an alarm from Home.
+    await db.update(
       'alarm',
-      where: 'alarm_id = ? AND user_id = ?',
+      {'enabled': 0, 'deleted_at': DateTime.now().toIso8601String()},
+      where: 'alarm_id = ? AND user_id = ? AND deleted_at IS NULL',
       whereArgs: [alarmId, userId],
     );
   }
@@ -83,7 +87,7 @@ class AlarmRepository {
     await db.update(
       'alarm',
       {'enabled': enabled ? 1 : 0},
-      where: 'alarm_id = ? AND user_id = ?',
+      where: 'alarm_id = ? AND user_id = ? AND deleted_at IS NULL',
       whereArgs: [alarmId, userId],
     );
   }
@@ -97,7 +101,7 @@ class AlarmRepository {
     await db.update(
       'alarm',
       {'days': jsonEncode(days), 'enabled': enabled ? 1 : 0},
-      where: 'alarm_id = ? AND user_id = ?',
+      where: 'alarm_id = ? AND user_id = ? AND deleted_at IS NULL',
       whereArgs: [alarmId, userId],
     );
   }
