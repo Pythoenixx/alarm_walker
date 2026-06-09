@@ -100,6 +100,8 @@ class WeatherService {
       return WeatherModel.fromOpenMeteo(
         decoded,
         locationName: locationName,
+        latitude: latitude,
+        longitude: longitude,
         isManualLocation: isManualLocation,
       );
     } on FormatException catch (error) {

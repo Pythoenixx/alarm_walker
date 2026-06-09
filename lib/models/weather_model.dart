@@ -4,6 +4,8 @@ class WeatherModel {
   final String condition;
   final String message;
   final String locationName;
+  final double? latitude;
+  final double? longitude;
   final DateTime? updatedAt;
   final bool isCached;
   final bool isManualLocation;
@@ -14,6 +16,8 @@ class WeatherModel {
     required this.condition,
     required this.message,
     this.locationName = 'Current location',
+    this.latitude,
+    this.longitude,
     this.updatedAt,
     this.isCached = false,
     this.isManualLocation = false,
@@ -22,6 +26,8 @@ class WeatherModel {
   factory WeatherModel.fromOpenMeteo(
     Map<String, dynamic> json, {
     String locationName = 'Current location',
+    double? latitude,
+    double? longitude,
     bool isManualLocation = false,
     bool isCached = false,
     DateTime? updatedAt,
@@ -48,6 +54,8 @@ class WeatherModel {
       condition: condition,
       message: messageFromCode(code),
       locationName: locationName,
+      latitude: latitude,
+      longitude: longitude,
       updatedAt: updatedAt ?? DateTime.now(),
       isCached: isCached,
       isManualLocation: isManualLocation,
@@ -72,6 +80,8 @@ class WeatherModel {
           json['condition'] as String? ?? WeatherModel.conditionFromCode(code),
       message: json['message'] as String? ?? WeatherModel.messageFromCode(code),
       locationName: json['locationName'] as String? ?? 'Saved location',
+      latitude: (json['latitude'] as num?)?.toDouble(),
+      longitude: (json['longitude'] as num?)?.toDouble(),
       updatedAt:
           updatedAtText is String ? DateTime.tryParse(updatedAtText) : null,
       isCached: true,
@@ -85,12 +95,16 @@ class WeatherModel {
     'condition': condition,
     'message': message,
     'locationName': locationName,
+    'latitude': latitude,
+    'longitude': longitude,
     'updatedAt': (updatedAt ?? DateTime.now()).toIso8601String(),
     'isManualLocation': isManualLocation,
   };
 
   WeatherModel copyWith({
     String? locationName,
+    double? latitude,
+    double? longitude,
     DateTime? updatedAt,
     bool? isCached,
     bool? isManualLocation,
@@ -100,10 +114,19 @@ class WeatherModel {
     condition: condition,
     message: message,
     locationName: locationName ?? this.locationName,
+    latitude: latitude ?? this.latitude,
+    longitude: longitude ?? this.longitude,
     updatedAt: updatedAt ?? this.updatedAt,
     isCached: isCached ?? this.isCached,
     isManualLocation: isManualLocation ?? this.isManualLocation,
   );
+
+  String? get coordinateLabel {
+    final lat = latitude;
+    final lon = longitude;
+    if (lat == null || lon == null) return null;
+    return '${lat.toStringAsFixed(2)}, ${lon.toStringAsFixed(2)}';
+  }
 
   static String conditionFromCode(int code) {
     return switch (code) {

@@ -427,6 +427,7 @@ const Map<String, String> _msTranslations = {
   'Weather unavailable': 'Cuaca tidak tersedia',
   'Refresh weather': 'Muat semula cuaca',
   'Weather source: {location}': 'Sumber cuaca: {location}',
+  'Weather source: last known location ({coordinates})': 'Sumber cuaca: lokasi terakhir diketahui ({coordinates})',
   'Weather source: device location': 'Sumber cuaca: lokasi peranti',
   'Checking weather...': 'Menyemak cuaca...',
   'Weather message unavailable': 'Mesej cuaca tidak tersedia',

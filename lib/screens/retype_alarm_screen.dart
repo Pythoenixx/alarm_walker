@@ -31,30 +31,44 @@ class _RetypeAlarmScreenState extends State<RetypeAlarmScreen> {
   String? _error;
   bool _isCorrect = false;
 
-  // Random default phrases are intentionally mixed-case and symbol-heavy.
-  // This keeps Retype firmer when the user leaves the custom phrase empty.
-  static const List<String> _sentences = [
-    'K9!2z.Q7@4mX',
-    'V8?P1@x5.R3t',
-    '2!mZ.9q@7Bv',
-    'X6.1V@p9?3kL',
-    '7L@4n.8j!1wQ',
-    'B3?9m.V1@6zR',
-    '4k.7Q!2w@8pN',
-    '9!5z.R2@1xT',
-    'M7@3k.V9?4jS',
-    '1q.8Z!5p@2nD',
-  ];
+  static const String _letters =
+      'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+  static const String _numbers = '23456789';
+  static const String _symbols = '!@#?._-';
+
+  // Empty Retype text now creates a fresh phrase per alarm session.
+  // The generated length follows mathDifficulty so adaptive difficulty can
+  // still make Retype lighter or firmer without adding another setting field.
+  String _generateRandomPhrase() {
+    final difficulty = widget.alarmModel.dismissSettings.mathDifficulty;
+    final length = switch (difficulty) {
+      <= 1 => 10,
+      2 => 12,
+      _ => 14,
+    };
+    final rnd = Random();
+    final requiredChars = <String>[
+      _pick(rnd, _letters.toUpperCase()),
+      _pick(rnd, _letters.toLowerCase()),
+      _pick(rnd, _numbers),
+      _pick(rnd, _symbols),
+    ];
+    final allChars = _letters + _numbers + _symbols;
+    while (requiredChars.length < length) {
+      requiredChars.add(_pick(rnd, allChars));
+    }
+    requiredChars.shuffle(rnd);
+    return requiredChars.join();
+  }
+
+  String _pick(Random rnd, String source) => source[rnd.nextInt(source.length)];
 
   @override
   void initState() {
     super.initState();
     final configuredText = widget.alarmModel.dismissSettings.reTypeText.trim();
-    final rnd = Random();
     _targetSentence =
-        configuredText.isNotEmpty
-            ? configuredText
-            : _sentences[rnd.nextInt(_sentences.length)];
+        configuredText.isNotEmpty ? configuredText : _generateRandomPhrase();
     _caseSensitive = widget.alarmModel.dismissSettings.reTypeCaseSensitive;
     _controller.addListener(_onTextChanged);
   }

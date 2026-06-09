@@ -325,8 +325,22 @@ class _WeatherContent extends StatelessWidget {
     if (location.startsWith('GPS ')) {
       return context.tr('Weather source: {location}', {'location': location});
     }
+    if (location == 'Last known location') {
+      final coordinates = weather.coordinateLabel;
+      if (coordinates != null) {
+        return context.tr(
+          'Weather source: last known location ({coordinates})',
+          {'coordinates': coordinates},
+        );
+      }
+      return context.tr('Weather source: {location}', {
+        'location': context.tr(location),
+      });
+    }
     if (location.isNotEmpty && location != 'Current location') {
-      return context.tr('Weather source: {location}', {'location': location});
+      return context.tr('Weather source: {location}', {
+        'location': context.tr(location),
+      });
     }
     return context.tr('Weather source: device location');
   }
