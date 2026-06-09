@@ -26,6 +26,7 @@ class RetypeAlarmScreen extends StatefulWidget {
 
 class _RetypeAlarmScreenState extends State<RetypeAlarmScreen> {
   late final String _targetSentence;
+  late final bool _caseSensitive;
   final TextEditingController _controller = TextEditingController();
   String? _error;
   bool _isCorrect = false;
@@ -47,8 +48,13 @@ class _RetypeAlarmScreenState extends State<RetypeAlarmScreen> {
   @override
   void initState() {
     super.initState();
+    final configuredText = widget.alarmModel.dismissSettings.reTypeText.trim();
     final rnd = Random();
-    _targetSentence = _sentences[rnd.nextInt(_sentences.length)];
+    _targetSentence =
+        configuredText.isNotEmpty
+            ? configuredText
+            : _sentences[rnd.nextInt(_sentences.length)];
+    _caseSensitive = widget.alarmModel.dismissSettings.reTypeCaseSensitive;
     _controller.addListener(_onTextChanged);
   }
 
@@ -68,8 +74,13 @@ class _RetypeAlarmScreenState extends State<RetypeAlarmScreen> {
 
   Future<void> _tryStop() async {
     final input = _controller.text.trim();
+    final target = _targetSentence.trim();
+    final isMatch =
+        _caseSensitive
+            ? input == target
+            : input.toLowerCase() == target.toLowerCase();
 
-    if (input == _targetSentence) {
+    if (isMatch) {
       setState(() {
         _isCorrect = true;
         _error = null;
@@ -96,7 +107,9 @@ class _RetypeAlarmScreenState extends State<RetypeAlarmScreen> {
 
       setState(() {
         _error = context.tr(
-          'Incorrect! Please type the sentence exactly as shown.',
+          _caseSensitive
+              ? 'Incorrect! Please type the sentence exactly as shown.'
+              : 'Incorrect! Please match the sentence. Capital letters are optional.',
         );
         _isCorrect = false;
       });
@@ -276,7 +289,9 @@ class _RetypeAlarmScreenState extends State<RetypeAlarmScreen> {
                         SizedBox(height: compactLayout ? 16 : 28),
                         Text(
                           context.tr(
-                            'Match capitalization and punctuation exactly',
+                            _caseSensitive
+                                ? 'Match capitalization and punctuation exactly'
+                                : 'Match the words and punctuation shown',
                           ),
                           style: TextStyle(
                             color:
