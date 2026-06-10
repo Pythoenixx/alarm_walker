@@ -180,7 +180,7 @@ class AlarmCubit extends Cubit<List<AlarmModel>> {
         notificationSettings: NotificationSettings(
           title: 'Alarm',
           body: title,
-          icon: 'ic_stat_alarm_walker_noti_icon',
+          icon: 'notification_icon',
           iconColor: Colors.white,
         ),
         payload: alarmModel.alarmId.toString(),
