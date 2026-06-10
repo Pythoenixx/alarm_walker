@@ -50,17 +50,17 @@ The system also includes wake-up analytics, profile-based difficulty settings, s
 The admin web panel is deployed using Render as a Flutter Web static site. It is used to monitor issue logs and crash reports from the mobile application.
 
 Admin Web URL:
-[Insert Render admin web URL here]
+[https://alarm-walker-admin-web.onrender.com/]
 
 Admin Web Deploy Repository:
-[Insert admin web GitHub repository link here]
+[https://github.com/Pythoenixx/alarm-walker-admin-web]
 
 ## APK Release
 
 The final Android APK is distributed through GitHub Releases.
 
 APK Release URL:
-[Insert GitHub release URL here]
+[https://github.com/Pythoenixx/alarm_walker/releases/tag/v1.0.0]
 
 ## Final Version
 
