@@ -1,5 +1,5 @@
 name: alarm_walker
-description: A neumorphic themed digital calculator which has keyboard and dark mode support
+description: A smart Flutter alarm application that requires users to complete wake-up tasks before dismissing alarms.
 publish_to: 'none'
 version: 1.0.0+6
 environment:
