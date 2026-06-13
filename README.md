@@ -17,7 +17,7 @@ The system also includes wake-up analytics, profile-based difficulty settings, s
 * Multi-mode wake-up tasks:
 
   * Math task
-  * Typing/retype task
+  * Typing / retype task
   * Shake task
   * Walking task
 * Profile-based difficulty settings:
@@ -30,6 +30,37 @@ The system also includes wake-up analytics, profile-based difficulty settings, s
 * Reminder notifications
 * English and Malay interface support
 * Admin web panel for issue log and crash monitoring
+
+## Screenshots
+
+### Mobile Application
+
+| Home Screen                                      | Create Alarm                                                     |
+| ------------------------------------------------ | ---------------------------------------------------------------- |
+| ![Home Screen](docs/screenshots/home-screen.jpg) | ![Create Alarm Screen](docs/screenshots/create-alarm-screen.jpg) |
+
+| Alarm Ringing                                                | Math Task                                             |
+| ------------------------------------------------------------ | ----------------------------------------------------- |
+| ![Alarm Ringing Screen](docs/screenshots/ringing-screen.jpg) | ![Math Task Screen](docs/screenshots/math-screen.jpg) |
+
+| Retype Task                                               | Shake Task                                              |
+| --------------------------------------------------------- | ------------------------------------------------------- |
+| ![Retype Task Screen](docs/screenshots/retype-screen.jpg) | ![Shake Task Screen](docs/screenshots/shake-screen.jpg) |
+
+| Walking Task                                                | Wake Analytics                                                       |
+| ----------------------------------------------------------- | -------------------------------------------------------------------- |
+| ![Walking Task Screen](docs/screenshots/walking-screen.jpg) | ![Wake Analytics Screen](docs/screenshots/wake-analytics-screen.jpg) |
+
+| Backup and Restore                                                       |
+| ------------------------------------------------------------------------ |
+| ![Backup and Restore Screen](docs/screenshots/backup-restore-screen.jpg) |
+
+
+### Admin Web Panel
+
+| Issue Log Monitoring                                     |
+| -------------------------------------------------------- |
+| ![Admin Web Panel](docs/screenshots/admin-dashboard.png) |
 
 ## Platforms
 
@@ -49,22 +80,22 @@ The system also includes wake-up analytics, profile-based difficulty settings, s
 
 The admin web panel is deployed using Render as a Flutter Web static site. It is used to monitor issue logs and crash reports from the mobile application.
 
-Admin Web URL:
-[https://alarm-walker-admin-web.onrender.com/]
+**Admin Web URL:**
+https://alarm-walker-admin-web.onrender.com/
 
-Admin Web Deploy Repository:
-[https://github.com/Pythoenixx/alarm-walker-admin-web]
+**Admin Web Deploy Repository:**
+https://github.com/Pythoenixx/alarm-walker-admin-web
 
 ## APK Release
 
 The final Android APK is distributed through GitHub Releases.
 
-APK Release URL:
-[https://github.com/Pythoenixx/alarm_walker/releases/tag/v1.0.0]
+**APK Release URL:**
+https://github.com/Pythoenixx/alarm_walker/releases/tag/v1.0.0
 
 ## Final Version
 
-Version: 1.0.0+6
+**Version:** 1.0.0+6
 
 ## Final Testing Status
 
